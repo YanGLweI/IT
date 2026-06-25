@@ -20,6 +20,13 @@ export function deleteUserPermission(id, dualToken) {
   return request.delete(`/user-permissions/${id}`, withDual(null, dualToken))
 }
 
+export function exportDepartmentConfirmation(departmentId) {
+  return request.get('/user-permissions/export-confirmation', {
+    params: { department_id: departmentId },
+    responseType: 'blob'
+  })
+}
+
 function withDual(config, dualToken) {
   if (dualToken) {
     config = config || {}

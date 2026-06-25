@@ -77,6 +77,7 @@ func SetupRouter() *gin.Engine {
 			// 用户权限管理 - 查询（不需要双控）
 			protected.GET("/user-permissions", handlers.ListUserPermissions)
 			protected.GET("/user-permissions/:id", handlers.GetUserPermission)
+			protected.GET("/user-permissions/export-confirmation", handlers.ExportDepartmentConfirmation)
 
 			// ============ 双控保护接口（需要JWT + 双控验证）============
 			dual := protected.Group("")

@@ -21,6 +21,11 @@
         />
       </el-tabs>
 
+      <!-- 导出按钮（仅选中具体部门时显示） -->
+      <div v-if="activeTab !== 'all'" class="export-bar">
+        <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出月度确认表</el-button>
+      </div>
+
       <!-- 用户表格 -->
       <div class="table-wrapper" ref="tableWrapper">
         <el-table
@@ -144,7 +149,7 @@
 
 <script>
 import { getDepartments, getDepartmentPositions } from '@/api/department'
-import { getUserPermissions, createUserPermission, updateUserPermission, deleteUserPermission } from '@/api/userPermission'
+import { getUserPermissions, createUserPermission, updateUserPermission, deleteUserPermission, exportDepartmentConfirmation } from '@/api/userPermission'
 import { getPermissionRules, getPositionPermissions } from '@/api/permission'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import DepartmentManage from './DepartmentManage.vue'
@@ -183,6 +188,8 @@ export default {
       deptPositions: {}, // { deptId: ['岗位1', '岗位2'] }
       // 管理配置
       showDeptManage: false,
+      // 导出
+      exporting: false,
       // 表格高度
       tableMaxHeight: null,
       // 当前岗位的权限规则（合并所有岗位）
@@ -487,6 +494,34 @@ export default {
           console.error(e)
         }
       }
+    },
+    async handleExport() {
+      if (this.activeTab === 'all') return
+      const dept = this.departments.find(d => String(d.id) === this.activeTab)
+      if (!dept) return
+
+      this.exporting = true
+      try {
+        const res = await exportDepartmentConfirmation(dept.id)
+        // res 是 blob 数据
+        const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        const now = new Date()
+        const yearMonth = `${now.getFullYear()}年${now.getMonth() + 1}月份`
+        link.download = `IT07-2.0 用户确认表(${yearMonth})-${dept.name}.xlsx`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+        this.$message.success('导出成功')
+      } catch (e) {
+        console.error('导出失败:', e)
+        this.$message.error('导出失败，请重试')
+      } finally {
+        this.exporting = false
+      }
     }
   }
 }
@@ -538,5 +573,10 @@ export default {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+.export-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
 }
 </style>
