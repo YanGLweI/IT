@@ -145,80 +145,10 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 		},
 	})
 
-	// 判断是否需要额外的签字列（必须在Row 1之前）
-	needsDBASignature := false // 产业部 + 数据库角色
-	needsCISOSignature := false // 密钥团队 + 密钥经理
-	extraCols := []string{}    // 额外签字列标题
-	
-	if dept.Name == "产业部" {
-		// 检查是否有用户拥有数据库角色
-		for _, user := range users {
-			var systemRoles []struct {
-				System string   `json:"system"`
-				Roles  []string `json:"roles"`
-			}
-			if user.SystemRolesJSON != "" && user.SystemRolesJSON != "[]" {
-				if err := json.Unmarshal([]byte(user.SystemRolesJSON), &systemRoles); err == nil {
-					for _, sr := range systemRoles {
-						// 检查系统名称是否包含"数据库"
-						if containsKeyword(sr.System, []string{"数据库", "Database", "DB"}) {
-							needsDBASignature = true
-							break
-						}
-					}
-				}
-			}
-			if needsDBASignature {
-				break
-			}
-		}
-	} else if dept.Name == "密钥团队" {
-		// 检查是否有密钥经理角色
-		for _, user := range users {
-			var systemRoles []struct {
-				System string   `json:"system"`
-				Roles  []string `json:"roles"`
-			}
-			if user.SystemRolesJSON != "" && user.SystemRolesJSON != "[]" {
-				if err := json.Unmarshal([]byte(user.SystemRolesJSON), &systemRoles); err == nil {
-					for _, sr := range systemRoles {
-						for _, role := range sr.Roles {
-							if containsKeyword(role, []string{"密钥经理", "Key Manager", "密钥管理"}) {
-								needsCISOSignature = true
-								break
-							}
-						}
-						if needsCISOSignature {
-							break
-						}
-					}
-				}
-			}
-			if needsCISOSignature {
-				break
-			}
-		}
-	}
-	
-	// 构建表头并计算最后一列索引
-	headers := []string{"序号", "姓名", "岗位", "系统", "角色", "确认结果"}
-	lastColIndex := 5 // F列
-	if needsDBASignature {
-		extraCols = append(extraCols, "DBA签字")
-		headers = append(headers, "DBA签字")
-		lastColIndex++
-	}
-	if needsCISOSignature {
-		extraCols = append(extraCols, "CISO签字")
-		headers = append(headers, "CISO签字")
-		lastColIndex++
-	}
-
 	// ---- Row 1: 标题 ----
-	titleEndCol := string(rune('A' + lastColIndex))
 	f.SetCellValue(sheetName, "A1", "用户确认表")
-	f.MergeCell(sheetName, "A1", titleEndCol+"1")
-	f.SetCellStyle(sheetName, "A1", titleEndCol+"1", titleStyle)
+	f.MergeCell(sheetName, "A1", "G1") // 固定7列
+	f.SetCellStyle(sheetName, "A1", "G1", titleStyle)
 	f.SetRowHeight(sheetName, 1, 36)
 
 	// ---- Row 2: 部门信息 ----
@@ -226,20 +156,19 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	f.MergeCell(sheetName, "A2", "B2")
 	f.SetCellStyle(sheetName, "A2", "B2", headerInfoStyle)
 
-	confirmPersonEndCol := string(rune('A' + lastColIndex - 2))
 	f.SetCellValue(sheetName, "C2", "确认人（部门领导）：                         确认日期：")
-	f.MergeCell(sheetName, "C2", confirmPersonEndCol+"2")
-	f.SetCellStyle(sheetName, "C2", confirmPersonEndCol+"2", headerInfoStyle)
+	f.MergeCell(sheetName, "C2", "F2")
+	f.SetCellStyle(sheetName, "C2", "F2", headerInfoStyle)
 	f.SetRowHeight(sheetName, 2, 30)
 
 	// ---- Row 3: 备注 ----
-	noteEndCol := string(rune('A' + lastColIndex))
 	f.SetCellValue(sheetName, "A3", "注：A:保留  B:不保留  C:权限有误")
-	f.MergeCell(sheetName, "A3", noteEndCol+"3")
-	f.SetCellStyle(sheetName, "A3", noteEndCol+"3", headerInfoStyle)
+	f.MergeCell(sheetName, "A3", "G3")
+	f.SetCellStyle(sheetName, "A3", "G3", headerInfoStyle)
 	f.SetRowHeight(sheetName, 3, 22)
 
 	// ---- Row 4: 表头 ----
+	headers := []string{"序号", "姓名", "岗位", "系统", "角色", "确认结果", "特殊确认人"}
 	for i, h := range headers {
 		col := string(rune('A' + i))
 		f.SetCellValue(sheetName, col+"4", h)
@@ -289,24 +218,15 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 			f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), "-")
 			// F列：显示三个复选框 □A □B □C
 			f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), "□A  □B  □C")
-			// 额外签字列（如果需要）
-			extraColIdx := 6 // G列开始
-			if needsDBASignature {
-				f.SetCellValue(sheetName, fmt.Sprintf("%s%d", string(rune('A'+extraColIdx)), rowNum), "")
-				extraColIdx++
-			}
-			if needsCISOSignature {
-				f.SetCellValue(sheetName, fmt.Sprintf("%s%d", string(rune('A'+extraColIdx)), rowNum), "")
-			}
+			// G列：特殊确认人（留空）
+			f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), "/")
 			// 设置所有列的样式
-			for i := 0; i <= lastColIndex; i++ {
+			for i := 0; i < 7; i++ {
 				col := string(rune('A' + i))
 				f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 			}
 			f.SetCellStyle(sheetName, fmt.Sprintf("B%d", rowNum), fmt.Sprintf("B%d", rowNum), nameCellStyle)
 			f.SetCellStyle(sheetName, fmt.Sprintf("C%d", rowNum), fmt.Sprintf("C%d", rowNum), nameCellStyle)
-			// F列使用居中对齐
-			f.SetCellStyle(sheetName, fmt.Sprintf("F%d", rowNum), fmt.Sprintf("F%d", rowNum), dataCellStyle)
 			f.SetRowHeight(sheetName, rowNum, 24)
 			rowNum++
 			seq++
@@ -323,17 +243,11 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), vr.Roles)
 				// F列：显示三个复选框 □A □B □C
 				f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), "□A  □B  □C")
-				// 额外签字列（如果需要）
-				extraColIdx := 6 // G列开始
-				if needsDBASignature {
-					f.SetCellValue(sheetName, fmt.Sprintf("%s%d", string(rune('A'+extraColIdx)), rowNum), "")
-					extraColIdx++
-				}
-				if needsCISOSignature {
-					f.SetCellValue(sheetName, fmt.Sprintf("%s%d", string(rune('A'+extraColIdx)), rowNum), "")
-				}
+				// G列：特殊确认人 - 根据系统和角色判断
+				specialConfirm := getSpecialConfirm(vr.System, vr.Roles)
+				f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), specialConfirm)
 
-				for i := 0; i <= lastColIndex; i++ {
+				for i := 0; i < 7; i++ {
 					col := string(rune('A' + i))
 					f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 				}
@@ -356,9 +270,8 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	// 如果没有用户，显示空行提示
 	if len(users) == 0 {
 		f.SetCellValue(sheetName, "A5", "（该部门暂无用户）")
-		lastEmptyCol := string(rune('A' + lastColIndex))
-		f.MergeCell(sheetName, "A5", lastEmptyCol+"5")
-		f.SetCellStyle(sheetName, "A5", lastEmptyCol+"5", dataCellStyle)
+		f.MergeCell(sheetName, "A5", "G5")
+		f.SetCellStyle(sheetName, "A5", "G5", dataCellStyle)
 		rowNum = 6
 	}
 
@@ -367,10 +280,9 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 
 	// ---- 复核行 ----
 	footerText := "复核部门：IT          复核人：                         复核日期："
-	lastFooterCol := string(rune('A' + lastColIndex))
 	f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), footerText)
-	f.MergeCell(sheetName, fmt.Sprintf("A%d", rowNum), lastFooterCol+fmt.Sprintf("%d", rowNum))
-	f.SetCellStyle(sheetName, fmt.Sprintf("A%d", rowNum), lastFooterCol+fmt.Sprintf("%d", rowNum), footerStyle)
+	f.MergeCell(sheetName, fmt.Sprintf("A%d", rowNum), fmt.Sprintf("G%d", rowNum))
+	f.SetCellStyle(sheetName, fmt.Sprintf("A%d", rowNum), fmt.Sprintf("G%d", rowNum), footerStyle)
 	f.SetRowHeight(sheetName, rowNum, 30)
 
 	// ---- 设置列宽 ----
@@ -380,16 +292,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	f.SetColWidth(sheetName, "D", "D", 22)  // 系统
 	f.SetColWidth(sheetName, "E", "E", 35)  // 角色
 	f.SetColWidth(sheetName, "F", "F", 14)  // 确认结果
-	if needsDBASignature {
-		f.SetColWidth(sheetName, "G", "G", 12) // DBA签字
-	}
-	if needsCISOSignature {
-		colLetter := "G"
-		if needsDBASignature {
-			colLetter = "H"
-		}
-		f.SetColWidth(sheetName, colLetter, colLetter, 12) // CISO签字
-	}
+	f.SetColWidth(sheetName, "G", "G", 12)  // 特殊确认人
 
 	// 输出Excel文件
 	fileName := fmt.Sprintf("IT07-2.0 用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)
@@ -440,4 +343,27 @@ func containsSubstring(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// getSpecialConfirm 根据系统和角色返回特殊确认人标识
+func getSpecialConfirm(system, roles string) string {
+	// 产业部：数据库系统 + 服务用户 -> DBA
+	if containsKeyword(system, []string{"数据库", "Database", "DB"}) && 
+	   containsKeyword(roles, []string{"服务用户", "Service User"}) {
+		return "(DBA)"
+	}
+	
+	// 产业部：数据库系统 + DBA角色 -> CISO
+	if containsKeyword(system, []string{"数据库", "Database", "DB"}) && 
+	   containsKeyword(roles, []string{"DBA", "数据库管理员"}) {
+		return "(CISO)"
+	}
+	
+	// 密钥团队：任何系统 + 密钥经理角色 -> CISO
+	if containsKeyword(roles, []string{"密钥经理", "Key Manager", "密钥管理"}) {
+		return "(CISO)"
+	}
+	
+	// 默认返回斜杠
+	return "/"
 }
