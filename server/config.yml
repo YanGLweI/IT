@@ -28,4 +28,4 @@ ldap:
   username: "ylw@hot.local"
   password: "!Qw2!Qw2!Qw2!Qw2"
   security_group_dn: "CN=IT部,OU=IT部,OU=HOT,DC=hot,DC=local"
-  cert_path: "../certificate/ca.crt"
+  cert_path: "./certificate/ca.crt"
