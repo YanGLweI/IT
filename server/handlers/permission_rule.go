@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -35,21 +36,31 @@ func GetPositionPermissions(c *gin.Context) {
 		return
 	}
 
-	// 解析权限规则
+	// 解析权限规则 - roles 是对象数组 [{"enabled":true,"name":"角色名"}]
 	var allowedRules []struct {
-		System string   `json:"system"`
-		Roles  []string `json:"roles"`
+		System string `json:"system"`
+		Roles  []struct {
+			Enabled bool   `json:"enabled"`
+			Name    string `json:"name"`
+		} `json:"roles"`
 	}
 	if err := json.Unmarshal([]byte(rule.RulesJSON), &allowedRules); err != nil {
+		log.Printf("解析权限规则失败: %v, rules_json=%s", err, rule.RulesJSON)
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "解析权限规则失败"})
 		return
 	}
 
-	// 构建响应格式: { system: [role1, role2] }
+	// 构建响应格式: { system: [role1, role2] } - 只返回 enabled=true 的角色
 	result := make(map[string][]string)
 	for _, ar := range allowedRules {
-		if len(ar.Roles) > 0 {
-			result[ar.System] = ar.Roles
+		var roles []string
+		for _, role := range ar.Roles {
+			if role.Enabled {
+				roles = append(roles, role.Name)
+			}
+		}
+		if len(roles) > 0 {
+			result[ar.System] = roles
 		}
 	}
 

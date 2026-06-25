@@ -24,23 +24,28 @@ func validateUserRoles(positionName string, systemRolesJSON string) error {
 		return fmt.Errorf("未找到岗位 '%s' 的权限规则", positionName)
 	}
 
-	// 解析岗位权限规则
+	// 解析岗位权限规则 - roles 是对象数组 [{"enabled":true,"name":"角色名"}]
 	var allowedRules []struct {
-		System string   `json:"system"`
-		Roles  []string `json:"roles"`
+		System string `json:"system"`
+		Roles  []struct {
+			Enabled bool   `json:"enabled"`
+			Name    string `json:"name"`
+		} `json:"roles"`
 	}
 	if err := json.Unmarshal([]byte(rule.RulesJSON), &allowedRules); err != nil {
 		return fmt.Errorf("解析岗位权限规则失败: %v", err)
 	}
 
-	// 构建允许的角色映射: map[system]map[role]bool
+	// 构建允许的角色映射（只包含 enabled=true 的角色）
 	allowedMap := make(map[string]map[string]bool)
 	for _, ar := range allowedRules {
 		if allowedMap[ar.System] == nil {
 			allowedMap[ar.System] = make(map[string]bool)
 		}
 		for _, role := range ar.Roles {
-			allowedMap[ar.System][role] = true
+			if role.Enabled {
+				allowedMap[ar.System][role.Name] = true
+			}
 		}
 	}
 
