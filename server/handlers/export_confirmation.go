@@ -262,6 +262,17 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 		rowNum = 6
 	}
 
+	// ---- 为F列添加下拉选择验证（A:保留 / B:不保留 / C:权限有误）----
+	lastDataRow := rowNum - 1
+	if lastDataRow >= 5 {
+		dv := excelize.NewDataValidation(true)
+		dv.Sqref = fmt.Sprintf("F5:F%d", lastDataRow)
+		dv.SetDropList([]string{"A:保留", "B:不保留", "C:权限有误"})
+		dv.SetError(excelize.DataValidationErrorStyleStop, "输入错误", "请从下拉列表中选择 A/B/C")
+		dv.SetInput("确认结果", "请选择：A-保留 / B-不保留 / C-权限有误")
+		f.AddDataValidation(sheetName, dv)
+	}
+
 	// ---- 空行 ----
 	rowNum++
 
