@@ -9,7 +9,7 @@
         </div>
       </div>
 
-      <div class="table-wrapper">
+      <div class="table-wrapper" ref="tableWrapper">
         <el-table
           :data="rules"
           border
@@ -195,8 +195,8 @@ export default {
       renameDialogVisible: false,
       renameTarget: null, // { type: 'position'|'system'|'role', id?, oldName?, systemName? }
       renameValue: '',
-      // 表格最大高度（用max-height使横向滚动条始终可见）
-      tableMaxHeight: window.innerHeight - 110
+      // 表格最大高度（动态按页面剩余空间计算，使横向滚动条始终可见）
+      tableMaxHeight: null
     }
   },
   computed: {
@@ -216,6 +216,7 @@ export default {
   },
   mounted() {
     this.fetchData()
+    this.$nextTick(() => this.calcTableHeight())
     window.addEventListener('resize', this.handleResize)
   },
   beforeDestroy() {
@@ -223,7 +224,15 @@ export default {
   },
   methods: {
     handleResize() {
-      this.tableMaxHeight = window.innerHeight - 110
+      this.calcTableHeight()
+    },
+    calcTableHeight() {
+      this.$nextTick(() => {
+        if (this.$refs.tableWrapper) {
+          const top = this.$refs.tableWrapper.getBoundingClientRect().top
+          this.tableMaxHeight = window.innerHeight - top - 20
+        }
+      })
     },
     async fetchData() {
       this.loading = true
@@ -242,6 +251,7 @@ export default {
         console.error(e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     getCellRoles(row, systemName) {
