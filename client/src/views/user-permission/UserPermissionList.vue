@@ -423,7 +423,6 @@ export default {
         if (positionNames.length > 0) {
           Promise.all(positionNames.map(pos => this.loadPositionPermissions(pos)))
         }
-        }
       } else {
         // 新增
         this.isEdit = false
