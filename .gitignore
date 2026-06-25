@@ -1,0 +1,24 @@
+# Dependencies
+client/node_modules/
+server/go.sum
+
+# Build output
+client/dist/
+
+# Uploads
+server/uploads/
+
+# Logs
+server/server.log
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Config with sensitive info (optional, uncomment if needed)
+# server/config.yml
