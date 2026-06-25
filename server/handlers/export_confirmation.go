@@ -135,6 +135,24 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 		},
 	})
 
+	specialConfirmStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Size:   10,
+			Family: "微软雅黑",
+		},
+		Alignment: &excelize.Alignment{
+			Vertical:   "center",
+			WrapText:   true,
+			Horizontal: "right", // 右对齐，留出左侧签字空间
+		},
+		Border: []excelize.Border{
+			{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+		},
+	})
+
 	footerStyle, _ := f.NewStyle(&excelize.Style{
 		Font: &excelize.Font{
 			Size:   11,
@@ -227,6 +245,8 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 			}
 			f.SetCellStyle(sheetName, fmt.Sprintf("B%d", rowNum), fmt.Sprintf("B%d", rowNum), nameCellStyle)
 			f.SetCellStyle(sheetName, fmt.Sprintf("C%d", rowNum), fmt.Sprintf("C%d", rowNum), nameCellStyle)
+			// G列使用右对齐样式
+			f.SetCellStyle(sheetName, fmt.Sprintf("G%d", rowNum), fmt.Sprintf("G%d", rowNum), specialConfirmStyle)
 			f.SetRowHeight(sheetName, rowNum, 24)
 			rowNum++
 			seq++
@@ -247,7 +267,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), vr.Roles)
 				// F列：显示三个复选框 □A □B □C
 				f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), "□A  □B  □C")
-				// G列：特殊确认人 - 根据系统和角色判断
+				// G列：特殊确认人 - 根据系统和角色判断，使用右对齐样式
 				specialConfirm := getSpecialConfirm(vr.System, vr.Roles)
 				f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), specialConfirm)
 
@@ -257,6 +277,8 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				}
 				f.SetCellStyle(sheetName, fmt.Sprintf("B%d", rowNum), fmt.Sprintf("B%d", rowNum), nameCellStyle)
 				f.SetCellStyle(sheetName, fmt.Sprintf("C%d", rowNum), fmt.Sprintf("C%d", rowNum), nameCellStyle)
+				// G列使用右对齐样式，留出左侧签字空间
+				f.SetCellStyle(sheetName, fmt.Sprintf("G%d", rowNum), fmt.Sprintf("G%d", rowNum), specialConfirmStyle)
 				f.SetRowHeight(sheetName, rowNum, 24)
 				rowNum++
 			}
@@ -302,7 +324,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	f.SetColWidth(sheetName, "D", "D", 22)  // 系统
 	f.SetColWidth(sheetName, "E", "E", 35)  // 角色
 	f.SetColWidth(sheetName, "F", "F", 14)  // 确认结果
-	f.SetColWidth(sheetName, "G", "G", 16)  // 特殊确认人（增加宽度）
+	f.SetColWidth(sheetName, "G", "G", 20)  // 特殊确认人（增加宽度，留出签字空间）
 
 	// 输出Excel文件
 	fileName := fmt.Sprintf("IT07-2.0 用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)
