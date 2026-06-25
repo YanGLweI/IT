@@ -387,27 +387,21 @@ export default {
       this.renameDialogVisible = true
     },
 
-    // ---- 排序移动 ----
+    // ---- 排序移动（不需要双控）----
     async movePosition(row, direction) {
       try {
-        const dualToken = await this.$refs.dualControl.open()
-        await reorderPermissionRule({ id: row.id, direction }, dualToken)
+        await reorderPermissionRule({ id: row.id, direction })
         await this.fetchData()
       } catch (e) {
-        if (e.message !== 'canceled') {
-          this.$message.error(e.response?.data?.message || '移动失败')
-        }
+        this.$message.error(e.response?.data?.message || '移动失败')
       }
     },
     async moveSystem(systemName, direction) {
       try {
-        const dualToken = await this.$refs.dualControl.open()
-        await reorderSystemInPermissions({ system_name: systemName, direction }, dualToken)
+        await reorderSystemInPermissions({ system_name: systemName, direction })
         await this.fetchData()
       } catch (e) {
-        if (e.message !== 'canceled') {
-          this.$message.error(e.response?.data?.message || '移动失败')
-        }
+        this.$message.error(e.response?.data?.message || '移动失败')
       }
     },
 

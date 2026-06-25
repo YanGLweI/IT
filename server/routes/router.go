@@ -64,8 +64,10 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/topologies/:id/preview", handlers.PreviewTopology)
 			protected.GET("/topologies/:id/download", handlers.DownloadTopology)
 
-			// 岗位权限管理 - 查询（不需要双控）
+			// 岗位权限管理 - 查询和排序（不需要双控）
 			protected.GET("/permission-rules", handlers.ListPermissionRules)
+			protected.POST("/permission-rules/reorder", handlers.ReorderPermissionRule)
+			protected.PUT("/permission-rules/systems/reorder", handlers.ReorderSystemInPermissions)
 
 			// ============ 双控保护接口（需要JWT + 双控验证）============
 			dual := protected.Group("")
@@ -94,8 +96,6 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/permission-rules/systems", handlers.RemoveSystemFromPermissions)
 				dual.PUT("/permission-rules/systems/rename", handlers.RenameSystemInPermissions)
 				dual.POST("/permission-rules/systems/roles", handlers.ManageRolesInSystem)
-				dual.POST("/permission-rules/reorder", handlers.ReorderPermissionRule)
-				dual.PUT("/permission-rules/systems/reorder", handlers.ReorderSystemInPermissions)
 			}
 		}
 	}
