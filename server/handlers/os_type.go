@@ -28,6 +28,13 @@ func CreateOSType(c *gin.Context) {
 		return
 	}
 
+	// 清理软删除的同名记录（避免唯一索引冲突）
+	var softDeleted models.OSType
+	result := database.GetDB().Unscoped().Where("name = ?", osType.Name).Find(&softDeleted)
+	if result.Error == nil && result.RowsAffected > 0 {
+		database.GetDB().Unscoped().Delete(&softDeleted)
+	}
+
 	if err := database.GetDB().Create(&osType).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建失败"})
 		return
@@ -72,7 +79,15 @@ func DeleteOSType(c *gin.Context) {
 		return
 	}
 
-	if err := database.GetDB().Delete(&osType).Error; err != nil {
+	// 检查是否有关联资产
+	var count int64
+	database.GetDB().Model(&models.Asset{}).Where("os_type = ?", osType.Name).Count(&count)
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "该操作系统下还有资产，无法删除"})
+		return
+	}
+
+	if err := database.GetDB().Unscoped().Delete(&osType).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
