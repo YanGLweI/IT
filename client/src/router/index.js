@@ -21,7 +21,8 @@ const routes = [
       { path: 'os-types', name: 'OSTypes', component: () => import('../views/ostype/OSTypeList.vue'), meta: { title: '操作系统管理' } },
       { path: 'assets', name: 'Assets', component: () => import('../views/asset/AssetList.vue'), meta: { title: '资产管理' } },
       { path: 'policies', name: 'Policies', component: () => import('../views/policy/PolicyList.vue'), meta: { title: 'IT政策' } },
-      { path: 'topology', name: 'Topology', component: () => import('../views/topology/TopologyView.vue'), meta: { title: '网络拓扑图' } }
+      { path: 'topology', name: 'Topology', component: () => import('../views/topology/TopologyView.vue'), meta: { title: '网络拓扑图' } },
+      { path: 'permissions', name: 'Permissions', component: () => import('../views/permission/PermissionList.vue'), meta: { title: '岗位权限' } }
     ]
   }
 ]

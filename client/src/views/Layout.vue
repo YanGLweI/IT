@@ -41,6 +41,10 @@
           <i class="el-icon-share"></i>
           <span slot="title">网络拓扑图</span>
         </el-menu-item>
+        <el-menu-item index="/permissions">
+          <i class="el-icon-s-check"></i>
+          <span slot="title">岗位权限</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>

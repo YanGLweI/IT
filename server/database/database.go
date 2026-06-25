@@ -32,6 +32,7 @@ func InitDB() {
 		&models.Policy{},
 		&models.Topology{},
 		&models.OSType{},
+		&models.PermissionRule{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
@@ -39,6 +40,9 @@ func InitDB() {
 
 	// 修复已有表的字段长度
 	DB.Exec("ALTER TABLE policies MODIFY COLUMN file_type VARCHAR(255)")
+
+	// 初始化基础数据
+	SeedPermissionRules()
 
 	fmt.Println("数据库初始化成功!")
 }

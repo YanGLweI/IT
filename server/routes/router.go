@@ -69,6 +69,10 @@ func SetupRouter() *gin.Engine {
 			protected.DELETE("/topologies/:id", handlers.DeleteTopology)
 			protected.GET("/topologies/:id/preview", handlers.PreviewTopology)
 			protected.GET("/topologies/:id/download", handlers.DownloadTopology)
+
+			// 岗位权限管理
+			protected.GET("/permission-rules", handlers.ListPermissionRules)
+			protected.PUT("/permission-rules/:id", handlers.UpdatePermissionRule)
 		}
 	}
 
