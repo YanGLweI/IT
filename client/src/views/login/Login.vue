@@ -21,6 +21,7 @@
       <el-form :model="loginForm" :rules="loginRules" ref="loginFormRef" class="login-form">
         <el-form-item prop="username">
           <el-input
+            ref="usernameInput"
             v-model="loginForm.username"
             placeholder="请输入域账号"
             prefix-icon="el-icon-user"
@@ -73,6 +74,11 @@ export default {
       },
       loading: false
     }
+  },
+  mounted() {
+    this.$nextTick(() => {
+      if (this.$refs.usernameInput) this.$refs.usernameInput.focus()
+    })
   },
   methods: {
     handleLogin() {

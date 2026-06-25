@@ -14,6 +14,7 @@
     <el-form :model="form" :rules="rules" ref="form" label-width="100px" @submit.native.prevent="handleConfirm">
       <el-form-item label="审批人账号" prop="username">
         <el-input
+          ref="usernameInput"
           v-model="form.username"
           placeholder="请输入另一成员的域账号"
           @keyup.enter="$refs.password.focus()"
@@ -65,6 +66,7 @@ export default {
       this.form = { username: '', password: '' }
       this.$nextTick(() => {
         if (this.$refs.form) this.$refs.form.clearValidate()
+        if (this.$refs.usernameInput) this.$refs.usernameInput.focus()
       })
       return new Promise((resolve, reject) => {
         this.resolvePromise = resolve
