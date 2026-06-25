@@ -33,6 +33,9 @@ func InitDB() {
 		&models.Topology{},
 		&models.OSType{},
 		&models.PermissionRule{},
+		&models.Department{},
+		&models.DepartmentPosition{},
+		&models.UserPermission{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

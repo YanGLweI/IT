@@ -69,6 +69,14 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/permission-rules/reorder", handlers.ReorderPermissionRule)
 			protected.PUT("/permission-rules/systems/reorder", handlers.ReorderSystemInPermissions)
 
+			// 部门管理 - 查询（不需要双控）
+			protected.GET("/departments", handlers.ListDepartments)
+			protected.GET("/departments/:id/positions", handlers.ListDepartmentPositions)
+
+			// 用户权限管理 - 查询（不需要双控）
+			protected.GET("/user-permissions", handlers.ListUserPermissions)
+			protected.GET("/user-permissions/:id", handlers.GetUserPermission)
+
 			// ============ 双控保护接口（需要JWT + 双控验证）============
 			dual := protected.Group("")
 			dual.Use(middleware.DualControl())
@@ -96,6 +104,18 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/permission-rules/systems", handlers.RemoveSystemFromPermissions)
 				dual.PUT("/permission-rules/systems/rename", handlers.RenameSystemInPermissions)
 				dual.POST("/permission-rules/systems/roles", handlers.ManageRolesInSystem)
+
+				// 部门管理 - 写操作（需要双控）
+				dual.POST("/departments", handlers.CreateDepartment)
+				dual.PUT("/departments/:id", handlers.UpdateDepartment)
+				dual.DELETE("/departments/:id", handlers.DeleteDepartment)
+				dual.POST("/departments/:id/positions", handlers.AddDepartmentPosition)
+				dual.DELETE("/departments/:id/positions/:pid", handlers.RemoveDepartmentPosition)
+
+				// 用户权限管理 - 写操作（需要双控）
+				dual.POST("/user-permissions", handlers.CreateUserPermission)
+				dual.PUT("/user-permissions/:id", handlers.UpdateUserPermission)
+				dual.DELETE("/user-permissions/:id", handlers.DeleteUserPermission)
 			}
 		}
 	}

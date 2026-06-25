@@ -22,7 +22,8 @@ const routes = [
       { path: 'assets', name: 'Assets', component: () => import('../views/asset/AssetList.vue'), meta: { title: '资产管理' } },
       { path: 'policies', name: 'Policies', component: () => import('../views/policy/PolicyList.vue'), meta: { title: 'IT政策' } },
       { path: 'topology', name: 'Topology', component: () => import('../views/topology/TopologyView.vue'), meta: { title: '网络拓扑图' } },
-      { path: 'permissions', name: 'Permissions', component: () => import('../views/permission/PermissionList.vue'), meta: { title: '岗位权限' } }
+      { path: 'permissions', name: 'Permissions', component: () => import('../views/permission/PermissionList.vue'), meta: { title: '岗位权限设置' } },
+      { path: 'user-permissions', name: 'UserPermissions', component: () => import('../views/user-permission/UserPermissionList.vue'), meta: { title: '用户权限一览' } }
     ]
   }
 ]

@@ -41,10 +41,20 @@
           <i class="el-icon-share"></i>
           <span slot="title">网络拓扑图</span>
         </el-menu-item>
-        <el-menu-item index="/permissions">
-          <i class="el-icon-s-check"></i>
-          <span slot="title">岗位权限</span>
-        </el-menu-item>
+        <el-submenu index="permission">
+          <template slot="title">
+            <i class="el-icon-s-check"></i>
+            <span>岗位权限</span>
+          </template>
+          <el-menu-item index="/permissions">
+            <i class="el-icon-setting"></i>
+            <span>岗位权限设置</span>
+          </el-menu-item>
+          <el-menu-item index="/user-permissions">
+            <i class="el-icon-user"></i>
+            <span>用户权限一览</span>
+          </el-menu-item>
+        </el-submenu>
       </el-menu>
     </el-aside>
     <el-container>
