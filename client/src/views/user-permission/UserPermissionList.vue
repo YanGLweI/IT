@@ -32,7 +32,24 @@
           :max-height="tableMaxHeight"
         >
           <el-table-column prop="name" label="姓名" width="150" />
-          <el-table-column prop="position_name" label="岗位" width="150" />
+          <el-table-column label="岗位" width="200">
+            <template slot-scope="{ row }">
+              <div class="cell-roles">
+                <template v-if="row.position_name">
+                  <el-tag
+                    v-for="(pos, idx) in row.position_name.split(',').map(p => p.trim()).filter(p => p)"
+                    :key="idx"
+                    size="small"
+                    class="role-tag"
+                    type="info"
+                  >
+                    {{ pos }}
+                  </el-tag>
+                </template>
+                <span v-else class="empty-role">-</span>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="系统角色" min-width="400">
             <template slot-scope="{ row }">
               <div class="cell-roles">
@@ -72,8 +89,8 @@
             <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="岗位" prop="position_name">
-          <el-select v-model="userForm.position_name" placeholder="请先选择部门" :disabled="!userForm.department_id" style="width:100%">
+        <el-form-item label="岗位" prop="position_names">
+          <el-select v-model="userForm.position_names" placeholder="请先选择部门" :disabled="!userForm.department_id" multiple style="width:100%">
             <el-option v-for="pos in availablePositions" :key="pos" :label="pos" :value="pos" />
           </el-select>
         </el-form-item>
@@ -149,13 +166,13 @@ export default {
       userForm: {
         name: '',
         department_id: null,
-        position_name: '',
+        position_names: [], // 支持多个岗位
         systemRoles: [] // [{system: '防火墙', roles: ['admin', 'viewer']}]
       },
       userRules: {
         name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
         department_id: [{ required: true, message: '请选择部门', trigger: 'change' }],
-        position_name: [{ required: true, message: '请选择岗位', trigger: 'change' }]
+        position_names: [{ required: true, type: 'array', min: 1, message: '请至少选择一个岗位', trigger: 'change' }]
       },
       // 系统角色选择
       allSystems: [],
@@ -168,8 +185,8 @@ export default {
       showDeptManage: false,
       // 表格高度
       tableMaxHeight: null,
-      // 当前岗位的权限规则
-      positionPermissions: {} // { system: [role1, role2] }
+      // 当前岗位的权限规则（合并所有岗位）
+      positionPermissionsMap: {} // { positionName: { system: [role1, role2] } }
     }
   },
   computed: {
@@ -181,26 +198,35 @@ export default {
       if (!this.userForm.department_id) return []
       return this.deptPositions[this.userForm.department_id] || []
     },
-    // 根据当前选择的岗位过滤可用系统
+    // 根据当前选择的岗位过滤可用系统（合并所有岗位的权限）
     availableSystems() {
-      if (!this.userForm.position_name) return []
-      return Object.keys(this.positionPermissions)
+      if (!this.userForm.position_names || this.userForm.position_names.length === 0) return []
+      const allSystems = new Set()
+      this.userForm.position_names.forEach(posName => {
+        const perms = this.positionPermissionsMap[posName] || {}
+        Object.keys(perms).forEach(sys => allSystems.add(sys))
+      })
+      return Array.from(allSystems)
     },
-    // 获取当前选中系统的可用角色
+    // 获取当前选中系统的可用角色（合并所有岗位的角色）
     availableRolesForSelectedSystem() {
-      if (!this.selectedSystem || !this.positionPermissions[this.selectedSystem]) {
-        return []
-      }
-      return this.positionPermissions[this.selectedSystem]
+      if (!this.selectedSystem) return []
+      const allRoles = new Set()
+      this.userForm.position_names.forEach(posName => {
+        const perms = this.positionPermissionsMap[posName] || {}
+        const roles = perms[this.selectedSystem] || []
+        roles.forEach(role => allRoles.add(role))
+      })
+      return Array.from(allRoles)
     }
   },
   watch: {
-    // 监听岗位变化，加载该岗位的权限规则
-    'userForm.position_name': async function(newPosition) {
-      if (newPosition) {
-        await this.loadPositionPermissions(newPosition)
+    // 监听岗位变化，加载所有岗位的权限规则
+    'userForm.position_names': async function(newPositions) {
+      if (newPositions && newPositions.length > 0) {
+        await Promise.all(newPositions.map(pos => this.loadPositionPermissions(pos)))
       } else {
-        this.positionPermissions = {}
+        this.positionPermissionsMap = {}
       }
     }
   },
@@ -275,18 +301,26 @@ export default {
     async loadPositionPermissions(positionName) {
       try {
         const res = await getPositionPermissions(positionName)
-        this.positionPermissions = res.data || {}
-        // 清空已选择的系统，因为可能不在新岗位的权限范围内
-        this.selectedSystem = ''
-        this.tempSelectedRoles = []
+        this.$set(this.positionPermissionsMap, positionName, res.data || {})
         
-        // 验证已选的角色是否仍然有效
+        // 验证已选的角色是否仍然有效（检查所有岗位）
         const validRoles = []
         for (const sr of this.userForm.systemRoles) {
-          if (this.positionPermissions[sr.system]) {
-            // 过滤出该岗位允许的角色
-            const allowedRoles = this.positionPermissions[sr.system]
-            const filteredRoles = sr.roles.filter(r => allowedRoles.includes(r))
+          let isValidSystem = false
+          const validRolesForSystem = new Set()
+          
+          // 检查该系统是否在任一岗位中允许
+          this.userForm.position_names.forEach(posName => {
+            const perms = this.positionPermissionsMap[posName] || {}
+            if (perms[sr.system]) {
+              isValidSystem = true
+              perms[sr.system].forEach(role => validRolesForSystem.add(role))
+            }
+          })
+          
+          if (isValidSystem) {
+            // 过滤出所有岗位都允许的角色
+            const filteredRoles = sr.roles.filter(r => validRolesForSystem.has(r))
             if (filteredRoles.length > 0) {
               validRoles.push({
                 system: sr.system,
@@ -299,7 +333,7 @@ export default {
       } catch (e) {
         console.error('加载岗位权限失败:', e)
         this.$message.warning(`无法加载岗位 "${positionName}" 的权限规则`)
-        this.positionPermissions = {}
+        this.$set(this.positionPermissionsMap, positionName, {})
       }
     },
     parseSystemRoles(json) {
@@ -335,8 +369,8 @@ export default {
       this.tempSelectedRoles = []
     },
     handleDeptChange() {
-      this.userForm.position_name = ''
-      this.positionPermissions = {} // 清空岗位权限
+      this.userForm.position_names = []
+      this.positionPermissionsMap = {} // 清空岗位权限
       this.selectedSystem = ''
       this.tempSelectedRoles = []
     },
@@ -350,12 +384,12 @@ export default {
       this.userForm = {
         name: '',
         department_id: null,
-        position_name: '',
+        position_names: [], // 支持多个岗位
         systemRoles: []
       }
       this.selectedSystem = ''
       this.tempSelectedRoles = []
-      this.positionPermissions = {} // 清空岗位权限规则
+      this.positionPermissionsMap = {} // 清空岗位权限规则
       if (this.$refs.userForm) {
         this.$refs.userForm.clearValidate()
       }
@@ -369,18 +403,26 @@ export default {
         this.isEdit = true
         this.editingUserId = row.id
         console.log('编辑模式: isEdit=', this.isEdit, ', editingUserId=', this.editingUserId)
+        
+        // 解析岗位（可能是逗号分隔的字符串）
+        let positionNames = []
+        if (row.position_name) {
+          positionNames = row.position_name.split(',').map(p => p.trim()).filter(p => p)
+        }
+        
         this.userForm = {
           name: row.name,
           department_id: row.department_id,
-          position_name: row.position_name,
+          position_names: positionNames,
           systemRoles: this.parseSystemRoles(row.system_roles_json).map(sr => ({
             system: sr.system,
             roles: [...sr.roles]
           }))
         }
-        // 加载该岗位的权限规则
-        if (row.position_name) {
-          this.loadPositionPermissions(row.position_name)
+        // 加载所有岗位的权限规则
+        if (positionNames.length > 0) {
+          Promise.all(positionNames.map(pos => this.loadPositionPermissions(pos)))
+        }
         }
       } else {
         // 新增
@@ -390,7 +432,7 @@ export default {
         this.userForm = {
           name: '',
           department_id: null,
-          position_name: '',
+          position_names: [],
           systemRoles: []
         }
       }
@@ -411,7 +453,7 @@ export default {
           const submitData = {
             name: this.userForm.name,
             department_id: this.userForm.department_id,
-            position_name: this.userForm.position_name,
+            position_name: this.userForm.position_names.join(','), // 多个岗位用逗号连接
             system_roles_json: JSON.stringify(this.userForm.systemRoles)
           }
 

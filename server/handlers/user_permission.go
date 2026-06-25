@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"it-platform-server/database"
 	"it-platform-server/models"
@@ -13,38 +14,52 @@ import (
 )
 
 // validateUserRoles 验证用户选择的角色是否符合岗位权限规则
-func validateUserRoles(positionName string, systemRolesJSON string) error {
+// positionNames: 多个岗位用逗号分隔，如 "IT管理员,IT配置管理员"
+func validateUserRoles(positionNames string, systemRolesJSON string) error {
 	if systemRolesJSON == "" || systemRolesJSON == "[]" {
 		return nil // 没有选择任何角色，无需验证
 	}
 
-	// 获取该岗位的权限规则
-	var rule models.PermissionRule
-	if err := database.GetDB().Where("position_name = ?", positionName).First(&rule).Error; err != nil {
-		return fmt.Errorf("未找到岗位 '%s' 的权限规则", positionName)
+	// 解析多个岗位
+	positionNameList := strings.Split(positionNames, ",")
+	for i := range positionNameList {
+		positionNameList[i] = strings.TrimSpace(positionNameList[i])
 	}
 
-	// 解析岗位权限规则 - roles 是对象数组 [{"enabled":true,"name":"角色名"}]
-	var allowedRules []struct {
-		System string `json:"system"`
-		Roles  []struct {
-			Enabled bool   `json:"enabled"`
-			Name    string `json:"name"`
-		} `json:"roles"`
-	}
-	if err := json.Unmarshal([]byte(rule.RulesJSON), &allowedRules); err != nil {
-		return fmt.Errorf("解析岗位权限规则失败: %v", err)
-	}
-
-	// 构建允许的角色映射（只包含 enabled=true 的角色）
+	// 合并所有岗位的权限规则
 	allowedMap := make(map[string]map[string]bool)
-	for _, ar := range allowedRules {
-		if allowedMap[ar.System] == nil {
-			allowedMap[ar.System] = make(map[string]bool)
+	for _, positionName := range positionNameList {
+		if positionName == "" {
+			continue
 		}
-		for _, role := range ar.Roles {
-			if role.Enabled {
-				allowedMap[ar.System][role.Name] = true
+
+		// 获取该岗位的权限规则
+		var rule models.PermissionRule
+		if err := database.GetDB().Where("position_name = ?", positionName).First(&rule).Error; err != nil {
+			return fmt.Errorf("未找到岗位 '%s' 的权限规则", positionName)
+		}
+
+		// 解析岗位权限规则 - roles 是对象数组 [{"enabled":true,"name":"角色名"}]
+		var allowedRules []struct {
+			System string `json:"system"`
+			Roles  []struct {
+				Enabled bool   `json:"enabled"`
+				Name    string `json:"name"`
+			} `json:"roles"`
+		}
+		if err := json.Unmarshal([]byte(rule.RulesJSON), &allowedRules); err != nil {
+			return fmt.Errorf("解析岗位 '%s' 权限规则失败: %v", positionName, err)
+		}
+
+		// 构建允许的角色映射（只包含 enabled=true 的角色）
+		for _, ar := range allowedRules {
+			if allowedMap[ar.System] == nil {
+				allowedMap[ar.System] = make(map[string]bool)
+			}
+			for _, role := range ar.Roles {
+				if role.Enabled {
+					allowedMap[ar.System][role.Name] = true
+				}
 			}
 		}
 	}
@@ -58,11 +73,11 @@ func validateUserRoles(positionName string, systemRolesJSON string) error {
 		return fmt.Errorf("解析用户角色失败: %v", err)
 	}
 
-	// 验证每个角色是否在允许列表中
+	// 验证每个角色是否在任一岗位中允许
 	var invalidRoles []string
 	for _, ur := range userRoles {
 		if allowedMap[ur.System] == nil {
-			// 该系统完全不允许
+			// 该系统在所有岗位中都不允许
 			invalidRoles = append(invalidRoles, fmt.Sprintf("%s: 所有角色", ur.System))
 			continue
 		}
@@ -74,7 +89,7 @@ func validateUserRoles(positionName string, systemRolesJSON string) error {
 	}
 
 	if len(invalidRoles) > 0 {
-		return fmt.Errorf("岗位 '%s' 不允许以下权限: %s", positionName, joinStrings(invalidRoles))
+		return fmt.Errorf("所选岗位不允许以下权限: %s", joinStrings(invalidRoles))
 	}
 
 	return nil
