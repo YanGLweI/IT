@@ -215,11 +215,15 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 			f.SetCellValue(sheetName, fmt.Sprintf("C%d", rowNum), user.PositionName)
 			f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), "-")
 			f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), "-")
+			// F列：显示三个复选框 □A □B □C
+			f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), "□A  □B  □C")
 			for _, col := range []string{"A", "B", "C", "D", "E", "F"} {
 				f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 			}
 			f.SetCellStyle(sheetName, fmt.Sprintf("B%d", rowNum), fmt.Sprintf("B%d", rowNum), nameCellStyle)
 			f.SetCellStyle(sheetName, fmt.Sprintf("C%d", rowNum), fmt.Sprintf("C%d", rowNum), nameCellStyle)
+			// F列使用居中对齐
+			f.SetCellStyle(sheetName, fmt.Sprintf("F%d", rowNum), fmt.Sprintf("F%d", rowNum), dataCellStyle)
 			f.SetRowHeight(sheetName, rowNum, 24)
 			rowNum++
 			seq++
@@ -234,6 +238,8 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				}
 				f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), vr.System)
 				f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), vr.Roles)
+				// F列：显示三个复选框 □A □B □C
+				f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), "□A  □B  □C")
 
 				for _, col := range []string{"A", "B", "C", "D", "E", "F"} {
 					f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
@@ -260,17 +266,6 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 		f.MergeCell(sheetName, "A5", "F5")
 		f.SetCellStyle(sheetName, "A5", "F5", dataCellStyle)
 		rowNum = 6
-	}
-
-	// ---- 为F列添加下拉选择验证（A:保留 / B:不保留 / C:权限有误）----
-	lastDataRow := rowNum - 1
-	if lastDataRow >= 5 {
-		dv := excelize.NewDataValidation(true)
-		dv.Sqref = fmt.Sprintf("F5:F%d", lastDataRow)
-		dv.SetDropList([]string{"A:保留", "B:不保留", "C:权限有误"})
-		dv.SetError(excelize.DataValidationErrorStyleStop, "输入错误", "请从下拉列表中选择 A/B/C")
-		dv.SetInput("确认结果", "请选择：A-保留 / B-不保留 / C-权限有误")
-		f.AddDataValidation(sheetName, dv)
 	}
 
 	// ---- 空行 ----
