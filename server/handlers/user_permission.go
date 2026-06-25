@@ -165,11 +165,18 @@ func CreateUserPermission(c *gin.Context) {
 	}
 	fmt.Printf("找到部门: ID=%d, Name=%s\n", dept.ID, dept.Name)
 
-	// 检查岗位是否属于该部门
-	var pos models.DepartmentPosition
-	if database.GetDB().Where("department_id = ? AND position_name = ?", req.DepartmentID, req.PositionName).First(&pos).Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "该岗位不属于此部门"})
-		return
+	// 检查所有岗位是否都属于该部门（多个岗位用逗号分隔）
+	positionNames := strings.Split(req.PositionName, ",")
+	for _, posName := range positionNames {
+		posName = strings.TrimSpace(posName)
+		if posName == "" {
+			continue
+		}
+		var pos models.DepartmentPosition
+		if database.GetDB().Where("department_id = ? AND position_name = ?", req.DepartmentID, posName).First(&pos).Error != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": fmt.Sprintf("岗位 '%s' 不属于此部门", posName)})
+			return
+		}
 	}
 
 	// 验证用户选择的角色是否符合岗位权限规则
