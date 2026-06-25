@@ -319,7 +319,7 @@ func SeedPermissionRules() {
 		"密钥经理": {
 			{"防火墙", []roleItem{{"系统管理员", false}, {"配置管理员", false}, {"API管理员", false}}},
 			{"VMWareESXI/VCSA", []roleItem{{"管理员", false}}},
-			{"Windows域控", []roleItem{{"域管理员", false}, {"生产域用户", true}, {"IT域用户", false}, {"研发域用户", false}, {"SM域用户", false}}},
+			{"Windows域控", []roleItem{{"域管理员", false}, {"生产域用户", true}, {"IT域用户", false}, {"研发域用户", false}, {"SM域用户", true}}},
 			{"Windows管理机", []roleItem{{"管理员", false}}},
 			{"数据库", []roleItem{{"DBA", false}, {"服务用户", false}}},
 			{"Linux服务器", []roleItem{{"管理员", false}}},
