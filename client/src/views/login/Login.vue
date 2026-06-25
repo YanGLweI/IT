@@ -81,7 +81,7 @@ export default {
         this.loading = true
         try {
           const res = await login(this.loginForm.username, this.loginForm.password)
-          const data = res.data
+          const data = res.data?.data || res.data
           if (data && data.token) {
             // 存储 token 和用户信息
             localStorage.setItem('token', data.token)
