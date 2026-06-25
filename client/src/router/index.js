@@ -6,6 +6,12 @@ Vue.use(VueRouter)
 
 const routes = [
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/login/Login.vue'),
+    meta: { title: '登录', public: true }
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
@@ -23,6 +29,27 @@ const routes = [
 const router = new VueRouter({
   mode: 'history',
   routes
+})
+
+// 路由守卫：检查登录状态
+router.beforeEach((to, from, next) => {
+  // 设置页面标题
+  document.title = to.meta.title ? `${to.meta.title} - IT管理平台` : 'IT管理平台'
+
+  // 公开页面直接放行
+  if (to.meta.public) {
+    next()
+    return
+  }
+
+  // 检查是否已登录
+  const token = localStorage.getItem('token')
+  if (!token) {
+    next('/login')
+    return
+  }
+
+  next()
 })
 
 export default router

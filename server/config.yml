@@ -1,6 +1,7 @@
 # 服务器配置
 server:
   port: ":8080"
+  jwt_secret: "it-platform-secret-key-2024"
 
 # 数据库配置
 database:
@@ -16,3 +17,15 @@ upload:
   policy_path: "./uploads/policies"
   topology_path: "./uploads/topologies"
   max_size: 33554432  # 32MB
+
+# LDAP 配置
+ldap:
+  server: "ldaps://10.60.254.252:636"
+  base_dn: "dc=hot,dc=local"
+  use_tls: true
+  insecure: true
+  user_filter: "(sAMAccountName=%s)"
+  username: "ylw@hot.local"
+  password: "!Qw2!Qw2!Qw2!Qw2"
+  security_group_dn: "CN=IT部,OU=IT部,OU=HOT,DC=hot,DC=local"
+  cert_path: "../certificate/ca.crt"

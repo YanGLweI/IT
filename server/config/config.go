@@ -12,11 +12,13 @@ type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 	Database DatabaseConfig `yaml:"database"`
 	Upload   UploadConfig   `yaml:"upload"`
+	LDAP     LDAPConfig     `yaml:"ldap"`
 }
 
 // ServerConfig 服务器配置
 type ServerConfig struct {
-	Port string `yaml:"port"`
+	Port      string `yaml:"port"`
+	JWTSecret string `yaml:"jwt_secret"`
 }
 
 // DatabaseConfig 数据库配置
@@ -34,6 +36,19 @@ type UploadConfig struct {
 	PolicyPath   string `yaml:"policy_path"`
 	TopologyPath string `yaml:"topology_path"`
 	MaxSize      int64  `yaml:"max_size"`
+}
+
+// LDAPConfig LDAP配置
+type LDAPConfig struct {
+	Server          string `yaml:"server"`
+	BaseDN          string `yaml:"base_dn"`
+	UseTLS          bool   `yaml:"use_tls"`
+	Insecure        bool   `yaml:"insecure"`
+	UserFilter      string `yaml:"user_filter"`
+	Username        string `yaml:"username"`
+	Password        string `yaml:"password"`
+	SecurityGroupDN string `yaml:"security_group_dn"`
+	CertPath        string `yaml:"cert_path"`
 }
 
 var Cfg *Config

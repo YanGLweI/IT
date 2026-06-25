@@ -44,8 +44,22 @@
       </el-menu>
     </el-aside>
     <el-container>
-      <el-header style="background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; padding: 0 20px">
+      <el-header style="background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 20px">
         <h3 style="margin: 0; color: #333">{{ $route.meta.title }}</h3>
+        <div class="header-right">
+          <el-dropdown @command="handleCommand">
+            <span class="user-info">
+              <i class="el-icon-user-solid"></i>
+              {{ displayName }}
+              <i class="el-icon-arrow-down el-icon--right"></i>
+            </span>
+            <el-dropdown-menu slot="dropdown">
+              <el-dropdown-item command="logout">
+                <i class="el-icon-switch-button"></i> 退出登录
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
+        </div>
       </el-header>
       <el-main style="background: #f0f2f5; padding: 20px">
         <router-view />
@@ -57,10 +71,50 @@
 <script>
 export default {
   name: 'Layout',
+  data() {
+    return {
+      displayName: localStorage.getItem('display_name') || '用户'
+    }
+  },
   computed: {
     activeMenu() {
       return this.$route.path
     }
+  },
+  methods: {
+    handleCommand(command) {
+      if (command === 'logout') {
+        this.$confirm('确定要退出登录吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          localStorage.removeItem('token')
+          localStorage.removeItem('username')
+          localStorage.removeItem('display_name')
+          this.$router.push('/login')
+        }).catch(() => {})
+      }
+    }
   }
 }
 </script>
+
+<style scoped>
+.header-right {
+  display: flex;
+  align-items: center;
+}
+.user-info {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #606266;
+}
+.user-info i:first-child {
+  margin-right: 5px;
+  font-size: 16px;
+  color: #409EFF;
+}
+</style>
