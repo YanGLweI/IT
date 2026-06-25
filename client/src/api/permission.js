@@ -31,3 +31,11 @@ export function renameSystemInPermissions(data) {
 export function manageRolesInSystem(data) {
   return request.post('/permission-rules/systems/roles', data)
 }
+
+export function reorderPermissionRule(data) {
+  return request.post('/permission-rules/reorder', data)
+}
+
+export function reorderSystemInPermissions(data) {
+  return request.put('/permission-rules/systems/reorder', data)
+}

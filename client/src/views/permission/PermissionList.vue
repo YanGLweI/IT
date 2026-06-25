@@ -74,6 +74,16 @@
             <el-button type="primary" size="small" @click="addPosition">添加</el-button>
           </div>
           <el-table :data="rules" stripe size="small" max-height="380">
+            <el-table-column label="#" width="64">
+              <template slot-scope="{ $index }">
+                <div class="sort-btns">
+                  <el-button size="mini" type="text" icon="el-icon-arrow-up"
+                    :disabled="$index === 0" @click="movePosition(rules[$index], 'up')" />
+                  <el-button size="mini" type="text" icon="el-icon-arrow-down"
+                    :disabled="$index === rules.length - 1" @click="movePosition(rules[$index], 'down')" />
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column prop="position_name" label="岗位名称" min-width="200" />
             <el-table-column label="操作" width="160">
               <template slot-scope="{ row }">
@@ -91,6 +101,16 @@
             <el-button type="primary" size="small" @click="addSystem">添加</el-button>
           </div>
           <el-table :data="systemList" stripe size="small" max-height="380">
+            <el-table-column label="#" width="64">
+              <template slot-scope="{ $index }">
+                <div class="sort-btns">
+                  <el-button size="mini" type="text" icon="el-icon-arrow-up"
+                    :disabled="$index === 0" @click="moveSystem(systems[$index], 'up')" />
+                  <el-button size="mini" type="text" icon="el-icon-arrow-down"
+                    :disabled="$index === systems.length - 1" @click="moveSystem(systems[$index], 'down')" />
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column prop="name" label="系统名称" min-width="200" />
             <el-table-column label="操作" width="160">
               <template slot-scope="{ row }">
@@ -144,7 +164,7 @@
 </template>
 
 <script>
-import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions, renameSystemInPermissions, manageRolesInSystem } from '@/api/permission'
+import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions, renameSystemInPermissions, manageRolesInSystem, reorderPermissionRule, reorderSystemInPermissions } from '@/api/permission'
 
 export default {
   name: 'PermissionList',
@@ -324,6 +344,24 @@ export default {
       this.renameDialogVisible = true
     },
 
+    // ---- 排序移动 ----
+    async movePosition(row, direction) {
+      try {
+        await reorderPermissionRule({ id: row.id, direction })
+        await this.fetchData()
+      } catch (e) {
+        this.$message.error(e.response?.data?.message || '移动失败')
+      }
+    },
+    async moveSystem(systemName, direction) {
+      try {
+        await reorderSystemInPermissions({ system_name: systemName, direction })
+        await this.fetchData()
+      } catch (e) {
+        this.$message.error(e.response?.data?.message || '移动失败')
+      }
+    },
+
     // ---- 角色管理 ----
     loadRolesForSystem() {
       if (!this.selectedSystemForRole || this.rules.length === 0) {
@@ -427,7 +465,14 @@ export default {
 }
 
 .table-wrapper {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: calc(100vh - 130px);
+}
+
+.sort-btns {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
 }
 
 .cell-roles {

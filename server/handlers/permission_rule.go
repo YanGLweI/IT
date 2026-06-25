@@ -320,3 +320,108 @@ func ManageRolesInSystem(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "操作成功", "data": gin.H{"updated_count": updatedCount}})
 }
+
+// ReorderPermissionRule 调整岗位排序（上移/下移）
+func ReorderPermissionRule(c *gin.Context) {
+	var req struct {
+		ID        uint   `json:"id" binding:"required"`
+		Direction string `json:"direction" binding:"required"` // "up" or "down"
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	var current models.PermissionRule
+	if err := database.GetDB().First(&current, req.ID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "岗位不存在"})
+		return
+	}
+
+	// 查找相邻岗位
+	var adjacent models.PermissionRule
+	var query string
+	var order string
+	if req.Direction == "up" {
+		query = "sort_order < ?"
+		order = "sort_order desc"
+	} else {
+		query = "sort_order > ?"
+		order = "sort_order asc"
+	}
+
+	if err := database.GetDB().Where(query, current.SortOrder).Order(order).First(&adjacent).Error; err != nil {
+		msg := "已到达顶部"
+		if req.Direction == "down" {
+			msg = "已到达底部"
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": msg})
+		return
+	}
+
+	// 交换 sort_order
+	tempOrder := current.SortOrder
+	database.GetDB().Model(&current).Update("sort_order", adjacent.SortOrder)
+	database.GetDB().Model(&adjacent).Update("sort_order", tempOrder)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移动成功"})
+}
+
+// ReorderSystemInPermissions 调整系统在所有岗位中的排序
+func ReorderSystemInPermissions(c *gin.Context) {
+	var req struct {
+		SystemName string `json:"system_name" binding:"required"`
+		Direction  string `json:"direction" binding:"required"` // "up" or "down"
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	var allRules []models.PermissionRule
+	database.GetDB().Find(&allRules)
+	if len(allRules) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "没有岗位数据"})
+		return
+	}
+
+	updatedCount := 0
+	for _, rule := range allRules {
+		var sysRules []map[string]interface{}
+		json.Unmarshal([]byte(rule.RulesJSON), &sysRules)
+
+		// 找到当前系统的索引
+		currentIdx := -1
+		for i, sr := range sysRules {
+			if name, ok := sr["system"].(string); ok && name == req.SystemName {
+				currentIdx = i
+				break
+			}
+		}
+		if currentIdx == -1 {
+			continue
+		}
+
+		targetIdx := currentIdx
+		if req.Direction == "up" {
+			if currentIdx == 0 {
+				continue // 已到顶部，跳过
+			}
+			targetIdx = currentIdx - 1
+		} else {
+			if currentIdx == len(sysRules)-1 {
+				continue // 已到底部，跳过
+			}
+			targetIdx = currentIdx + 1
+		}
+
+		// 交换位置（保持每个岗位的角色状态不变）
+		sysRules[currentIdx], sysRules[targetIdx] = sysRules[targetIdx], sysRules[currentIdx]
+
+		newJSON, _ := json.Marshal(sysRules)
+		database.GetDB().Model(&rule).Update("rules_json", string(newJSON))
+		updatedCount++
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移动成功", "data": gin.H{"updated_count": updatedCount}})
+}
