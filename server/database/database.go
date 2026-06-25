@@ -41,6 +41,9 @@ func InitDB() {
 	// 修复已有表的字段长度
 	DB.Exec("ALTER TABLE policies MODIFY COLUMN file_type VARCHAR(255)")
 
+	// 清理软删除的区域记录（确保同名区域可重新添加）
+	DB.Unscoped().Where("deleted_at IS NOT NULL").Delete(&models.Region{})
+
 	// 初始化基础数据
 	SeedPermissionRules()
 

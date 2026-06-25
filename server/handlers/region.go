@@ -28,6 +28,13 @@ func CreateRegion(c *gin.Context) {
 		return
 	}
 
+	// 清理软删除的同名记录（避免唯一索引冲突）
+	var softDeleted models.Region
+	result := database.GetDB().Unscoped().Where("name = ?", region.Name).Find(&softDeleted)
+	if result.Error == nil && result.RowsAffected > 0 {
+		database.GetDB().Unscoped().Delete(&softDeleted)
+	}
+
 	if err := database.GetDB().Create(&region).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建失败"})
 		return
