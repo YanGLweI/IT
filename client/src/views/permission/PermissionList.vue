@@ -244,7 +244,10 @@ export default {
         const res = await getPermissionRules()
         this.rules = (res.data || []).map(r => ({
           ...r,
-          _rules: JSON.parse(r.rules_json || '[]')
+          _rules: (JSON.parse(r.rules_json || '[]') || []).map(sr => ({
+            ...sr,
+            roles: Array.isArray(sr.roles) ? sr.roles : []
+          }))
         }))
         // 提取所有系统名称
         if (this.rules.length > 0) {
@@ -260,7 +263,7 @@ export default {
     },
     getCellRoles(row, systemName) {
       const sysRule = row._rules.find(sr => sr.system === systemName)
-      return sysRule ? sysRule.roles : []
+      return sysRule && Array.isArray(sysRule.roles) ? sysRule.roles : []
     },
     toggleRole(row, systemName, role) {
       this.editingRuleId = row.id
