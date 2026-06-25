@@ -18,9 +18,13 @@
           style="width: 100%"
           v-loading="loading"
         >
-          <el-table-column label="岗位" width="160" fixed>
+          <el-table-column label="岗位" width="200" fixed>
             <template slot-scope="{ row }">
-              <strong>{{ row.position_name }}</strong>
+              <div class="position-cell">
+                <strong>{{ row.position_name }}</strong>
+                <el-button type="danger" size="mini" icon="el-icon-delete" circle
+                  @click="confirmDeletePosition(row)" title="删除岗位"></el-button>
+              </div>
             </template>
           </el-table-column>
 
@@ -30,6 +34,13 @@
             :label="sys"
             min-width="180"
           >
+            <template slot="header" slot-scope="{ column }">
+              <div class="system-header">
+                <span>{{ column.label }}</span>
+                <el-button type="danger" size="mini" icon="el-icon-delete" circle
+                  @click="confirmDeleteSystem(column.label)" title="删除系统"></el-button>
+              </div>
+            </template>
             <template slot-scope="{ row }">
               <div class="cell-roles">
                 <el-tag
@@ -75,7 +86,7 @@
             v-model="addSystemForm.roles"
             type="textarea"
             :rows="3"
-            placeholder="请输入角色名称，用逗号分隔&#10;例如：管理员,操作员,审计员"
+            placeholder="请输入角色名称，用逗号分隔，例如：管理员,操作员,审计员"
           />
           <span class="form-tip">多个角色请用逗号（,）分隔</span>
         </el-form-item>
@@ -107,7 +118,7 @@
 </template>
 
 <script>
-import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule } from '@/api/permission'
+import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions } from '@/api/permission'
 
 export default {
   name: 'PermissionList',
@@ -219,6 +230,28 @@ export default {
       this.editingNewStatus = !role.enabled
       this.dialogVisible = true
     },
+    confirmDeletePosition(row) {
+      this.$confirm(`确定要删除岗位「${row.position_name}」吗？`, '删除确认', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        await deletePermissionRule(row.id)
+        this.$message.success('删除成功')
+        this.fetchData()
+      }).catch(() => {})
+    },
+    confirmDeleteSystem(systemName) {
+      this.$confirm(`确定要删除系统「${systemName}」吗？将从所有岗位移除该系统及其角色。`, '删除确认', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        await removeSystemFromPermissions({ system_name: systemName })
+        this.$message.success('删除成功')
+        this.fetchData()
+      }).catch(() => {})
+    },
     async confirmSave() {
       this.saving = true
       try {
@@ -294,5 +327,22 @@ export default {
 .empty-role {
   color: #ccc;
   font-size: 12px;
+}
+
+.position-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.system-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.3;
 }
 </style>
