@@ -10,18 +10,22 @@ export function createPolicy(formData) {
   })
 }
 
-export function updatePolicy(id, data) {
-  return request.put(`/policies/${id}`, data)
+export function updatePolicy(id, data, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/policies/${id}`, data, config)
 }
 
-export function replacePolicyFile(id, formData) {
-  return request.put(`/policies/${id}/file`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  })
+export function replacePolicyFile(id, formData, dualToken) {
+  const headers = { 'Content-Type': 'multipart/form-data' }
+  if (dualToken) headers['X-Dual-Control-Token'] = dualToken
+  return request.put(`/policies/${id}/file`, formData, { headers })
 }
 
-export function deletePolicy(id) {
-  return request.delete(`/policies/${id}`)
+export function deletePolicy(id, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.delete(`/policies/${id}`, config)
 }
 
 export function getPolicyPreviewUrl(id) {

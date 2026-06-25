@@ -10,18 +10,22 @@ export function createTopology(formData) {
   })
 }
 
-export function updateTopology(id, data) {
-  return request.put(`/topologies/${id}`, data)
+export function updateTopology(id, data, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/topologies/${id}`, data, config)
 }
 
-export function replaceTopologyFile(id, formData) {
-  return request.put(`/topologies/${id}/file`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  })
+export function replaceTopologyFile(id, formData, dualToken) {
+  const headers = { 'Content-Type': 'multipart/form-data' }
+  if (dualToken) headers['X-Dual-Control-Token'] = dualToken
+  return request.put(`/topologies/${id}/file`, formData, { headers })
 }
 
-export function deleteTopology(id) {
-  return request.delete(`/topologies/${id}`)
+export function deleteTopology(id, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.delete(`/topologies/${id}`, config)
 }
 
 export function getTopologyPreviewUrl(id) {

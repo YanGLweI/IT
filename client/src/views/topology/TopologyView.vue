@@ -92,13 +92,17 @@
         <img :src="previewUrl" style="max-width: 100%" />
       </div>
     </el-dialog>
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </div>
 </template>
 
 <script>
 import { getTopologies, createTopology, updateTopology, deleteTopology, getTopologyPreviewUrl, getTopologyDownloadUrl } from '@/api/topology'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
+  components: { DualControlDialog },
   name: 'TopologyView',
   data() {
     return {
@@ -202,27 +206,28 @@ export default {
     },
     async handleEditSubmit() {
       try {
+        const dualToken = await this.$refs.dualControl.open()
         await updateTopology(this.editForm.id, {
           name: this.editForm.name,
           description: this.editForm.description
-        })
+        }, dualToken)
         this.$message.success('更新成功')
         this.editVisible = false
         this.fetchData()
       } catch (e) {
-        console.error(e)
+        if (e.message !== 'canceled') console.error(e)
       }
     },
-    handleDelete(item) {
-      this.$confirm('确定要删除该拓扑图吗？', '提示', { type: 'warning' }).then(async () => {
-        try {
-          await deleteTopology(item.id)
-          this.$message.success('删除成功')
-          this.fetchData()
-        } catch (e) {
-          console.error(e)
-        }
-      }).catch(() => {})
+    async handleDelete(item) {
+      try {
+        await this.$confirm('确定要删除该拓扑图吗？', '提示', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deleteTopology(item.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchData()
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
     },
     async handlePreview(item) {
       this.previewId = item.id

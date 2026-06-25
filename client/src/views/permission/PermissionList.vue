@@ -161,13 +161,17 @@
         <el-button type="primary" @click="confirmRename">确定</el-button>
       </span>
     </el-dialog>
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </div>
 </template>
 
 <script>
 import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions, renameSystemInPermissions, manageRolesInSystem, reorderPermissionRule, reorderSystemInPermissions } from '@/api/permission'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
+  components: { DualControlDialog },
   name: 'PermissionList',
   data() {
     return {
@@ -281,16 +285,21 @@ export default {
           }
         }
 
+        // 双控验证
+        const dualToken = await this.$refs.dualControl.open()
+
         // 保存到后端
         await updatePermissionRule(rule.id, {
           rules_json: JSON.stringify(rule._rules)
-        })
+        }, dualToken)
 
         this.$message.success('保存成功')
         this.dialogVisible = false
       } catch (e) {
-        this.$message.error('保存失败')
-        console.error(e)
+        if (e.message !== 'canceled') {
+          this.$message.error('保存失败')
+          console.error(e)
+        }
       } finally {
         this.saving = false
       }
@@ -304,23 +313,30 @@ export default {
         return
       }
       try {
-        await createPermissionRule({ position_name: name })
+        const dualToken = await this.$refs.dualControl.open()
+        await createPermissionRule({ position_name: name }, dualToken)
         this.$message.success('岗位添加成功')
         this.posInput = ''
         await this.fetchData()
       } catch (e) {
-        this.$message.error('添加失败')
-        console.error(e)
+        if (e.message !== 'canceled') {
+          this.$message.error('添加失败')
+          console.error(e)
+        }
       }
     },
-    confirmDeletePosition(row) {
-      this.$confirm(`确定要删除岗位「${row.position_name}」吗？`, '删除确认', {
-        confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
-      }).then(async () => {
-        await deletePermissionRule(row.id)
+    async confirmDeletePosition(row) {
+      try {
+        await this.$confirm(`确定要删除岗位「${row.position_name}」吗？`, '删除确认', {
+          confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+        })
+        const dualToken = await this.$refs.dualControl.open()
+        await deletePermissionRule(row.id, dualToken)
         this.$message.success('删除成功')
         this.fetchData()
-      }).catch(() => {})
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
     },
     startRenamePosition(row) {
       this.renameTarget = { type: 'position', id: row.id, oldName: row.position_name }
@@ -336,27 +352,34 @@ export default {
         return
       }
       try {
-        await addSystemToPermissions({ system_name: name, roles: [] })
+        const dualToken = await this.$refs.dualControl.open()
+        await addSystemToPermissions({ system_name: name, roles: [] }, dualToken)
         this.$message.success('系统添加成功（可到角色管理添加角色）')
         this.sysInput = ''
         await this.fetchData()
       } catch (e) {
-        this.$message.error('添加失败')
-        console.error(e)
+        if (e.message !== 'canceled') {
+          this.$message.error('添加失败')
+          console.error(e)
+        }
       }
     },
-    confirmDeleteSystem(systemName) {
-      this.$confirm(`确定要删除系统「${systemName}」吗？将从所有岗位移除该系统及其角色。`, '删除确认', {
-        confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
-      }).then(async () => {
-        await removeSystemFromPermissions({ system_name: systemName })
+    async confirmDeleteSystem(systemName) {
+      try {
+        await this.$confirm(`确定要删除系统「${systemName}」吗？将从所有岗位移除该系统及其角色。`, '删除确认', {
+          confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+        })
+        const dualToken = await this.$refs.dualControl.open()
+        await removeSystemFromPermissions({ system_name: systemName }, dualToken)
         this.$message.success('删除成功')
         if (this.selectedSystemForRole === systemName) {
           this.selectedSystemForRole = ''
           this.currentRoles = []
         }
         this.fetchData()
-      }).catch(() => {})
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
     },
     startRenameSystem(row) {
       this.renameTarget = { type: 'system', oldName: row.name }
@@ -367,18 +390,24 @@ export default {
     // ---- 排序移动 ----
     async movePosition(row, direction) {
       try {
-        await reorderPermissionRule({ id: row.id, direction })
+        const dualToken = await this.$refs.dualControl.open()
+        await reorderPermissionRule({ id: row.id, direction }, dualToken)
         await this.fetchData()
       } catch (e) {
-        this.$message.error(e.response?.data?.message || '移动失败')
+        if (e.message !== 'canceled') {
+          this.$message.error(e.response?.data?.message || '移动失败')
+        }
       }
     },
     async moveSystem(systemName, direction) {
       try {
-        await reorderSystemInPermissions({ system_name: systemName, direction })
+        const dualToken = await this.$refs.dualControl.open()
+        await reorderSystemInPermissions({ system_name: systemName, direction }, dualToken)
         await this.fetchData()
       } catch (e) {
-        this.$message.error(e.response?.data?.message || '移动失败')
+        if (e.message !== 'canceled') {
+          this.$message.error(e.response?.data?.message || '移动失败')
+        }
       }
     },
 
@@ -403,25 +432,32 @@ export default {
         return
       }
       try {
-        await manageRolesInSystem({ system_name: this.selectedSystemForRole, action: 'add', new_name: name })
+        const dualToken = await this.$refs.dualControl.open()
+        await manageRolesInSystem({ system_name: this.selectedSystemForRole, action: 'add', new_name: name }, dualToken)
         this.$message.success('角色添加成功')
         this.roleInput = ''
         await this.fetchData()
         this.loadRolesForSystem()
       } catch (e) {
-        this.$message.error('添加失败')
-        console.error(e)
+        if (e.message !== 'canceled') {
+          this.$message.error('添加失败')
+          console.error(e)
+        }
       }
     },
-    confirmDeleteRole(roleName) {
-      this.$confirm(`确定要删除角色「${roleName}」吗？将从所有岗位中移除此角色。`, '删除确认', {
-        confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
-      }).then(async () => {
-        await manageRolesInSystem({ system_name: this.selectedSystemForRole, action: 'delete', old_name: roleName })
+    async confirmDeleteRole(roleName) {
+      try {
+        await this.$confirm(`确定要删除角色「${roleName}」吗？将从所有岗位中移除此角色。`, '删除确认', {
+          confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+        })
+        const dualToken = await this.$refs.dualControl.open()
+        await manageRolesInSystem({ system_name: this.selectedSystemForRole, action: 'delete', old_name: roleName }, dualToken)
         this.$message.success('删除成功')
         await this.fetchData()
         this.loadRolesForSystem()
-      }).catch(() => {})
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
     },
     startRenameRole(row) {
       this.renameTarget = { type: 'role', systemName: this.selectedSystemForRole, oldName: row.name }
@@ -443,12 +479,13 @@ export default {
         return
       }
       try {
+        const dualToken = await this.$refs.dualControl.open()
         switch (target.type) {
           case 'position':
-            await updatePermissionRule(target.id, { position_name: newName })
+            await updatePermissionRule(target.id, { position_name: newName }, dualToken)
             break
           case 'system':
-            await renameSystemInPermissions({ old_name: target.oldName, new_name: newName })
+            await renameSystemInPermissions({ old_name: target.oldName, new_name: newName }, dualToken)
             break
           case 'role':
             await manageRolesInSystem({
@@ -456,7 +493,7 @@ export default {
               action: 'rename',
               old_name: target.oldName,
               new_name: newName
-            })
+            }, dualToken)
             break
         }
         this.$message.success('重命名成功')
@@ -464,8 +501,10 @@ export default {
         await this.fetchData()
         if (target.type === 'role') this.loadRolesForSystem()
       } catch (e) {
-        this.$message.error('重命名失败')
-        console.error(e)
+        if (e.message !== 'canceled') {
+          this.$message.error('重命名失败')
+          console.error(e)
+        }
       }
     }
   }

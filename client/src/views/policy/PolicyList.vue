@@ -107,14 +107,18 @@
         <el-button type="primary" @click="downloadFile">下载文件</el-button>
       </div>
     </el-dialog>
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </div>
 </template>
 
 <script>
 import { getPolicies, createPolicy, updatePolicy, deletePolicy, getPolicyPreviewUrl, getPolicyDownloadUrl } from '@/api/policy'
 import { renderAsync } from 'docx-preview'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
+  components: { DualControlDialog },
   name: 'PolicyList',
   data() {
     return {
@@ -212,27 +216,28 @@ export default {
     },
     async handleEditSubmit() {
       try {
+        const dualToken = await this.$refs.dualControl.open()
         await updatePolicy(this.editForm.id, {
           title: this.editForm.title,
           description: this.editForm.description
-        })
+        }, dualToken)
         this.$message.success('更新成功')
         this.editVisible = false
         this.fetchData()
       } catch (e) {
-        console.error(e)
+        if (e.message !== 'canceled') console.error(e)
       }
     },
-    handleDelete(row) {
-      this.$confirm('确定要删除该政策吗？', '提示', { type: 'warning' }).then(async () => {
-        try {
-          await deletePolicy(row.id)
-          this.$message.success('删除成功')
-          this.fetchData()
-        } catch (e) {
-          console.error(e)
-        }
-      }).catch(() => {})
+    async handleDelete(row) {
+      try {
+        await this.$confirm('确定要删除该政策吗？', '提示', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deletePolicy(row.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchData()
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
     },
     async handlePreview(row) {
       const url = getPolicyPreviewUrl(row.id)

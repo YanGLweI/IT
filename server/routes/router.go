@@ -30,6 +30,9 @@ func SetupRouter() *gin.Engine {
 		protected := api.Group("")
 		protected.Use(middleware.JWTAuth())
 		{
+			// 双控验证（需要JWT但不需要双控token）
+			protected.POST("/dual-control/verify", handlers.VerifyDualControl)
+
 			// 区域管理
 			protected.GET("/regions", handlers.ListRegions)
 			protected.POST("/regions", handlers.CreateRegion)
@@ -52,35 +55,46 @@ func SetupRouter() *gin.Engine {
 			// 看板统计
 			protected.GET("/dashboard/summary", handlers.DashboardSummary)
 
-			// IT政策管理
+			// IT政策管理 - 查询（不需要双控）
 			protected.GET("/policies", handlers.ListPolicies)
 			protected.POST("/policies", handlers.CreatePolicy)
-			protected.PUT("/policies/:id", handlers.UpdatePolicy)
-			protected.PUT("/policies/:id/file", handlers.ReplacePolicyFile)
-			protected.DELETE("/policies/:id", handlers.DeletePolicy)
 			protected.GET("/policies/:id/preview", handlers.PreviewPolicy)
 			protected.GET("/policies/:id/download", handlers.DownloadPolicy)
 
-			// 网络拓扑图
+			// 网络拓扑图 - 查询（不需要双控）
 			protected.GET("/topologies", handlers.ListTopologies)
 			protected.POST("/topologies", handlers.CreateTopology)
-			protected.PUT("/topologies/:id", handlers.UpdateTopology)
-			protected.PUT("/topologies/:id/file", handlers.ReplaceTopologyFile)
-			protected.DELETE("/topologies/:id", handlers.DeleteTopology)
 			protected.GET("/topologies/:id/preview", handlers.PreviewTopology)
 			protected.GET("/topologies/:id/download", handlers.DownloadTopology)
 
-			// 岗位权限管理
+			// 岗位权限管理 - 查询（不需要双控）
 			protected.GET("/permission-rules", handlers.ListPermissionRules)
-			protected.POST("/permission-rules", handlers.CreatePermissionRule)
-			protected.PUT("/permission-rules/:id", handlers.UpdatePermissionRule)
-			protected.DELETE("/permission-rules/:id", handlers.DeletePermissionRule)
-			protected.POST("/permission-rules/systems", handlers.AddSystemToPermissions)
-			protected.DELETE("/permission-rules/systems", handlers.RemoveSystemFromPermissions)
-			protected.PUT("/permission-rules/systems/rename", handlers.RenameSystemInPermissions)
-			protected.POST("/permission-rules/systems/roles", handlers.ManageRolesInSystem)
-			protected.POST("/permission-rules/reorder", handlers.ReorderPermissionRule)
-			protected.PUT("/permission-rules/systems/reorder", handlers.ReorderSystemInPermissions)
+
+			// ============ 双控保护接口（需要JWT + 双控验证）============
+			dual := protected.Group("")
+			dual.Use(middleware.DualControl())
+			{
+				// IT政策 - 修改删除
+				dual.PUT("/policies/:id", handlers.UpdatePolicy)
+				dual.PUT("/policies/:id/file", handlers.ReplacePolicyFile)
+				dual.DELETE("/policies/:id", handlers.DeletePolicy)
+
+				// 网络拓扑图 - 修改删除
+				dual.PUT("/topologies/:id", handlers.UpdateTopology)
+				dual.PUT("/topologies/:id/file", handlers.ReplaceTopologyFile)
+				dual.DELETE("/topologies/:id", handlers.DeleteTopology)
+
+				// 岗位权限管理配置（所有写操作）
+				dual.POST("/permission-rules", handlers.CreatePermissionRule)
+				dual.PUT("/permission-rules/:id", handlers.UpdatePermissionRule)
+				dual.DELETE("/permission-rules/:id", handlers.DeletePermissionRule)
+				dual.POST("/permission-rules/systems", handlers.AddSystemToPermissions)
+				dual.DELETE("/permission-rules/systems", handlers.RemoveSystemFromPermissions)
+				dual.PUT("/permission-rules/systems/rename", handlers.RenameSystemInPermissions)
+				dual.POST("/permission-rules/systems/roles", handlers.ManageRolesInSystem)
+				dual.POST("/permission-rules/reorder", handlers.ReorderPermissionRule)
+				dual.PUT("/permission-rules/systems/reorder", handlers.ReorderSystemInPermissions)
+			}
 		}
 	}
 
