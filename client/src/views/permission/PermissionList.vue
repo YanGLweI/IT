@@ -16,6 +16,7 @@
           stripe
           style="width: 100%"
           v-loading="loading"
+          :max-height="tableMaxHeight"
         >
           <el-table-column label="岗位" width="200" fixed>
             <template slot-scope="{ row }">
@@ -193,7 +194,9 @@ export default {
       // 重命名弹窗
       renameDialogVisible: false,
       renameTarget: null, // { type: 'position'|'system'|'role', id?, oldName?, systemName? }
-      renameValue: ''
+      renameValue: '',
+      // 表格最大高度（用max-height使横向滚动条始终可见）
+      tableMaxHeight: window.innerHeight - 110
     }
   },
   computed: {
@@ -213,8 +216,15 @@ export default {
   },
   mounted() {
     this.fetchData()
+    window.addEventListener('resize', this.handleResize)
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.handleResize)
   },
   methods: {
+    handleResize() {
+      this.tableMaxHeight = window.innerHeight - 110
+    },
     async fetchData() {
       this.loading = true
       try {
@@ -465,8 +475,8 @@ export default {
 }
 
 .table-wrapper {
-  overflow: auto;
-  max-height: calc(100vh - 130px);
+  overflow-x: auto;
+  padding-bottom: 8px;
 }
 
 .sort-btns {
