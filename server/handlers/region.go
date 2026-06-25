@@ -82,7 +82,7 @@ func DeleteRegion(c *gin.Context) {
 		return
 	}
 
-	if err := database.GetDB().Delete(&region).Error; err != nil {
+	if err := database.GetDB().Unscoped().Delete(&region).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}

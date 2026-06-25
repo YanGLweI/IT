@@ -4,6 +4,7 @@
     :visible.sync="visible"
     width="420px"
     :close-on-click-modal="false"
+    :append-to-body="true"
     @close="handleCancel"
   >
     <div class="dual-control-hint">
