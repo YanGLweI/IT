@@ -81,7 +81,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog :visible.sync="previewVisible" width="90%" top="3vh">
+    <el-dialog :visible.sync="previewVisible" width="90%" top="3vh" @closed="clearPreview">
       <div slot="title" class="preview-toolbar">
         <span>拓扑图预览</span>
         <div class="preview-toolbar-right">
@@ -116,7 +116,8 @@ export default {
       previewVisible: false,
       previewUrl: '',
       previewId: null,
-      previewFileName: ''
+      previewFileName: '',
+      thumbUrls: {} // 存储缩略图的 blob URL
     }
   },
   mounted() {
@@ -127,12 +128,33 @@ export default {
       try {
         const res = await getTopologies()
         this.topologies = res.data || []
+        // 加载所有缩略图（带 token）
+        this.loadThumbnails()
       } catch (e) {
         console.error(e)
       }
     },
+    async loadThumbnails() {
+      // 清理旧的 blob URL
+      Object.values(this.thumbUrls).forEach(url => URL.revokeObjectURL(url))
+      this.thumbUrls = {}
+      
+      for (const item of this.topologies) {
+        try {
+          const url = getTopologyPreviewUrl(item.id)
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          if (!response.ok) continue
+          const blob = await response.blob()
+          this.$set(this.thumbUrls, item.id, URL.createObjectURL(blob))
+        } catch (e) {
+          console.error(`加载缩略图失败 ID=${item.id}:`, e)
+        }
+      }
+    },
     getThumbUrl(id) {
-      return getTopologyPreviewUrl(id)
+      return this.thumbUrls[id] || ''
     },
     handleFileChange(file) {
       this.selectedFile = file.raw
@@ -202,21 +224,52 @@ export default {
         }
       }).catch(() => {})
     },
-    handlePreview(item) {
-      this.previewUrl = getTopologyPreviewUrl(item.id)
+    async handlePreview(item) {
       this.previewId = item.id
       this.previewFileName = item.file_name || '拓扑图'
       this.previewVisible = true
+      
+      // 使用 fetch 带 token 获取文件并创建 blob URL
+      try {
+        const url = getTopologyPreviewUrl(item.id)
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('预览失败')
+        const blob = await response.blob()
+        this.previewUrl = URL.createObjectURL(blob)
+      } catch (e) {
+        console.error('预览失败:', e)
+        this.$message.error('图片预览失败')
+      }
     },
-    downloadFile() {
+    clearPreview() {
+      if (this.previewUrl) {
+        URL.revokeObjectURL(this.previewUrl)
+        this.previewUrl = ''
+      }
+    },
+    async downloadFile() {
       if (this.previewId) {
         const url = getTopologyDownloadUrl(this.previewId)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = this.previewFileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        try {
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          if (!response.ok) throw new Error('下载失败')
+          const blob = await response.blob()
+          const downloadUrl = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = downloadUrl
+          link.download = this.previewFileName
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(downloadUrl)
+        } catch (e) {
+          console.error('下载失败:', e)
+          this.$message.error('下载失败')
+        }
       }
     },
     formatSize(size) {

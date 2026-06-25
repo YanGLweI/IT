@@ -234,7 +234,7 @@ export default {
         }
       }).catch(() => {})
     },
-    handlePreview(row) {
+    async handlePreview(row) {
       const url = getPolicyPreviewUrl(row.id)
       const fileType = row.file_type || ''
       const fileName = (row.file_name || '').toLowerCase()
@@ -254,19 +254,30 @@ export default {
       } else {
         this.previewType = 'other'
       }
-      this.previewUrl = url
       this.previewVisible = true
 
-      if (this.previewType === 'docx') {
-        this.$nextTick(() => {
-          this.renderDocx(url)
+      // 使用 fetch 带 token 获取文件并创建 blob URL
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
+        if (!response.ok) throw new Error('预览失败')
+        const blob = await response.blob()
+        this.previewUrl = URL.createObjectURL(blob)
+
+        if (this.previewType === 'docx') {
+          this.$nextTick(() => {
+            this.renderDocxFromBlob(blob)
+          })
+        }
+      } catch (e) {
+        console.error('预览失败:', e)
+        this.$message.error('文件预览失败')
       }
     },
-    async renderDocx(url) {
+    async renderDocxFromBlob(blob) {
       try {
-        const response = await fetch(url)
-        const arrayBuffer = await response.arrayBuffer()
+        const arrayBuffer = await blob.arrayBuffer()
         const container = this.$refs.docxContainer
         if (container) {
           container.innerHTML = ''
@@ -283,6 +294,11 @@ export default {
       }
       this.searchMarks = []
       this.searchTotal = 0
+      // 释放 blob URL
+      if (this.previewUrl) {
+        URL.revokeObjectURL(this.previewUrl)
+        this.previewUrl = ''
+      }
     },
     // 关键词搜索：跳转到下一个匹配
     searchNext() {
@@ -392,15 +408,27 @@ export default {
     escapeRegExp(str) {
       return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     },
-    downloadFile() {
+    async downloadFile() {
       if (this.previewId) {
         const url = getPolicyDownloadUrl(this.previewId)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = this.previewFileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        try {
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          if (!response.ok) throw new Error('下载失败')
+          const blob = await response.blob()
+          const downloadUrl = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = downloadUrl
+          link.download = this.previewFileName
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(downloadUrl)
+        } catch (e) {
+          console.error('下载失败:', e)
+          this.$message.error('下载失败')
+        }
       }
     },
     formatSize(size) {
