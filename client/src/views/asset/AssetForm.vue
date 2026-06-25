@@ -1,5 +1,6 @@
 <template>
   <el-dialog :title="isEdit ? '编辑资产' : '新增资产'" :visible.sync="dialogVisible" width="600px" @close="handleClose">
+    <DualControlDialog ref="dualControl" />
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
       <el-form-item label="计算机名" prop="computer_name">
         <el-input v-model="form.computer_name" placeholder="请输入计算机名" />
@@ -47,9 +48,11 @@
 
 <script>
 import { createAsset, updateAsset } from '@/api/asset'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 import { getOSTypes } from '@/api/os_type'
 
 export default {
+  components: { DualControlDialog },
   name: 'AssetForm',
   props: {
     visible: { type: Boolean, default: false },
@@ -138,18 +141,22 @@ export default {
             remark: this.form.remark
           }
           
+          const dualToken = await this.$refs.dualControl.open()
+
           if (this.isEdit) {
-            await updateAsset(this.form.id, submitData)
+            await updateAsset(this.form.id, submitData, dualToken)
             this.$message.success('更新成功')
           } else {
-            await createAsset(submitData)
+            await createAsset(submitData, dualToken)
             this.$message.success('创建成功')
           }
           this.dialogVisible = false
           this.$emit('success')
         } catch (e) {
-          console.error('提交失败:', e)
-          this.$message.error(e.response?.data?.message || '操作失败')
+          if (e.message !== 'canceled') {
+            console.error('提交失败:', e)
+            this.$message.error(e.response?.data?.message || '操作失败')
+          }
         }
       })
     },

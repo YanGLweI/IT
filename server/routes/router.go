@@ -45,12 +45,9 @@ func SetupRouter() *gin.Engine {
 			protected.PUT("/os-types/:id", handlers.UpdateOSType)
 			protected.DELETE("/os-types/:id", handlers.DeleteOSType)
 
-			// 资产管理
+			// 资产管理 - 查询（不需要双控）
 			protected.GET("/assets", handlers.ListAssets)
 			protected.GET("/assets/:id", handlers.GetAsset)
-			protected.POST("/assets", handlers.CreateAsset)
-			protected.PUT("/assets/:id", handlers.UpdateAsset)
-			protected.DELETE("/assets/:id", handlers.DeleteAsset)
 
 			// 看板统计
 			protected.GET("/dashboard/summary", handlers.DashboardSummary)
@@ -74,6 +71,11 @@ func SetupRouter() *gin.Engine {
 			dual := protected.Group("")
 			dual.Use(middleware.DualControl())
 			{
+				// 资产管理 - 修改删除
+				dual.POST("/assets", handlers.CreateAsset)
+				dual.PUT("/assets/:id", handlers.UpdateAsset)
+				dual.DELETE("/assets/:id", handlers.DeleteAsset)
+				
 				// IT政策 - 修改删除
 				dual.PUT("/policies/:id", handlers.UpdatePolicy)
 				dual.PUT("/policies/:id/file", handlers.ReplacePolicyFile)

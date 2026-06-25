@@ -65,18 +65,22 @@
       :edit-data="editData"
       :regions="regions"
       @success="fetchData"
+      ref="assetForm"
     />
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </div>
 </template>
 
 <script>
 import { getAssets, deleteAsset } from '@/api/asset'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 import { getRegions } from '@/api/region'
 import AssetForm from './AssetForm.vue'
 
 export default {
   name: 'AssetList',
-  components: { AssetForm },
+  components: { AssetForm, DualControlDialog },
   data() {
     return {
       assets: [],
@@ -162,16 +166,16 @@ export default {
       this.editData = { ...row }
       this.formVisible = true
     },
-    handleDelete(row) {
-      this.$confirm('确定要删除该资产吗？', '提示', { type: 'warning' }).then(async () => {
-        try {
-          await deleteAsset(row.id)
-          this.$message.success('删除成功')
-          this.fetchData()
-        } catch (e) {
-          console.error(e)
-        }
-      }).catch(() => {})
+    async handleDelete(row) {
+      try {
+        await this.$confirm('确定要删除该资产吗？', '提示', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deleteAsset(row.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchData()
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
     },
     statusType(status) {
       switch (status) {
