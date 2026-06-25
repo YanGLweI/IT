@@ -1,0 +1,18 @@
+# 服务器配置
+server:
+  port: ":8080"
+
+# 数据库配置
+database:
+  username: "it"
+  password: "a*999999"
+  host: "10.60.254.127"
+  port: "3306"
+  dbname: "it_platform"
+
+# 上传配置
+upload:
+  path: "./uploads"
+  policy_path: "./uploads/policies"
+  topology_path: "./uploads/topologies"
+  max_size: 33554432  # 32MB
