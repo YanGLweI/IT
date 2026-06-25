@@ -11,7 +11,7 @@
       <i class="el-icon-warning-outline"></i>
       此操作需要另一名IT组成员进行双控验证确认
     </div>
-    <el-form :model="form" :rules="rules" ref="form" label-width="100px">
+    <el-form :model="form" :rules="rules" ref="form" label-width="100px" @submit.native.prevent="handleConfirm">
       <el-form-item label="审批人账号" prop="username">
         <el-input
           v-model="form.username"
