@@ -311,10 +311,12 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				f.MergeCell(sheetName, fmt.Sprintf("B%d", startRow), fmt.Sprintf("B%d", endRow))
 				f.MergeCell(sheetName, fmt.Sprintf("C%d", startRow), fmt.Sprintf("C%d", endRow))
 				
-				// 如果是密钥团队的密钥经理，合并G列并显示(CISO)
+				// 如果是密钥团队的密钥经理，合并G列并显示(CISO)，使用右对齐样式
 				if isKeyManagerInKeyTeam {
 					f.MergeCell(sheetName, fmt.Sprintf("G%d", startRow), fmt.Sprintf("G%d", endRow))
 					f.SetCellValue(sheetName, fmt.Sprintf("G%d", startRow), "(CISO)")
+					// 为合并后的G列设置右对齐样式
+					f.SetCellStyle(sheetName, fmt.Sprintf("G%d", startRow), fmt.Sprintf("G%d", endRow), specialConfirmStyle)
 				}
 			}
 			seq++
