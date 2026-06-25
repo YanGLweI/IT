@@ -3,7 +3,11 @@
     <el-card>
       <div slot="header" class="page-header">
         <span>岗位权限设置规则</span>
-        <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+        <div class="page-header-right">
+          <el-button type="success" size="small" icon="el-icon-plus" @click="showAddPosition = true">添加岗位</el-button>
+          <el-button type="warning" size="small" icon="el-icon-plus" @click="showAddSystem = true">添加系统</el-button>
+          <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+        </div>
       </div>
 
       <div class="table-wrapper">
@@ -11,11 +15,10 @@
           :data="rules"
           border
           stripe
-          max-height="calc(100vh - 200px)"
           style="width: 100%"
           v-loading="loading"
         >
-          <el-table-column label="系统\角色\岗位" width="160" fixed>
+          <el-table-column label="岗位" width="160" fixed>
             <template slot-scope="{ row }">
               <strong>{{ row.position_name }}</strong>
             </template>
@@ -48,6 +51,41 @@
       </div>
     </el-card>
 
+    <!-- 添加岗位弹窗 -->
+    <el-dialog title="添加岗位" :visible.sync="showAddPosition" width="400px">
+      <el-form :model="addPositionForm">
+        <el-form-item label="岗位名称" required>
+          <el-input v-model="addPositionForm.name" placeholder="请输入岗位名称" />
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="showAddPosition = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="handleAddPosition">确定</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 添加系统弹窗 -->
+    <el-dialog title="添加系统" :visible.sync="showAddSystem" width="500px">
+      <el-form :model="addSystemForm">
+        <el-form-item label="系统名称" required>
+          <el-input v-model="addSystemForm.name" placeholder="请输入系统名称" />
+        </el-form-item>
+        <el-form-item label="角色列表" required>
+          <el-input
+            v-model="addSystemForm.roles"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入角色名称，用逗号分隔&#10;例如：管理员,操作员,审计员"
+          />
+          <span class="form-tip">多个角色请用逗号（,）分隔</span>
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="showAddSystem = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="handleAddSystem">确定</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 保存确认弹窗 -->
     <el-dialog
       title="保存确认"
@@ -69,7 +107,7 @@
 </template>
 
 <script>
-import { getPermissionRules, updatePermissionRule } from '@/api/permission'
+import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule } from '@/api/permission'
 
 export default {
   name: 'PermissionList',
@@ -80,6 +118,12 @@ export default {
       rules: [],
       // 所有系统名称（按顺序从数据中提取）
       systems: [],
+      // 添加岗位
+      showAddPosition: false,
+      addPositionForm: { name: '' },
+      // 添加系统
+      showAddSystem: false,
+      addSystemForm: { name: '', roles: '' },
       // 编辑相关
       dialogVisible: false,
       editingPosition: '',
@@ -87,7 +131,6 @@ export default {
       editingRoleName: '',
       editingNewStatus: false,
       editingRuleId: null,
-      // 存放待保存的变更队列
       pendingChanges: []
     }
   },
@@ -117,6 +160,56 @@ export default {
     getCellRoles(row, systemName) {
       const sysRule = row._rules.find(sr => sr.system === systemName)
       return sysRule ? sysRule.roles : []
+    },
+    async handleAddPosition() {
+      const name = this.addPositionForm.name.trim()
+      if (!name) {
+        this.$message.warning('请输入岗位名称')
+        return
+      }
+      this.saving = true
+      try {
+        await createPermissionRule({ position_name: name })
+        this.$message.success('岗位添加成功')
+        this.showAddPosition = false
+        this.addPositionForm.name = ''
+        await this.fetchData()
+      } catch (e) {
+        this.$message.error('添加失败')
+        console.error(e)
+      } finally {
+        this.saving = false
+      }
+    },
+    async handleAddSystem() {
+      const name = this.addSystemForm.name.trim()
+      const rolesStr = this.addSystemForm.roles.trim()
+      if (!name) {
+        this.$message.warning('请输入系统名称')
+        return
+      }
+      if (!rolesStr) {
+        this.$message.warning('请输入角色列表')
+        return
+      }
+      const roles = rolesStr.split(',').map(s => s.trim()).filter(s => s)
+      if (roles.length === 0) {
+        this.$message.warning('请输入有效的角色名称')
+        return
+      }
+      this.saving = true
+      try {
+        await addSystemToPermissions({ system_name: name, roles })
+        this.$message.success('系统添加成功')
+        this.showAddSystem = false
+        this.addSystemForm = { name: '', roles: '' }
+        await this.fetchData()
+      } catch (e) {
+        this.$message.error('添加失败')
+        console.error(e)
+      } finally {
+        this.saving = false
+      }
     },
     toggleRole(row, systemName, role) {
       this.editingRuleId = row.id
@@ -164,6 +257,17 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.page-header-right {
+  display: flex;
+  gap: 8px;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
 }
 
 .table-wrapper {

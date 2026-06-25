@@ -72,7 +72,11 @@ func SetupRouter() *gin.Engine {
 
 			// 岗位权限管理
 			protected.GET("/permission-rules", handlers.ListPermissionRules)
+			protected.POST("/permission-rules", handlers.CreatePermissionRule)
 			protected.PUT("/permission-rules/:id", handlers.UpdatePermissionRule)
+			protected.DELETE("/permission-rules/:id", handlers.DeletePermissionRule)
+			protected.POST("/permission-rules/systems", handlers.AddSystemToPermissions)
+			protected.DELETE("/permission-rules/systems", handlers.RemoveSystemFromPermissions)
 		}
 	}
 
