@@ -233,6 +233,10 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 		} else {
 			// 有系统角色，每个系统一行，第一行显示序号/姓名/岗位
 			startRow := rowNum
+			
+			// 检查是否为密钥团队的密钥经理（需要合并G列）
+			isKeyManagerInKeyTeam := dept.Name == "密钥团队" && containsKeyword(user.PositionName, []string{"密钥经理", "Key Manager"})
+			
 			for i, vr := range validRoles {
 				if i == 0 {
 					f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), seq)
@@ -247,8 +251,8 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				specialConfirm := getSpecialConfirm(vr.System, vr.Roles)
 				f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), specialConfirm)
 
-				for i := 0; i < 7; i++ {
-					col := string(rune('A' + i))
+				for j := 0; j < 7; j++ {
+					col := string(rune('A' + j))
 					f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 				}
 				f.SetCellStyle(sheetName, fmt.Sprintf("B%d", rowNum), fmt.Sprintf("B%d", rowNum), nameCellStyle)
@@ -262,6 +266,12 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				f.MergeCell(sheetName, fmt.Sprintf("A%d", startRow), fmt.Sprintf("A%d", endRow))
 				f.MergeCell(sheetName, fmt.Sprintf("B%d", startRow), fmt.Sprintf("B%d", endRow))
 				f.MergeCell(sheetName, fmt.Sprintf("C%d", startRow), fmt.Sprintf("C%d", endRow))
+				
+				// 如果是密钥团队的密钥经理，合并G列并显示(CISO)
+				if isKeyManagerInKeyTeam {
+					f.MergeCell(sheetName, fmt.Sprintf("G%d", startRow), fmt.Sprintf("G%d", endRow))
+					f.SetCellValue(sheetName, fmt.Sprintf("G%d", startRow), "(CISO)")
+				}
 			}
 			seq++
 		}
@@ -292,7 +302,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	f.SetColWidth(sheetName, "D", "D", 22)  // 系统
 	f.SetColWidth(sheetName, "E", "E", 35)  // 角色
 	f.SetColWidth(sheetName, "F", "F", 14)  // 确认结果
-	f.SetColWidth(sheetName, "G", "G", 12)  // 特殊确认人
+	f.SetColWidth(sheetName, "G", "G", 16)  // 特殊确认人（增加宽度）
 
 	// 输出Excel文件
 	fileName := fmt.Sprintf("IT07-2.0 用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)
