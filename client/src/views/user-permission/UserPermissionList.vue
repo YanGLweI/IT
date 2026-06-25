@@ -62,7 +62,7 @@
     </el-card>
 
     <!-- 新增/编辑用户弹窗 -->
-    <el-dialog :title="isEdit ? '编辑用户' : '新增用户'" :visible.sync="userFormVisible" width="650px" top="5vh">
+    <el-dialog :title="isEdit ? '编辑用户' : '新增用户'" :visible.sync="userFormVisible" width="650px" top="5vh" @close="resetUserForm">
       <el-form :model="userForm" :rules="userRules" ref="userForm" label-width="100px">
         <el-form-item label="姓名" prop="name">
           <el-input v-model="userForm.name" placeholder="请输入姓名" />
@@ -286,11 +286,31 @@ export default {
     handleTabClick() {
       // tab 切换后自动过滤
     },
+    resetUserForm() {
+      // 重置表单状态
+      this.isEdit = false
+      this.editingUserId = null
+      this.userForm = {
+        name: '',
+        department_id: null,
+        position_name: '',
+        systemRoles: []
+      }
+      this.selectedSystem = ''
+      this.tempSelectedRoles = []
+      if (this.$refs.userForm) {
+        this.$refs.userForm.clearValidate()
+      }
+    },
     openUserForm(row) {
-      if (row) {
+      // 先重置状态，确保干净
+      this.resetUserForm()
+      
+      if (row && typeof row === 'object' && row.id !== undefined && row.id !== null) {
         // 编辑
         this.isEdit = true
         this.editingUserId = row.id
+        console.log('编辑模式: isEdit=', this.isEdit, ', editingUserId=', this.editingUserId)
         this.userForm = {
           name: row.name,
           department_id: row.department_id,
@@ -304,6 +324,7 @@ export default {
         // 新增
         this.isEdit = false
         this.editingUserId = null
+        console.log('新增模式: isEdit=', this.isEdit, ', editingUserId=', this.editingUserId)
         this.userForm = {
           name: '',
           department_id: null,

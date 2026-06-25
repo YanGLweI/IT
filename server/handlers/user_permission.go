@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -52,16 +53,21 @@ func CreateUserPermission(c *gin.Context) {
 		SystemRolesJSON string `json:"system_roles_json"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请填写必要信息"})
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请填写必要信息", "error": err.Error()})
 		return
 	}
 
+	// 调试日志
+	fmt.Printf("创建用户请求: Name=%s, DepartmentID=%d, PositionName=%s\n", req.Name, req.DepartmentID, req.PositionName)
+
 	// 检查部门是否存在
 	var dept models.Department
-	if database.GetDB().First(&dept, req.DepartmentID).Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "部门不存在"})
+	if err := database.GetDB().First(&dept, req.DepartmentID).Error; err != nil {
+		fmt.Printf("查找部门失败: DepartmentID=%d, Error=%v\n", req.DepartmentID, err)
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": fmt.Sprintf("部门不存在 (ID=%d)", req.DepartmentID)})
 		return
 	}
+	fmt.Printf("找到部门: ID=%d, Name=%s\n", dept.ID, dept.Name)
 
 	// 检查岗位是否属于该部门
 	var pos models.DepartmentPosition
@@ -92,8 +98,11 @@ func CreateUserPermission(c *gin.Context) {
 
 // UpdateUserPermission 编辑用户权限
 func UpdateUserPermission(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	idStr := c.Param("id")
+	fmt.Printf("更新用户请求: ID参数=%s\n", idStr)
+	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		fmt.Printf("解析ID失败: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的用户ID"})
 		return
 	}
