@@ -28,6 +28,8 @@
           @keyup.enter="handleConfirm"
         />
       </el-form-item>
+      <!-- 隐藏的提交按钮：使回车键触发表单提交 -->
+      <button type="submit" style="display:none"></button>
     </el-form>
     <span slot="footer">
       <el-button @click="handleCancel">取消</el-button>
