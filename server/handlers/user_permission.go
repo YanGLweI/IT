@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,6 +11,81 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// validateUserRoles 验证用户选择的角色是否符合岗位权限规则
+func validateUserRoles(positionName string, systemRolesJSON string) error {
+	if systemRolesJSON == "" || systemRolesJSON == "[]" {
+		return nil // 没有选择任何角色，无需验证
+	}
+
+	// 获取该岗位的权限规则
+	var rule models.PermissionRule
+	if err := database.GetDB().Where("position_name = ?", positionName).First(&rule).Error; err != nil {
+		return fmt.Errorf("未找到岗位 '%s' 的权限规则", positionName)
+	}
+
+	// 解析岗位权限规则
+	var allowedRules []struct {
+		System string   `json:"system"`
+		Roles  []string `json:"roles"`
+	}
+	if err := json.Unmarshal([]byte(rule.RulesJSON), &allowedRules); err != nil {
+		return fmt.Errorf("解析岗位权限规则失败: %v", err)
+	}
+
+	// 构建允许的角色映射: map[system]map[role]bool
+	allowedMap := make(map[string]map[string]bool)
+	for _, ar := range allowedRules {
+		if allowedMap[ar.System] == nil {
+			allowedMap[ar.System] = make(map[string]bool)
+		}
+		for _, role := range ar.Roles {
+			allowedMap[ar.System][role] = true
+		}
+	}
+
+	// 解析用户选择的角色
+	var userRoles []struct {
+		System string   `json:"system"`
+		Roles  []string `json:"roles"`
+	}
+	if err := json.Unmarshal([]byte(systemRolesJSON), &userRoles); err != nil {
+		return fmt.Errorf("解析用户角色失败: %v", err)
+	}
+
+	// 验证每个角色是否在允许列表中
+	var invalidRoles []string
+	for _, ur := range userRoles {
+		if allowedMap[ur.System] == nil {
+			// 该系统完全不允许
+			invalidRoles = append(invalidRoles, fmt.Sprintf("%s: 所有角色", ur.System))
+			continue
+		}
+		for _, role := range ur.Roles {
+			if !allowedMap[ur.System][role] {
+				invalidRoles = append(invalidRoles, fmt.Sprintf("%s: %s", ur.System, role))
+			}
+		}
+	}
+
+	if len(invalidRoles) > 0 {
+		return fmt.Errorf("岗位 '%s' 不允许以下权限: %s", positionName, joinStrings(invalidRoles))
+	}
+
+	return nil
+}
+
+// joinStrings 将字符串数组用逗号连接
+func joinStrings(strs []string) string {
+	result := ""
+	for i, s := range strs {
+		if i > 0 {
+			result += ", "
+		}
+		result += s
+	}
+	return result
+}
 
 // ListUserPermissions 获取用户权限列表
 func ListUserPermissions(c *gin.Context) {
@@ -76,6 +152,12 @@ func CreateUserPermission(c *gin.Context) {
 		return
 	}
 
+	// 验证用户选择的角色是否符合岗位权限规则
+	if err := validateUserRoles(req.PositionName, req.SystemRolesJSON); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
+		return
+	}
+
 	// 检查同部门同姓名是否已存在
 	var existing models.UserPermission
 	if database.GetDB().Where("name = ? AND department_id = ?", req.Name, req.DepartmentID).First(&existing).Error == nil {
@@ -135,6 +217,12 @@ func UpdateUserPermission(c *gin.Context) {
 	var pos models.DepartmentPosition
 	if database.GetDB().Where("department_id = ? AND position_name = ?", req.DepartmentID, req.PositionName).First(&pos).Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "该岗位不属于此部门"})
+		return
+	}
+
+	// 验证用户选择的角色是否符合岗位权限规则
+	if err := validateUserRoles(req.PositionName, req.SystemRolesJSON); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
 		return
 	}
 

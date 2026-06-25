@@ -21,6 +21,41 @@ func ListPermissionRules(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": rules})
 }
 
+// GetPositionPermissions 获取特定岗位的权限规则
+func GetPositionPermissions(c *gin.Context) {
+	positionName := c.Query("position_name")
+	if positionName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请提供岗位名称"})
+		return
+	}
+
+	var rule models.PermissionRule
+	if err := database.GetDB().Where("position_name = ?", positionName).First(&rule).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "未找到该岗位的权限规则"})
+		return
+	}
+
+	// 解析权限规则
+	var allowedRules []struct {
+		System string   `json:"system"`
+		Roles  []string `json:"roles"`
+	}
+	if err := json.Unmarshal([]byte(rule.RulesJSON), &allowedRules); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "解析权限规则失败"})
+		return
+	}
+
+	// 构建响应格式: { system: [role1, role2] }
+	result := make(map[string][]string)
+	for _, ar := range allowedRules {
+		if len(ar.Roles) > 0 {
+			result[ar.System] = ar.Roles
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": result})
+}
+
 // CreatePermissionRule 新增岗位
 func CreatePermissionRule(c *gin.Context) {
 	var req struct {

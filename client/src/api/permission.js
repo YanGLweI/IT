@@ -4,6 +4,11 @@ export function getPermissionRules() {
   return request.get('/permission-rules')
 }
 
+// 获取特定岗位的权限规则
+export function getPositionPermissions(positionName) {
+  return request.get('/permission-rules/position', { params: { position_name: positionName } })
+}
+
 function withDual(config, dualToken) {
   if (dualToken) {
     config = config || {}

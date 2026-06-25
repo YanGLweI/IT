@@ -66,6 +66,7 @@ func SetupRouter() *gin.Engine {
 
 			// 岗位权限管理 - 查询和排序（不需要双控）
 			protected.GET("/permission-rules", handlers.ListPermissionRules)
+			protected.GET("/permission-rules/position", handlers.GetPositionPermissions)
 			protected.POST("/permission-rules/reorder", handlers.ReorderPermissionRule)
 			protected.PUT("/permission-rules/systems/reorder", handlers.ReorderSystemInPermissions)
 

@@ -96,15 +96,15 @@
             <!-- 添加系统角色 -->
             <div class="add-role-row">
               <el-select v-model="selectedSystem" placeholder="选择系统" size="small" @change="handleSystemChange" style="width:200px">
-                <el-option v-for="sys in allSystems" :key="sys" :label="sys" :value="sys" />
+                <el-option v-for="sys in availableSystems" :key="sys" :label="sys" :value="sys" />
               </el-select>
               <el-checkbox-group
-                v-if="selectedSystem && getSystemRoles(selectedSystem).length > 0"
+                v-if="selectedSystem && availableRolesForSelectedSystem.length > 0"
                 v-model="tempSelectedRoles"
                 size="small"
                 class="role-checkboxes"
               >
-                <el-checkbox v-for="role in getSystemRoles(selectedSystem)" :key="role" :label="role">{{ role }}</el-checkbox>
+                <el-checkbox v-for="role in availableRolesForSelectedSystem" :key="role" :label="role">{{ role }}</el-checkbox>
               </el-checkbox-group>
               <el-button v-if="selectedSystem && tempSelectedRoles.length > 0" type="primary" size="small" @click="addSystemRoles">添加</el-button>
             </div>
@@ -128,7 +128,7 @@
 <script>
 import { getDepartments, getDepartmentPositions } from '@/api/department'
 import { getUserPermissions, createUserPermission, updateUserPermission, deleteUserPermission } from '@/api/userPermission'
-import { getPermissionRules } from '@/api/permission'
+import { getPermissionRules, getPositionPermissions } from '@/api/permission'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import DepartmentManage from './DepartmentManage.vue'
 
@@ -167,7 +167,9 @@ export default {
       // 管理配置
       showDeptManage: false,
       // 表格高度
-      tableMaxHeight: null
+      tableMaxHeight: null,
+      // 当前岗位的权限规则
+      positionPermissions: {} // { system: [role1, role2] }
     }
   },
   computed: {
@@ -178,6 +180,28 @@ export default {
     availablePositions() {
       if (!this.userForm.department_id) return []
       return this.deptPositions[this.userForm.department_id] || []
+    },
+    // 根据当前选择的岗位过滤可用系统
+    availableSystems() {
+      if (!this.userForm.position_name) return []
+      return Object.keys(this.positionPermissions)
+    },
+    // 获取当前选中系统的可用角色
+    availableRolesForSelectedSystem() {
+      if (!this.selectedSystem || !this.positionPermissions[this.selectedSystem]) {
+        return []
+      }
+      return this.positionPermissions[this.selectedSystem]
+    }
+  },
+  watch: {
+    // 监听岗位变化，加载该岗位的权限规则
+    'userForm.position_name': async function(newPosition) {
+      if (newPosition) {
+        await this.loadPositionPermissions(newPosition)
+      } else {
+        this.positionPermissions = {}
+      }
     }
   },
   mounted() {
@@ -248,6 +272,36 @@ export default {
         console.error(e)
       }
     },
+    async loadPositionPermissions(positionName) {
+      try {
+        const res = await getPositionPermissions(positionName)
+        this.positionPermissions = res.data || {}
+        // 清空已选择的系统，因为可能不在新岗位的权限范围内
+        this.selectedSystem = ''
+        this.tempSelectedRoles = []
+        
+        // 验证已选的角色是否仍然有效
+        const validRoles = []
+        for (const sr of this.userForm.systemRoles) {
+          if (this.positionPermissions[sr.system]) {
+            // 过滤出该岗位允许的角色
+            const allowedRoles = this.positionPermissions[sr.system]
+            const filteredRoles = sr.roles.filter(r => allowedRoles.includes(r))
+            if (filteredRoles.length > 0) {
+              validRoles.push({
+                system: sr.system,
+                roles: filteredRoles
+              })
+            }
+          }
+        }
+        this.userForm.systemRoles = validRoles
+      } catch (e) {
+        console.error('加载岗位权限失败:', e)
+        this.$message.warning(`无法加载岗位 "${positionName}" 的权限规则`)
+        this.positionPermissions = {}
+      }
+    },
     parseSystemRoles(json) {
       if (!json) return []
       try {
@@ -282,6 +336,9 @@ export default {
     },
     handleDeptChange() {
       this.userForm.position_name = ''
+      this.positionPermissions = {} // 清空岗位权限
+      this.selectedSystem = ''
+      this.tempSelectedRoles = []
     },
     handleTabClick() {
       // tab 切换后自动过滤
@@ -298,6 +355,7 @@ export default {
       }
       this.selectedSystem = ''
       this.tempSelectedRoles = []
+      this.positionPermissions = {} // 清空岗位权限规则
       if (this.$refs.userForm) {
         this.$refs.userForm.clearValidate()
       }
@@ -319,6 +377,10 @@ export default {
             system: sr.system,
             roles: [...sr.roles]
           }))
+        }
+        // 加载该岗位的权限规则
+        if (row.position_name) {
+          this.loadPositionPermissions(row.position_name)
         }
       } else {
         // 新增
