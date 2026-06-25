@@ -77,6 +77,8 @@ func SetupRouter() *gin.Engine {
 			protected.DELETE("/permission-rules/:id", handlers.DeletePermissionRule)
 			protected.POST("/permission-rules/systems", handlers.AddSystemToPermissions)
 			protected.DELETE("/permission-rules/systems", handlers.RemoveSystemFromPermissions)
+			protected.PUT("/permission-rules/systems/rename", handlers.RenameSystemInPermissions)
+			protected.POST("/permission-rules/systems/roles", handlers.ManageRolesInSystem)
 		}
 	}
 

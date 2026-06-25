@@ -202,3 +202,121 @@ func RemoveSystemFromPermissions(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移除成功", "data": gin.H{"updated_count": updatedCount}})
 }
+
+// RenameSystemInPermissions 重命名系统
+func RenameSystemInPermissions(c *gin.Context) {
+	var req struct {
+		OldName string `json:"old_name" binding:"required"`
+		NewName string `json:"new_name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	var allRules []models.PermissionRule
+	database.GetDB().Find(&allRules)
+	updatedCount := 0
+	for _, rule := range allRules {
+		var sysRules []map[string]interface{}
+		json.Unmarshal([]byte(rule.RulesJSON), &sysRules)
+		changed := false
+		for _, sr := range sysRules {
+			if name, ok := sr["system"].(string); ok && name == req.OldName {
+				sr["system"] = req.NewName
+				changed = true
+				break
+			}
+		}
+		if changed {
+			newJSON, _ := json.Marshal(sysRules)
+			database.GetDB().Model(&rule).Update("rules_json", string(newJSON))
+			updatedCount++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "重命名成功", "data": gin.H{"updated_count": updatedCount}})
+}
+
+// ManageRolesInSystem 管理系统内的角色（新增/重命名/删除）
+func ManageRolesInSystem(c *gin.Context) {
+	var req struct {
+		SystemName string `json:"system_name" binding:"required"`
+		Action     string `json:"action" binding:"required"` // add / rename / delete
+		OldName    string `json:"old_name"`                   // rename/delete时需要
+		NewName    string `json:"new_name"`                   // add/rename时需要
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	var allRules []models.PermissionRule
+	database.GetDB().Find(&allRules)
+	updatedCount := 0
+
+	for _, rule := range allRules {
+		var sysRules []map[string]interface{}
+		json.Unmarshal([]byte(rule.RulesJSON), &sysRules)
+		changed := false
+
+		for _, sr := range sysRules {
+			name, _ := sr["system"].(string)
+			if name != req.SystemName {
+				continue
+			}
+			roles, _ := sr["roles"].([]interface{})
+
+			switch req.Action {
+			case "add":
+				// 检查是否已存在
+				exists := false
+				for _, r := range roles {
+					if m, ok := r.(map[string]interface{}); ok {
+						if m["name"] == req.NewName {
+							exists = true
+							break
+						}
+					}
+				}
+				if !exists {
+					roles = append(roles, map[string]interface{}{"name": req.NewName, "enabled": false})
+					sr["roles"] = roles
+					changed = true
+				}
+			case "rename":
+				for i, r := range roles {
+					if m, ok := r.(map[string]interface{}); ok {
+						if m["name"] == req.OldName {
+							m["name"] = req.NewName
+							roles[i] = m
+							changed = true
+							break
+						}
+					}
+				}
+			case "delete":
+				newRoles := []interface{}{}
+				for _, r := range roles {
+					if m, ok := r.(map[string]interface{}); ok {
+						if m["name"] == req.OldName {
+							changed = true
+							continue
+						}
+					}
+					newRoles = append(newRoles, r)
+				}
+				sr["roles"] = newRoles
+			}
+			break
+		}
+
+		if changed {
+			newJSON, _ := json.Marshal(sysRules)
+			database.GetDB().Model(&rule).Update("rules_json", string(newJSON))
+			updatedCount++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "操作成功", "data": gin.H{"updated_count": updatedCount}})
+}

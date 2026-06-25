@@ -4,8 +4,7 @@
       <div slot="header" class="page-header">
         <span>岗位权限设置规则</span>
         <div class="page-header-right">
-          <el-button type="success" size="small" icon="el-icon-plus" @click="showAddPosition = true">添加岗位</el-button>
-          <el-button type="warning" size="small" icon="el-icon-plus" @click="showAddSystem = true">添加系统</el-button>
+          <el-button type="primary" size="small" icon="el-icon-setting" @click="showManagement = true">管理配置</el-button>
           <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
@@ -20,11 +19,7 @@
         >
           <el-table-column label="岗位" width="200" fixed>
             <template slot-scope="{ row }">
-              <div class="position-cell">
-                <strong>{{ row.position_name }}</strong>
-                <el-button type="danger" size="mini" icon="el-icon-delete" circle
-                  @click="confirmDeletePosition(row)" title="删除岗位"></el-button>
-              </div>
+              <strong>{{ row.position_name }}</strong>
             </template>
           </el-table-column>
 
@@ -34,13 +29,6 @@
             :label="sys"
             min-width="180"
           >
-            <template slot="header" slot-scope="{ column }">
-              <div class="system-header">
-                <span>{{ column.label }}</span>
-                <el-button type="danger" size="mini" icon="el-icon-delete" circle
-                  @click="confirmDeleteSystem(column.label)" title="删除系统"></el-button>
-              </div>
-            </template>
             <template slot-scope="{ row }">
               <div class="cell-roles">
                 <el-tag
@@ -62,47 +50,8 @@
       </div>
     </el-card>
 
-    <!-- 添加岗位弹窗 -->
-    <el-dialog title="添加岗位" :visible.sync="showAddPosition" width="400px">
-      <el-form :model="addPositionForm">
-        <el-form-item label="岗位名称" required>
-          <el-input v-model="addPositionForm.name" placeholder="请输入岗位名称" />
-        </el-form-item>
-      </el-form>
-      <span slot="footer">
-        <el-button @click="showAddPosition = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleAddPosition">确定</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 添加系统弹窗 -->
-    <el-dialog title="添加系统" :visible.sync="showAddSystem" width="500px">
-      <el-form :model="addSystemForm">
-        <el-form-item label="系统名称" required>
-          <el-input v-model="addSystemForm.name" placeholder="请输入系统名称" />
-        </el-form-item>
-        <el-form-item label="角色列表" required>
-          <el-input
-            v-model="addSystemForm.roles"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入角色名称，用逗号分隔，例如：管理员,操作员,审计员"
-          />
-          <span class="form-tip">多个角色请用逗号（,）分隔</span>
-        </el-form-item>
-      </el-form>
-      <span slot="footer">
-        <el-button @click="showAddSystem = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleAddSystem">确定</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 保存确认弹窗 -->
-    <el-dialog
-      title="保存确认"
-      :visible.sync="dialogVisible"
-      width="400px"
-    >
+    <!-- 角色授权/取消授权确认弹窗 -->
+    <el-dialog title="保存确认" :visible.sync="dialogVisible" width="400px">
       <div>
         <p><strong>岗位：</strong>{{ editingPosition }}</p>
         <p><strong>系统：</strong>{{ editingSystem }}</p>
@@ -114,11 +63,88 @@
         <el-button type="primary" :loading="saving" @click="confirmSave">确定</el-button>
       </span>
     </el-dialog>
+
+    <!-- ==================== 管理配置弹窗 ==================== -->
+    <el-dialog title="管理配置" :visible.sync="showManagement" width="750px" top="5vh">
+      <el-tabs v-model="activeTab">
+        <!-- Tab 1: 岗位管理 -->
+        <el-tab-pane label="岗位管理" name="position">
+          <div class="mgmt-add-row">
+            <el-input v-model="posInput" placeholder="输入岗位名称" size="small" class="mgmt-input" @keyup.enter="addPosition" />
+            <el-button type="primary" size="small" @click="addPosition">添加</el-button>
+          </div>
+          <el-table :data="rules" stripe size="small" max-height="380">
+            <el-table-column prop="position_name" label="岗位名称" min-width="200" />
+            <el-table-column label="操作" width="160">
+              <template slot-scope="{ row }">
+                <el-button size="mini" type="text" @click="startRenamePosition(row)">重命名</el-button>
+                <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDeletePosition(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+
+        <!-- Tab 2: 系统管理 -->
+        <el-tab-pane label="系统管理" name="system">
+          <div class="mgmt-add-row">
+            <el-input v-model="sysInput" placeholder="输入系统名称" size="small" class="mgmt-input" @keyup.enter="addSystem" />
+            <el-button type="primary" size="small" @click="addSystem">添加</el-button>
+          </div>
+          <el-table :data="systemList" stripe size="small" max-height="380">
+            <el-table-column prop="name" label="系统名称" min-width="200" />
+            <el-table-column label="操作" width="160">
+              <template slot-scope="{ row }">
+                <el-button size="mini" type="text" @click="startRenameSystem(row)">重命名</el-button>
+                <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDeleteSystem(row.name)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+
+        <!-- Tab 3: 角色管理 -->
+        <el-tab-pane label="角色管理" name="role">
+          <div class="mgmt-field">
+            <label class="mgmt-label">选择系统：</label>
+            <el-select v-model="selectedSystemForRole" placeholder="请选择系统" size="small" @change="loadRolesForSystem">
+              <el-option v-for="sys in systems" :key="sys" :label="sys" :value="sys" />
+            </el-select>
+          </div>
+          <div class="mgmt-add-row" style="margin-top:12px">
+            <el-input v-model="roleInput" placeholder="输入角色名称" size="small" class="mgmt-input" @keyup.enter="addRole" />
+            <el-button type="primary" size="small" @click="addRole" :disabled="!selectedSystemForRole">添加</el-button>
+          </div>
+          <el-table v-if="selectedSystemForRole && currentRoles.length > 0" :data="currentRoles" stripe size="small" max-height="250">
+            <el-table-column prop="name" label="角色名称" min-width="200" />
+            <el-table-column label="操作" width="160">
+              <template slot-scope="{ row }">
+                <el-button size="mini" type="text" @click="startRenameRole(row)">重命名</el-button>
+                <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDeleteRole(row.name)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty v-if="selectedSystemForRole && currentRoles.length === 0" description="暂无角色" />
+          <div v-if="!selectedSystemForRole" style="color:#909399;text-align:center;padding:40px 0">请先选择系统</div>
+        </el-tab-pane>
+      </el-tabs>
+    </el-dialog>
+
+    <!-- 重命名弹窗（复用：岗位/系统/角色） -->
+    <el-dialog :title="renameTitle" :visible.sync="renameDialogVisible" width="400px">
+      <el-form>
+        <el-form-item :label="renameLabel" required>
+          <el-input v-model="renameValue" @keyup.enter="confirmRename" />
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="renameDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmRename">确定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions } from '@/api/permission'
+import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions, renameSystemInPermissions, manageRolesInSystem } from '@/api/permission'
 
 export default {
   name: 'PermissionList',
@@ -129,20 +155,40 @@ export default {
       rules: [],
       // 所有系统名称（按顺序从数据中提取）
       systems: [],
-      // 添加岗位
-      showAddPosition: false,
-      addPositionForm: { name: '' },
-      // 添加系统
-      showAddSystem: false,
-      addSystemForm: { name: '', roles: '' },
-      // 编辑相关
+      // 角色授权相关
       dialogVisible: false,
       editingPosition: '',
       editingSystem: '',
       editingRoleName: '',
       editingNewStatus: false,
       editingRuleId: null,
-      pendingChanges: []
+      // 管理配置弹窗
+      showManagement: false,
+      activeTab: 'position',
+      posInput: '',
+      sysInput: '',
+      selectedSystemForRole: '',
+      roleInput: '',
+      currentRoles: [],
+      // 重命名弹窗
+      renameDialogVisible: false,
+      renameTarget: null, // { type: 'position'|'system'|'role', id?, oldName?, systemName? }
+      renameValue: ''
+    }
+  },
+  computed: {
+    systemList() {
+      return this.systems.map(name => ({ name }))
+    },
+    renameTitle() {
+      if (!this.renameTarget) return '重命名'
+      const map = { position: '重命名岗位', system: '重命名系统', role: '重命名角色' }
+      return map[this.renameTarget.type] || '重命名'
+    },
+    renameLabel() {
+      if (!this.renameTarget) return ''
+      const map = { position: '岗位名称', system: '系统名称', role: '角色名称' }
+      return `新${map[this.renameTarget.type]}`
     }
   },
   mounted() {
@@ -172,56 +218,6 @@ export default {
       const sysRule = row._rules.find(sr => sr.system === systemName)
       return sysRule ? sysRule.roles : []
     },
-    async handleAddPosition() {
-      const name = this.addPositionForm.name.trim()
-      if (!name) {
-        this.$message.warning('请输入岗位名称')
-        return
-      }
-      this.saving = true
-      try {
-        await createPermissionRule({ position_name: name })
-        this.$message.success('岗位添加成功')
-        this.showAddPosition = false
-        this.addPositionForm.name = ''
-        await this.fetchData()
-      } catch (e) {
-        this.$message.error('添加失败')
-        console.error(e)
-      } finally {
-        this.saving = false
-      }
-    },
-    async handleAddSystem() {
-      const name = this.addSystemForm.name.trim()
-      const rolesStr = this.addSystemForm.roles.trim()
-      if (!name) {
-        this.$message.warning('请输入系统名称')
-        return
-      }
-      if (!rolesStr) {
-        this.$message.warning('请输入角色列表')
-        return
-      }
-      const roles = rolesStr.split(',').map(s => s.trim()).filter(s => s)
-      if (roles.length === 0) {
-        this.$message.warning('请输入有效的角色名称')
-        return
-      }
-      this.saving = true
-      try {
-        await addSystemToPermissions({ system_name: name, roles })
-        this.$message.success('系统添加成功')
-        this.showAddSystem = false
-        this.addSystemForm = { name: '', roles: '' }
-        await this.fetchData()
-      } catch (e) {
-        this.$message.error('添加失败')
-        console.error(e)
-      } finally {
-        this.saving = false
-      }
-    },
     toggleRole(row, systemName, role) {
       this.editingRuleId = row.id
       this.editingPosition = row.position_name
@@ -229,28 +225,6 @@ export default {
       this.editingRoleName = role.name
       this.editingNewStatus = !role.enabled
       this.dialogVisible = true
-    },
-    confirmDeletePosition(row) {
-      this.$confirm(`确定要删除岗位「${row.position_name}」吗？`, '删除确认', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(async () => {
-        await deletePermissionRule(row.id)
-        this.$message.success('删除成功')
-        this.fetchData()
-      }).catch(() => {})
-    },
-    confirmDeleteSystem(systemName) {
-      this.$confirm(`确定要删除系统「${systemName}」吗？将从所有岗位移除该系统及其角色。`, '删除确认', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(async () => {
-        await removeSystemFromPermissions({ system_name: systemName })
-        this.$message.success('删除成功')
-        this.fetchData()
-      }).catch(() => {})
     },
     async confirmSave() {
       this.saving = true
@@ -280,6 +254,161 @@ export default {
       } finally {
         this.saving = false
       }
+    },
+
+    // ---- 岗位管理 ----
+    async addPosition() {
+      const name = this.posInput.trim()
+      if (!name) {
+        this.$message.warning('请输入岗位名称')
+        return
+      }
+      try {
+        await createPermissionRule({ position_name: name })
+        this.$message.success('岗位添加成功')
+        this.posInput = ''
+        await this.fetchData()
+      } catch (e) {
+        this.$message.error('添加失败')
+        console.error(e)
+      }
+    },
+    confirmDeletePosition(row) {
+      this.$confirm(`确定要删除岗位「${row.position_name}」吗？`, '删除确认', {
+        confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+      }).then(async () => {
+        await deletePermissionRule(row.id)
+        this.$message.success('删除成功')
+        this.fetchData()
+      }).catch(() => {})
+    },
+    startRenamePosition(row) {
+      this.renameTarget = { type: 'position', id: row.id, oldName: row.position_name }
+      this.renameValue = row.position_name
+      this.renameDialogVisible = true
+    },
+
+    // ---- 系统管理 ----
+    async addSystem() {
+      const name = this.sysInput.trim()
+      if (!name) {
+        this.$message.warning('请输入系统名称')
+        return
+      }
+      try {
+        await addSystemToPermissions({ system_name: name, roles: [] })
+        this.$message.success('系统添加成功（可到角色管理添加角色）')
+        this.sysInput = ''
+        await this.fetchData()
+      } catch (e) {
+        this.$message.error('添加失败')
+        console.error(e)
+      }
+    },
+    confirmDeleteSystem(systemName) {
+      this.$confirm(`确定要删除系统「${systemName}」吗？将从所有岗位移除该系统及其角色。`, '删除确认', {
+        confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+      }).then(async () => {
+        await removeSystemFromPermissions({ system_name: systemName })
+        this.$message.success('删除成功')
+        if (this.selectedSystemForRole === systemName) {
+          this.selectedSystemForRole = ''
+          this.currentRoles = []
+        }
+        this.fetchData()
+      }).catch(() => {})
+    },
+    startRenameSystem(row) {
+      this.renameTarget = { type: 'system', oldName: row.name }
+      this.renameValue = row.name
+      this.renameDialogVisible = true
+    },
+
+    // ---- 角色管理 ----
+    loadRolesForSystem() {
+      if (!this.selectedSystemForRole || this.rules.length === 0) {
+        this.currentRoles = []
+        return
+      }
+      const sysRule = this.rules[0]._rules.find(sr => sr.system === this.selectedSystemForRole)
+      this.currentRoles = sysRule ? sysRule.roles.map(r => ({ ...r })) : []
+    },
+    async addRole() {
+      const name = this.roleInput.trim()
+      if (!name) {
+        this.$message.warning('请输入角色名称')
+        return
+      }
+      // 检查是否已存在
+      if (this.currentRoles.some(r => r.name === name)) {
+        this.$message.warning('该角色已存在')
+        return
+      }
+      try {
+        await manageRolesInSystem({ system_name: this.selectedSystemForRole, action: 'add', new_name: name })
+        this.$message.success('角色添加成功')
+        this.roleInput = ''
+        await this.fetchData()
+        this.loadRolesForSystem()
+      } catch (e) {
+        this.$message.error('添加失败')
+        console.error(e)
+      }
+    },
+    confirmDeleteRole(roleName) {
+      this.$confirm(`确定要删除角色「${roleName}」吗？将从所有岗位中移除此角色。`, '删除确认', {
+        confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+      }).then(async () => {
+        await manageRolesInSystem({ system_name: this.selectedSystemForRole, action: 'delete', old_name: roleName })
+        this.$message.success('删除成功')
+        await this.fetchData()
+        this.loadRolesForSystem()
+      }).catch(() => {})
+    },
+    startRenameRole(row) {
+      this.renameTarget = { type: 'role', systemName: this.selectedSystemForRole, oldName: row.name }
+      this.renameValue = row.name
+      this.renameDialogVisible = true
+    },
+
+    // ---- 通用重命名 ----
+    async confirmRename() {
+      const newName = this.renameValue.trim()
+      if (!newName) {
+        this.$message.warning('名称不能为空')
+        return
+      }
+      const target = this.renameTarget
+      if (!target) return
+      if (newName === target.oldName) {
+        this.renameDialogVisible = false
+        return
+      }
+      try {
+        switch (target.type) {
+          case 'position':
+            await updatePermissionRule(target.id, { position_name: newName })
+            break
+          case 'system':
+            await renameSystemInPermissions({ old_name: target.oldName, new_name: newName })
+            break
+          case 'role':
+            await manageRolesInSystem({
+              system_name: target.systemName,
+              action: 'rename',
+              old_name: target.oldName,
+              new_name: newName
+            })
+            break
+        }
+        this.$message.success('重命名成功')
+        this.renameDialogVisible = false
+        await this.fetchData()
+        if (target.type === 'role') this.loadRolesForSystem()
+      } catch (e) {
+        this.$message.error('重命名失败')
+        console.error(e)
+      }
     }
   }
 }
@@ -295,12 +424,6 @@ export default {
 .page-header-right {
   display: flex;
   gap: 8px;
-}
-
-.form-tip {
-  font-size: 12px;
-  color: #909399;
-  line-height: 1.5;
 }
 
 .table-wrapper {
@@ -329,20 +452,25 @@ export default {
   font-size: 12px;
 }
 
-.position-cell {
+.mgmt-add-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.system-header {
+.mgmt-input {
+  flex: 1;
+}
+
+.mgmt-field {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  white-space: normal;
-  word-break: break-all;
-  line-height: 1.3;
+  gap: 8px;
+}
+
+.mgmt-label {
+  white-space: nowrap;
+  color: #606266;
+  font-size: 14px;
 }
 </style>

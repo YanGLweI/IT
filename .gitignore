@@ -8,6 +8,9 @@ client/dist/
 # Uploads
 server/uploads/
 
+# Qoder AI metadata
+.qoder/
+
 # Logs
 server/server.log
 

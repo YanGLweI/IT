@@ -23,3 +23,11 @@ export function deletePermissionRule(id) {
 export function removeSystemFromPermissions(data) {
   return request.delete('/permission-rules/systems', { data })
 }
+
+export function renameSystemInPermissions(data) {
+  return request.put('/permission-rules/systems/rename', data)
+}
+
+export function manageRolesInSystem(data) {
+  return request.post('/permission-rules/systems/roles', data)
+}
