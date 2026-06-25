@@ -147,8 +147,8 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 
 	// ---- Row 1: 标题 ----
 	f.SetCellValue(sheetName, "A1", "用户确认表")
-	f.MergeCell(sheetName, "A1", "E1")
-	f.SetCellStyle(sheetName, "A1", "E1", titleStyle)
+	f.MergeCell(sheetName, "A1", "F1")
+	f.SetCellStyle(sheetName, "A1", "F1", titleStyle)
 	f.SetRowHeight(sheetName, 1, 36)
 
 	// ---- Row 2: 部门信息 ----
@@ -156,19 +156,19 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	f.MergeCell(sheetName, "A2", "B2")
 	f.SetCellStyle(sheetName, "A2", "B2", headerInfoStyle)
 
-	f.SetCellValue(sheetName, "C2", fmt.Sprintf("确认人（部门领导）：                         确认日期：                    %s", yearMonth))
-	f.MergeCell(sheetName, "C2", "E2")
-	f.SetCellStyle(sheetName, "C2", "E2", headerInfoStyle)
+	f.SetCellValue(sheetName, "C2", "确认人（部门领导）：                         确认日期：")
+	f.MergeCell(sheetName, "C2", "F2")
+	f.SetCellStyle(sheetName, "C2", "F2", headerInfoStyle)
 	f.SetRowHeight(sheetName, 2, 30)
 
 	// ---- Row 3: 备注 ----
 	f.SetCellValue(sheetName, "A3", "注：A:保留  B:不保留  C:权限有误")
-	f.MergeCell(sheetName, "A3", "E3")
-	f.SetCellStyle(sheetName, "A3", "E3", headerInfoStyle)
+	f.MergeCell(sheetName, "A3", "F3")
+	f.SetCellStyle(sheetName, "A3", "F3", headerInfoStyle)
 	f.SetRowHeight(sheetName, 3, 22)
 
 	// ---- Row 4: 表头 ----
-	headers := []string{"序号", "姓名", "岗位", "系统", "角色"}
+	headers := []string{"序号", "姓名", "岗位", "系统", "角色", "确认结果"}
 	for i, h := range headers {
 		col := string(rune('A' + i))
 		f.SetCellValue(sheetName, col+"4", h)
@@ -215,7 +215,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 			f.SetCellValue(sheetName, fmt.Sprintf("C%d", rowNum), user.PositionName)
 			f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), "-")
 			f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), "-")
-			for _, col := range []string{"A", "B", "C", "D", "E"} {
+			for _, col := range []string{"A", "B", "C", "D", "E", "F"} {
 				f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 			}
 			f.SetCellStyle(sheetName, fmt.Sprintf("B%d", rowNum), fmt.Sprintf("B%d", rowNum), nameCellStyle)
@@ -235,7 +235,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), vr.System)
 				f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), vr.Roles)
 
-				for _, col := range []string{"A", "B", "C", "D", "E"} {
+				for _, col := range []string{"A", "B", "C", "D", "E", "F"} {
 					f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 				}
 				f.SetCellStyle(sheetName, fmt.Sprintf("B%d", rowNum), fmt.Sprintf("B%d", rowNum), nameCellStyle)
@@ -257,8 +257,8 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	// 如果没有用户，显示空行提示
 	if len(users) == 0 {
 		f.SetCellValue(sheetName, "A5", "（该部门暂无用户）")
-		f.MergeCell(sheetName, "A5", "E5")
-		f.SetCellStyle(sheetName, "A5", "E5", dataCellStyle)
+		f.MergeCell(sheetName, "A5", "F5")
+		f.SetCellStyle(sheetName, "A5", "F5", dataCellStyle)
 		rowNum = 6
 	}
 
@@ -266,10 +266,10 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	rowNum++
 
 	// ---- 复核行 ----
-	footerText := fmt.Sprintf("复核部门：IT          复核人：                         复核日期：                    ")
+	footerText := "复核部门：IT          复核人：                         复核日期："
 	f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), footerText)
-	f.MergeCell(sheetName, fmt.Sprintf("A%d", rowNum), fmt.Sprintf("E%d", rowNum))
-	f.SetCellStyle(sheetName, fmt.Sprintf("A%d", rowNum), fmt.Sprintf("E%d", rowNum), footerStyle)
+	f.MergeCell(sheetName, fmt.Sprintf("A%d", rowNum), fmt.Sprintf("F%d", rowNum))
+	f.SetCellStyle(sheetName, fmt.Sprintf("A%d", rowNum), fmt.Sprintf("F%d", rowNum), footerStyle)
 	f.SetRowHeight(sheetName, rowNum, 30)
 
 	// ---- 设置列宽 ----
@@ -278,6 +278,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	f.SetColWidth(sheetName, "C", "C", 20)  // 岗位
 	f.SetColWidth(sheetName, "D", "D", 22)  // 系统
 	f.SetColWidth(sheetName, "E", "E", 35)  // 角色
+	f.SetColWidth(sheetName, "F", "F", 14)  // 确认结果
 
 	// 输出Excel文件
 	fileName := fmt.Sprintf("IT07-2.0 用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)
