@@ -6,7 +6,7 @@
         <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增区域</el-button>
       </div>
       <el-table :data="regions" border stripe>
-        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="name" label="区域名称" />
         <el-table-column prop="description" label="描述" />
         <el-table-column label="操作" width="200">

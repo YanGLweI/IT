@@ -79,6 +79,7 @@ func UpdateSftpAccount(c *gin.Context) {
 
 	var input struct {
 		AccountName     string `json:"account_name" binding:"required"`
+		ServerID        uint   `json:"server_id" binding:"required"`
 		CreatedTime     string `json:"created_time"`
 		Validity        string `json:"validity"`
 		PermissionsJSON string `json:"permissions_json"`
@@ -91,15 +92,23 @@ func UpdateSftpAccount(c *gin.Context) {
 		return
 	}
 
-	// 检查同服务器下账号名是否重复（排除自己）
+	// 检查新服务器是否存在
+	var newServer models.SftpServer
+	if err := database.GetDB().First(&newServer, input.ServerID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "目标服务器不存在"})
+		return
+	}
+
+	// 检查新服务器下账号名是否重复（排除自己）
 	var count int64
-	database.GetDB().Model(&models.SftpAccount{}).Where("server_id = ? AND account_name = ? AND id != ?", account.ServerID, input.AccountName, id).Count(&count)
+	database.GetDB().Model(&models.SftpAccount{}).Where("server_id = ? AND account_name = ? AND id != ?", input.ServerID, input.AccountName, id).Count(&count)
 	if count > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "该服务器下已存在同名账号"})
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "目标服务器下已存在同名账号"})
 		return
 	}
 
 	account.AccountName = input.AccountName
+	account.ServerID = input.ServerID
 	account.CreatedTime = input.CreatedTime
 	account.Validity = input.Validity
 	account.PermissionsJSON = input.PermissionsJSON

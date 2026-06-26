@@ -33,6 +33,7 @@
         style="width: 100%"
         v-loading="loading"
       >
+        <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="account_name" label="账号名" width="150" />
         <el-table-column prop="created_time" label="创建时间" width="120" />
         <el-table-column prop="validity" label="有效期" width="120" />
