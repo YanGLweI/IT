@@ -23,6 +23,17 @@ export function deleteMonthlyCheck(id, dualToken) {
   return request.delete(`/monthly-checks/${id}`, config)
 }
 
+// 更新月度检查记录（仅描述）
+export function updateMonthlyCheck(id, formData, dualToken) {
+  const config = {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }
+  if (dualToken) {
+    config.headers['X-Dual-Control-Token'] = dualToken
+  }
+  return request.put(`/monthly-checks/${id}`, formData, config)
+}
+
 // 获取预览URL
 export function getMonthlyCheckPreviewUrl(id) {
   return `/api/monthly-checks/${id}/preview`

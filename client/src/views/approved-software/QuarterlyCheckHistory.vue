@@ -33,11 +33,12 @@
         <el-table-column label="上传时间" width="160" align="center">
           <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template slot-scope="{ row }">
             <div class="op-btns">
               <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
               <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
+              <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
               <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
@@ -46,17 +47,17 @@
     </el-card>
 
     <!-- 上传弹窗 -->
-    <el-dialog title="上传季度检查记录" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog :title="isEdit ? '编辑季度检查记录' : '上传季度检查记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="年份" prop="year">
-              <el-input-number v-model="uploadForm.year" :min="2020" :max="2100" :step="1" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="uploadForm.year" :min="2020" :max="2100" :step="1" controls-position="right" style="width: 100%" :disabled="isEdit" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="季度" prop="quarter">
-              <el-select v-model="uploadForm.quarter" placeholder="请选择" style="width: 100%">
+              <el-select v-model="uploadForm.quarter" placeholder="请选择" style="width: 100%" :disabled="isEdit">
                 <el-option v-for="q in 4" :key="q" :label="'Q' + q" :value="q" />
               </el-select>
             </el-form-item>
@@ -65,7 +66,7 @@
         <el-form-item label="描述" prop="description">
           <el-input v-model="uploadForm.description" type="textarea" :rows="2" placeholder="输入描述，便于后续搜索" />
         </el-form-item>
-        <el-form-item label="文件" prop="file">
+        <el-form-item label="文件" prop="file" v-if="!isEdit">
           <el-upload
             ref="uploader"
             :auto-upload="false"
@@ -81,10 +82,11 @@
             <div slot="tip" class="el-upload__tip">仅支持 PDF 格式文件</div>
           </el-upload>
         </el-form-item>
+        <el-alert v-else title="编辑模式下不可修改文件" type="info" :closable="false" show-icon />
       </el-form>
       <span slot="footer">
         <el-button @click="showUpload = false">取消</el-button>
-        <el-button type="primary" :loading="uploading" @click="handleUpload">确定上传</el-button>
+        <el-button type="primary" :loading="uploading" @click="handleUpload">{{ isEdit ? '保存' : '确定上传' }}</el-button>
       </span>
     </el-dialog>
 
@@ -99,7 +101,7 @@
 </template>
 
 <script>
-import { getQuarterlyChecks, createQuarterlyCheck, deleteQuarterlyCheck, getQuarterlyCheckPreviewUrl, getQuarterlyCheckDownloadUrl } from '@/api/quarterly_check'
+import { getQuarterlyChecks, createQuarterlyCheck, updateQuarterlyCheck, deleteQuarterlyCheck, getQuarterlyCheckPreviewUrl, getQuarterlyCheckDownloadUrl } from '@/api/quarterly_check'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -115,6 +117,8 @@ export default {
       yearOptions: Array.from({ length: 10 }, (_, i) => now.getFullYear() - i),
       // 上传
       showUpload: false,
+      isEdit: false,
+      editingId: null,
       uploading: false,
       uploadForm: {
         year: now.getFullYear(),
@@ -159,7 +163,8 @@ export default {
     handleUpload() {
       this.$refs.uploadFormRef.validate(async valid => {
         if (!valid) return
-        if (!this.selectedFile) {
+        // 上传模式需要文件，编辑模式不需要
+        if (!this.isEdit && !this.selectedFile) {
           this.$message.warning('请选择PDF文件')
           return
         }
@@ -169,11 +174,18 @@ export default {
           formData.append('year', this.uploadForm.year)
           formData.append('quarter', this.uploadForm.quarter)
           formData.append('description', this.uploadForm.description || '')
-          formData.append('file', this.selectedFile)
+          if (this.selectedFile) {
+            formData.append('file', this.selectedFile)
+          }
 
           const dualToken = await this.$refs.dualControl.open()
-          await createQuarterlyCheck(formData, dualToken)
-          this.$message.success('上传成功')
+          if (this.isEdit) {
+            await updateQuarterlyCheck(this.editingId, formData, dualToken)
+            this.$message.success('更新成功')
+          } else {
+            await createQuarterlyCheck(formData, dualToken)
+            this.$message.success('上传成功')
+          }
           this.showUpload = false
           this.resetUploadForm()
           this.fetchData()
@@ -186,6 +198,8 @@ export default {
     },
     resetUploadForm() {
       const now = new Date()
+      this.isEdit = false
+      this.editingId = null
       this.uploadForm = {
         year: now.getFullYear(),
         quarter: Math.ceil((now.getMonth() + 1) / 3),
@@ -196,6 +210,16 @@ export default {
       if (this.$refs.uploader) {
         this.$refs.uploader.clearFiles()
       }
+    },
+    handleEdit(row) {
+      this.isEdit = true
+      this.editingId = row.id
+      this.uploadForm = {
+        year: row.year,
+        quarter: row.quarter,
+        description: row.description || ''
+      }
+      this.showUpload = true
     },
     async handlePreview(row) {
       const url = getQuarterlyCheckPreviewUrl(row.id)

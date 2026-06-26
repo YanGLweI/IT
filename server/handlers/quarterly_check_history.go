@@ -153,6 +153,34 @@ func DeleteQuarterlyCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
 
+// UpdateQuarterlyCheck 更新季度检查记录（仅描述）
+func UpdateQuarterlyCheck(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var record models.QuarterlyCheckHistory
+	if err := database.GetDB().First(&record, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "记录不存在"})
+		return
+	}
+
+	description := c.PostForm("description")
+
+	oldRecord := record
+	record.Description = description
+
+	if err := database.GetDB().Save(&record).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})
+		return
+	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("quarterly_check_history")
+	details := services.DiffStructs(oldRecord, record, fieldLabels)
+	services.LogOperation(username, displayName, "更新季度检查记录", "quarterly_check_history", record.ID, record.FileName, approver, c.ClientIP(), details)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": record})
+}
+
 // DownloadQuarterlyCheck 下载季度检查文件
 func DownloadQuarterlyCheck(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))

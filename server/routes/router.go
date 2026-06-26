@@ -164,10 +164,12 @@ func SetupRouter() *gin.Engine {
 
 				// 月度检查历史 - 写操作（需要双控）
 				dual.POST("/monthly-checks", handlers.CreateMonthlyCheck)
+				dual.PUT("/monthly-checks/:id", handlers.UpdateMonthlyCheck)
 				dual.DELETE("/monthly-checks/:id", handlers.DeleteMonthlyCheck)
 
 				// 季度检查历史 - 写操作（需要双控）
 				dual.POST("/quarterly-checks", handlers.CreateQuarterlyCheck)
+				dual.PUT("/quarterly-checks/:id", handlers.UpdateQuarterlyCheck)
 				dual.DELETE("/quarterly-checks/:id", handlers.DeleteQuarterlyCheck)
 			}
 		}
