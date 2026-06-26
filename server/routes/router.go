@@ -84,6 +84,11 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/sftp-accounts", handlers.ListSftpAccounts)
 			protected.GET("/sftp-accounts/export-confirmation", handlers.ExportSftpConfirmation)
 
+			// 第三方应用管理 - 查询（不需要双控）
+			protected.GET("/approved-software", handlers.ListApprovedSoftware)
+			protected.GET("/asset-software", handlers.ListAssetSoftware)
+			protected.GET("/asset-software/:id/links", handlers.GetAssetSoftwareLinks)
+
 			// ============ 双控保护接口（需要JWT + 双控验证）============
 			dual := protected.Group("")
 			dual.Use(middleware.DualControl())
@@ -133,6 +138,12 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/sftp-accounts", handlers.CreateSftpAccount)
 				dual.PUT("/sftp-accounts/:id", handlers.UpdateSftpAccount)
 				dual.DELETE("/sftp-accounts/:id", handlers.DeleteSftpAccount)
+
+				// 第三方应用管理 - 写操作（需要双控）
+				dual.POST("/approved-software", handlers.CreateApprovedSoftware)
+				dual.PUT("/approved-software/:id", handlers.UpdateApprovedSoftware)
+				dual.DELETE("/approved-software/:id", handlers.DeleteApprovedSoftware)
+				dual.PUT("/asset-software/:id/links", handlers.UpdateAssetSoftwareLinks)
 			}
 		}
 	}

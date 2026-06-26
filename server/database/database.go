@@ -38,6 +38,8 @@ func InitDB() {
 		&models.UserPermission{},
 		&models.SftpServer{},
 		&models.SftpAccount{},
+		&models.ApprovedSoftware{},
+		&models.AssetSoftware{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

@@ -59,6 +59,20 @@
             <span>SFTP账号一览</span>
           </el-menu-item>
         </el-submenu>
+        <el-submenu index="third-party">
+          <template slot="title">
+            <i class="el-icon-apple"></i>
+            <span>第三方应用</span>
+          </template>
+          <el-menu-item index="/approved-software">
+            <i class="el-icon-document-checked"></i>
+            <span>核准软件目录</span>
+          </el-menu-item>
+          <el-menu-item index="/asset-software">
+            <i class="el-icon-s-grid"></i>
+            <span>资产对应表</span>
+          </el-menu-item>
+        </el-submenu>
       </el-menu>
     </el-aside>
     <el-container>

@@ -27,7 +27,7 @@
         <el-table-column prop="computer_name" label="计算机名" sortable="custom" />
         <el-table-column prop="ip_address" label="IP地址" sortable="custom" />
         <el-table-column prop="os_type" label="操作系统" sortable="custom" />
-        <el-table-column prop="purpose" label="用途" />
+        <el-table-column prop="purpose" label="用途" show-overflow-tooltip/>
         <el-table-column prop="asset_level" label="资产等级" width="100" sortable="custom">
           <template slot-scope="scope">
             <el-tag v-if="scope.row.asset_level" size="small">{{ scope.row.asset_level }}</el-tag>

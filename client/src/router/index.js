@@ -24,7 +24,9 @@ const routes = [
       { path: 'topology', name: 'Topology', component: () => import('../views/topology/TopologyView.vue'), meta: { title: '网络拓扑图' } },
       { path: 'permissions', name: 'Permissions', component: () => import('../views/permission/PermissionList.vue'), meta: { title: '岗位权限设置' } },
       { path: 'user-permissions', name: 'UserPermissions', component: () => import('../views/user-permission/UserPermissionList.vue'), meta: { title: '用户权限一览' } },
-      { path: 'sftp-accounts', name: 'SftpAccounts', component: () => import('../views/sftp/SftpAccountList.vue'), meta: { title: 'SFTP账号一览' } }
+      { path: 'sftp-accounts', name: 'SftpAccounts', component: () => import('../views/sftp/SftpAccountList.vue'), meta: { title: 'SFTP账号一览' } },
+      { path: 'approved-software', name: 'ApprovedSoftware', component: () => import('../views/approved-software/ApprovedSoftwareList.vue'), meta: { title: '核准软件目录' } },
+      { path: 'asset-software', name: 'AssetSoftware', component: () => import('../views/approved-software/AssetSoftwareList.vue'), meta: { title: '资产对应表' } }
     ]
   }
 ]
