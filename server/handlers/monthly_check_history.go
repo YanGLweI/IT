@@ -114,7 +114,7 @@ func CreateMonthlyCheck(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, displayName, _ := services.GetUserContext(c)
+	username, displayName, approver := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "Year", FieldLabel: "年份", NewValue: strconv.Itoa(year)},
 		{FieldName: "Month", FieldLabel: "月份", NewValue: strconv.Itoa(month)},
@@ -122,7 +122,7 @@ func CreateMonthlyCheck(c *gin.Context) {
 		{FieldName: "FileName", FieldLabel: "文件名", NewValue: record.FileName},
 		{FieldName: "FileSize", FieldLabel: "文件大小", NewValue: fmt.Sprintf("%d", record.FileSize)},
 	}
-	services.LogOperation(username, displayName, "上传月度检查记录", "monthly_check_history", record.ID, record.FileName, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "上传月度检查记录", "monthly_check_history", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": record})
 }
