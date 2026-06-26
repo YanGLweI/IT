@@ -5,7 +5,7 @@
         <span>SFTP账号一览</span>
         <div class="page-header-right">
           <el-button type="primary" size="small" icon="el-icon-setting" @click="showServerManage = true">配置管理</el-button>
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openAccountForm" :disabled="servers.length === 0">新增账号</el-button>
+          <el-button type="primary" size="small" icon="el-icon-plus" @click="openAccountForm()" :disabled="servers.length === 0">新增账号</el-button>
           <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
