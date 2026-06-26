@@ -204,8 +204,10 @@ export default {
         const res = await getSftpServers()
         this.servers = res.data || []
         
-        // 如果有服务器且当前没有选中，选中第一个
-        if (this.servers.length > 0 && !this.activeServerId) {
+        // 检查当前选中的服务器是否仍然有效
+        const currentValid = this.activeServerId !== '' && this.servers.some(s => String(s.id) === this.activeServerId)
+        
+        if (this.servers.length > 0 && !currentValid) {
           this.activeServerId = String(this.servers[0].id)
           await this.$nextTick()
           await this.fetchAccounts()
