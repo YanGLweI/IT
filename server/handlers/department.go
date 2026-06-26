@@ -6,6 +6,7 @@ import (
 
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -49,6 +50,15 @@ func CreateDepartment(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "Name", FieldLabel: "名称", NewValue: dept.Name},
+		{FieldName: "SortOrder", FieldLabel: "排序", NewValue: strconv.Itoa(dept.SortOrder)},
+	}
+	services.LogOperation(username, displayName, "创建部门", "department", dept.ID, dept.Name, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": dept, "message": "创建成功"})
 }
 
@@ -66,6 +76,9 @@ func UpdateDepartment(c *gin.Context) {
 		return
 	}
 
+	// 保存旧值快照
+	oldDept := dept
+
 	var req struct {
 		Name string `json:"name" binding:"required"`
 	}
@@ -81,15 +94,18 @@ func UpdateDepartment(c *gin.Context) {
 		return
 	}
 
-	// 更新部门名称，同时更新关联的用户权限表中的岗位名称（如果有用户引用了旧岗位名）
-	oldName := dept.Name
+	// 更新部门名称
 	dept.Name = req.Name
 	if err := database.GetDB().Save(&dept).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})
 		return
 	}
 
-	_ = oldName // 部门改名不影响用户的岗位字段（岗位来自 permission_rules，不是部门名）
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("department")
+	details := services.DiffStructs(oldDept, dept, fieldLabels)
+	services.LogOperation(username, displayName, "更新部门", "department", dept.ID, dept.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": dept, "message": "更新成功"})
 }
@@ -99,6 +115,13 @@ func DeleteDepartment(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的部门ID"})
+		return
+	}
+
+	// 获取部门信息用于日志记录
+	var dept models.Department
+	if database.GetDB().First(&dept, id).Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "部门不存在"})
 		return
 	}
 
@@ -118,6 +141,13 @@ func DeleteDepartment(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("department")
+	details := services.DiffStructs(dept, models.Department{}, fieldLabels)
+	services.LogOperation(username, displayName, "删除部门", "department", dept.ID, dept.Name, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
 
@@ -179,6 +209,15 @@ func AddDepartmentPosition(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "添加失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "DepartmentID", FieldLabel: "部门ID", NewValue: strconv.FormatUint(id, 10)},
+		{FieldName: "PositionName", FieldLabel: "岗位名称", NewValue: pos.PositionName},
+	}
+	services.LogOperation(username, displayName, "添加岗位", "department_position", pos.ID, pos.PositionName, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": pos, "message": "添加成功"})
 }
 
@@ -190,9 +229,20 @@ func RemoveDepartmentPosition(c *gin.Context) {
 		return
 	}
 
+	// 获取岗位信息用于日志记录
+	var pos models.DepartmentPosition
+	database.GetDB().First(&pos, pid)
+
 	if err := database.GetDB().Delete(&models.DepartmentPosition{}, pid).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "移除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("department_position")
+	details := services.DiffStructs(pos, models.DepartmentPosition{}, fieldLabels)
+	services.LogOperation(username, displayName, "移除岗位", "department_position", pos.ID, pos.PositionName, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移除成功"})
 }

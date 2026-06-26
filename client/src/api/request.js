@@ -32,11 +32,23 @@ request.interceptors.response.use(
   error => {
     if (error.response && error.response.status === 401) {
       // Token 无效或过期，清除并跳转登录
+      const currentPath = router.currentRoute.path
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       localStorage.removeItem('display_name')
-      router.push('/login')
-      Message.error('登录已过期，请重新登录')
+      
+      // 如果是 logout 请求，静默处理（不显示错误提示）
+      const isLogoutRequest = error.config.url === '/logout'
+      
+      // 如果当前不在登录页才跳转，避免重复导航
+      if (currentPath !== '/login' && !isLogoutRequest) {
+        router.push('/login').catch(() => {})
+      }
+      
+      // 非 logout 请求才显示错误提示
+      if (!isLogoutRequest) {
+        Message.error('登录已过期，请重新登录')
+      }
     } else {
       Message.error(error.response?.data?.message || error.message || '网络错误')
     }

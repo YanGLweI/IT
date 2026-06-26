@@ -6,6 +6,7 @@ import (
 
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,6 +41,14 @@ func CreateRegion(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "Name", FieldLabel: "名称", NewValue: region.Name},
+		{FieldName: "Description", FieldLabel: "描述", NewValue: region.Description},
+	}
+	services.LogOperation(username, displayName, "创建区域", "region", region.ID, region.Name, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": region})
 }
 
@@ -51,6 +60,9 @@ func UpdateRegion(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "区域不存在"})
 		return
 	}
+
+	// 保存旧值快照
+	oldRegion := region
 
 	var input struct {
 		Name        string `json:"name" binding:"required"`
@@ -68,6 +80,12 @@ func UpdateRegion(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("region")
+	details := services.DiffStructs(oldRegion, region, fieldLabels)
+	services.LogOperation(username, displayName, "更新区域", "region", region.ID, region.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": region})
 }
@@ -93,6 +111,12 @@ func DeleteRegion(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("region")
+	details := services.DiffStructs(region, models.Region{}, fieldLabels)
+	services.LogOperation(username, displayName, "删除区域", "region", region.ID, region.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

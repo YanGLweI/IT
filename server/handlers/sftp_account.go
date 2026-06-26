@@ -10,6 +10,7 @@ import (
 
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/xuri/excelize/v2"
@@ -66,6 +67,20 @@ func CreateSftpAccount(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "ServerID", FieldLabel: "服务器ID", NewValue: fmt.Sprintf("%d", account.ServerID)},
+		{FieldName: "AccountName", FieldLabel: "账号名称", NewValue: account.AccountName},
+		{FieldName: "CreatedTime", FieldLabel: "创建时间", NewValue: account.CreatedTime},
+		{FieldName: "Validity", FieldLabel: "有效期", NewValue: account.Validity},
+		{FieldName: "PermissionsJSON", FieldLabel: "权限", NewValue: account.PermissionsJSON},
+		{FieldName: "ContactPerson", FieldLabel: "联系人", NewValue: account.ContactPerson},
+		{FieldName: "Department", FieldLabel: "部门", NewValue: account.Department},
+		{FieldName: "WhitelistJSON", FieldLabel: "白名单", NewValue: account.WhitelistJSON},
+	}
+	services.LogOperation(username, displayName, "创建SFTP账号", "sftp_account", account.ID, account.AccountName, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": account})
 }
 
@@ -77,6 +92,9 @@ func UpdateSftpAccount(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "账号不存在"})
 		return
 	}
+
+	// 保存旧值快照
+	oldAccount := account
 
 	var input struct {
 		AccountName     string `json:"account_name" binding:"required"`
@@ -122,6 +140,12 @@ func UpdateSftpAccount(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("sftp_account")
+	details := services.DiffStructs(oldAccount, account, fieldLabels)
+	services.LogOperation(username, displayName, "更新SFTP账号", "sftp_account", account.ID, account.AccountName, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": account})
 }
 
@@ -138,6 +162,12 @@ func DeleteSftpAccount(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("sftp_account")
+	details := services.DiffStructs(account, models.SftpAccount{}, fieldLabels)
+	services.LogOperation(username, displayName, "删除SFTP账号", "sftp_account", account.ID, account.AccountName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

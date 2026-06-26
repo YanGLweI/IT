@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +33,22 @@ func CreateApprovedSoftware(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "Name", FieldLabel: "名称", NewValue: sw.Name},
+		{FieldName: "Version", FieldLabel: "版本", NewValue: sw.Version},
+		{FieldName: "LatestVersion", FieldLabel: "最新版本", NewValue: sw.LatestVersion},
+		{FieldName: "NeedUpdate", FieldLabel: "需要更新", NewValue: fmt.Sprintf("%v", sw.NeedUpdate)},
+		{FieldName: "UpdateReason", FieldLabel: "更新原因", NewValue: sw.UpdateReason},
+		{FieldName: "Vendor", FieldLabel: "厂商", NewValue: sw.Vendor},
+		{FieldName: "VendorWebsite", FieldLabel: "厂商网站", NewValue: sw.VendorWebsite},
+		{FieldName: "LicenseType", FieldLabel: "许可证类型", NewValue: sw.LicenseType},
+		{FieldName: "Purpose", FieldLabel: "用途", NewValue: sw.Purpose},
+	}
+	services.LogOperation(username, displayName, "创建核准软件", "approved_software", sw.ID, sw.Name, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": sw})
 }
 
@@ -42,6 +60,9 @@ func UpdateApprovedSoftware(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "软件不存在"})
 		return
 	}
+
+	// 保存旧值快照
+	oldSw := sw
 
 	var input struct {
 		Name          string `json:"name" binding:"required"`
@@ -73,6 +94,13 @@ func UpdateApprovedSoftware(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("approved_software")
+	details := services.DiffStructs(oldSw, sw, fieldLabels)
+	services.LogOperation(username, displayName, "更新核准软件", "approved_software", sw.ID, sw.Name, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": sw})
 }
 
@@ -90,6 +118,13 @@ func DeleteApprovedSoftware(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("approved_software")
+	details := services.DiffStructs(sw, models.ApprovedSoftware{}, fieldLabels)
+	services.LogOperation(username, displayName, "删除核准软件", "approved_software", sw.ID, sw.Name, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
 
@@ -204,4 +239,12 @@ func UpdateAssetSoftwareLinks(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功"})
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "AssetID", FieldLabel: "资产ID", NewValue: fmt.Sprintf("%d", assetID)},
+		{FieldName: "SoftwareIDs", FieldLabel: "软件ID列表", NewValue: fmt.Sprintf("%v", input.SoftwareIDs)},
+	}
+	services.LogOperation(username, displayName, "更新资产软件关联", "asset_software", uint(assetID), asset.ComputerName, approver, c.ClientIP(), details)
 }

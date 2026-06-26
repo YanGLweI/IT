@@ -8,6 +8,7 @@ import (
 
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -116,6 +117,15 @@ func CreatePermissionRule(c *gin.Context) {
 	}
 	database.GetDB().Create(&rule)
 
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "PositionName", FieldLabel: "岗位名称", NewValue: rule.PositionName},
+		{FieldName: "SortOrder", FieldLabel: "排序", NewValue: strconv.Itoa(rule.SortOrder)},
+		{FieldName: "RulesJSON", FieldLabel: "权限规则", NewValue: rule.RulesJSON},
+	}
+	services.LogOperation(username, displayName, "创建岗位权限", "permission_rule", rule.ID, rule.PositionName, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": rule, "message": "创建成功"})
 }
 
@@ -158,6 +168,13 @@ func AddSystemToPermissions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "添加成功", "data": gin.H{"updated_count": updatedCount}})
+
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "SystemName", FieldLabel: "系统名称", NewValue: req.SystemName},
+	}
+	services.LogOperation(username, displayName, "添加系统到权限", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
 }
 
 // UpdatePermissionRule 更新岗位权限规则
@@ -165,6 +182,13 @@ func UpdatePermissionRule(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	// 获取旧值
+	var oldRule models.PermissionRule
+	if err := database.GetDB().First(&oldRule, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "岗位不存在"})
 		return
 	}
 
@@ -197,6 +221,12 @@ func UpdatePermissionRule(c *gin.Context) {
 	var rule models.PermissionRule
 	database.GetDB().First(&rule, id)
 
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("permission_rule")
+	details := services.DiffStructs(oldRule, rule, fieldLabels)
+	services.LogOperation(username, displayName, "更新岗位权限", "permission_rule", rule.ID, rule.PositionName, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": rule, "message": "更新成功"})
 }
 
@@ -208,10 +238,20 @@ func DeletePermissionRule(c *gin.Context) {
 		return
 	}
 
+	// 获取旧值用于日志
+	var rule models.PermissionRule
+	database.GetDB().First(&rule, id)
+
 	if err := database.GetDB().Delete(&models.PermissionRule{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("permission_rule")
+	details := services.DiffStructs(rule, models.PermissionRule{}, fieldLabels)
+	services.LogOperation(username, displayName, "删除岗位权限", "permission_rule", rule.ID, rule.PositionName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
@@ -247,6 +287,14 @@ func RemoveSystemFromPermissions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移除成功", "data": gin.H{"updated_count": updatedCount}})
+
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	details := []services.LogDetail{
+		{FieldName: "SystemName", FieldLabel: "系统名称", NewValue: req.SystemName},
+	}
+	services.LogOperation(username.(string), displayName.(string), "从权限移除系统", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
 }
 
 // RenameSystemInPermissions 重命名系统
@@ -282,6 +330,14 @@ func RenameSystemInPermissions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "重命名成功", "data": gin.H{"updated_count": updatedCount}})
+
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	details := []services.LogDetail{
+		{FieldName: "OldName", FieldLabel: "旧名称", OldValue: req.OldName, NewValue: req.NewName},
+	}
+	services.LogOperation(username.(string), displayName.(string), "重命名系统", "permission_rule", 0, req.OldName+"->"+req.NewName, "", c.ClientIP(), details)
 }
 
 // ManageRolesInSystem 管理系统内的角色（新增/重命名/删除）
@@ -365,6 +421,15 @@ func ManageRolesInSystem(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "操作成功", "data": gin.H{"updated_count": updatedCount}})
+
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	details := []services.LogDetail{
+		{FieldName: "SystemName", FieldLabel: "系统名称", NewValue: req.SystemName},
+		{FieldName: "Action", FieldLabel: "操作", NewValue: req.Action},
+	}
+	services.LogOperation(username.(string), displayName.(string), "管理角色", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
 }
 
 // ReorderPermissionRule 调整岗位排序（上移/下移）
@@ -411,6 +476,15 @@ func ReorderPermissionRule(c *gin.Context) {
 	database.GetDB().Model(&adjacent).Update("sort_order", tempOrder)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移动成功"})
+
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	details := []services.LogDetail{
+		{FieldName: "PositionName", FieldLabel: "岗位名称", NewValue: current.PositionName},
+		{FieldName: "Direction", FieldLabel: "方向", NewValue: req.Direction},
+	}
+	services.LogOperation(username.(string), displayName.(string), "调整岗位排序", "permission_rule", current.ID, current.PositionName, "", c.ClientIP(), details)
 }
 
 // ReorderSystemInPermissions 调整系统在所有岗位中的排序
@@ -470,4 +544,13 @@ func ReorderSystemInPermissions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移动成功", "data": gin.H{"updated_count": updatedCount}})
+
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	details := []services.LogDetail{
+		{FieldName: "SystemName", FieldLabel: "系统名称", NewValue: req.SystemName},
+		{FieldName: "Direction", FieldLabel: "方向", NewValue: req.Direction},
+	}
+	services.LogOperation(username.(string), displayName.(string), "调整系统排序", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
 }

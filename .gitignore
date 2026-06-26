@@ -4,6 +4,7 @@ server/go.sum
 
 # Build output
 client/dist/
+server/it-server
 
 # Uploads
 server/uploads/
@@ -13,6 +14,7 @@ server/uploads/
 
 # Logs
 server/server.log
+client/client.log
 
 # OS
 .DS_Store

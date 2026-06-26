@@ -37,6 +37,7 @@
         <el-form-item label="文件">
           <el-upload
             ref="uploader"
+            action=""
             :auto-upload="false"
             :on-change="handleFileChange"
             :on-remove="handleFileRemove"

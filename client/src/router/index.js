@@ -26,7 +26,9 @@ const routes = [
       { path: 'user-permissions', name: 'UserPermissions', component: () => import('../views/user-permission/UserPermissionList.vue'), meta: { title: '用户权限一览' } },
       { path: 'sftp-accounts', name: 'SftpAccounts', component: () => import('../views/sftp/SftpAccountList.vue'), meta: { title: 'SFTP账号一览' } },
       { path: 'approved-software', name: 'ApprovedSoftware', component: () => import('../views/approved-software/ApprovedSoftwareList.vue'), meta: { title: '核准软件目录' } },
-      { path: 'asset-software', name: 'AssetSoftware', component: () => import('../views/approved-software/AssetSoftwareList.vue'), meta: { title: '资产对应表' } }
+      { path: 'asset-software', name: 'AssetSoftware', component: () => import('../views/approved-software/AssetSoftwareList.vue'), meta: { title: '资产对应表' } },
+      { path: 'login-logs', name: 'LoginLogs', component: () => import('../views/log/LoginLogList.vue'), meta: { title: '登录日志' } },
+      { path: 'operation-logs', name: 'OperationLogs', component: () => import('../views/log/OperationLogList.vue'), meta: { title: '操作日志' } }
     ]
   }
 ]

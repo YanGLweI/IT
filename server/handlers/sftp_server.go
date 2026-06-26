@@ -6,6 +6,7 @@ import (
 
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,6 +42,14 @@ func CreateSftpServer(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "Name", FieldLabel: "名称", NewValue: server.Name},
+		{FieldName: "SortOrder", FieldLabel: "排序", NewValue: strconv.Itoa(server.SortOrder)},
+	}
+	services.LogOperation(username, displayName, "创建SFTP服务器", "sftp_server", server.ID, server.Name, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": server})
 }
 
@@ -52,6 +61,9 @@ func UpdateSftpServer(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "服务器不存在"})
 		return
 	}
+
+	// 保存旧值快照
+	oldServer := server
 
 	var input struct {
 		Name string `json:"name" binding:"required"`
@@ -75,6 +87,12 @@ func UpdateSftpServer(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("sftp_server")
+	details := services.DiffStructs(oldServer, server, fieldLabels)
+	services.LogOperation(username, displayName, "更新SFTP服务器", "sftp_server", server.ID, server.Name, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": server})
 }
 
@@ -95,6 +113,12 @@ func DeleteSftpServer(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("sftp_server")
+	details := services.DiffStructs(server, models.SftpServer{}, fieldLabels)
+	services.LogOperation(username, displayName, "删除SFTP服务器", "sftp_server", server.ID, server.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

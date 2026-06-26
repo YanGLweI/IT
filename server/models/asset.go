@@ -2,15 +2,14 @@ package models
 
 import (
 	"time"
-	"gorm.io/gorm"
 )
 
 // Asset IT资产模型
 type Asset struct {
-	ID        uint           `gorm:"primaryKey" json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"` // 已移除软删除，改为硬删除
 	ComputerName   string `gorm:"type:varchar(100);not null" json:"computer_name" binding:"required"`
 	RegionID       uint   `gorm:"not null" json:"region_id" binding:"required"`
 	Region         Region `gorm:"foreignKey:RegionID" json:"region,omitempty"`

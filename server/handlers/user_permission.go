@@ -9,6 +9,7 @@ import (
 
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -202,6 +203,17 @@ func CreateUserPermission(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, _ := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "Name", FieldLabel: "姓名", NewValue: user.Name},
+		{FieldName: "DepartmentID", FieldLabel: "部门ID", NewValue: fmt.Sprintf("%d", user.DepartmentID)},
+		{FieldName: "PositionName", FieldLabel: "岗位名称", NewValue: user.PositionName},
+		{FieldName: "SystemRolesJSON", FieldLabel: "系统角色", NewValue: user.SystemRolesJSON},
+	}
+	services.LogOperation(username, displayName, "创建用户权限", "user_permission", user.ID, user.Name, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": user, "message": "创建成功"})
 }
 
@@ -221,6 +233,9 @@ func UpdateUserPermission(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "用户不存在"})
 		return
 	}
+
+	// 保存旧值快照
+	oldUser := user
 
 	var req struct {
 		Name            string `json:"name" binding:"required"`
@@ -276,6 +291,13 @@ func UpdateUserPermission(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("user_permission")
+	details := services.DiffStructs(oldUser, user, fieldLabels)
+	services.LogOperation(username, displayName, "更新用户权限", "user_permission", user.ID, user.Name, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": user, "message": "更新成功"})
 }
 
@@ -287,9 +309,20 @@ func DeleteUserPermission(c *gin.Context) {
 		return
 	}
 
+	// 获取旧值用于日志
+	var user models.UserPermission
+	database.GetDB().First(&user, id)
+
 	if err := database.GetDB().Delete(&models.UserPermission{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	fieldLabels := services.GetFieldLabels("user_permission")
+	details := services.DiffStructs(user, models.UserPermission{}, fieldLabels)
+	services.LogOperation(username, displayName, "删除用户权限", "user_permission", user.ID, user.Name, approver, c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

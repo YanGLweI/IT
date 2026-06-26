@@ -73,6 +73,20 @@
             <span>资产对应表</span>
           </el-menu-item>
         </el-submenu>
+        <el-submenu index="log">
+          <template slot="title">
+            <i class="el-icon-notebook-2"></i>
+            <span>日志管理</span>
+          </template>
+          <el-menu-item index="/login-logs">
+            <i class="el-icon-s-check"></i>
+            <span>登录日志</span>
+          </el-menu-item>
+          <el-menu-item index="/operation-logs">
+            <i class="el-icon-document"></i>
+            <span>操作日志</span>
+          </el-menu-item>
+        </el-submenu>
       </el-menu>
     </el-aside>
     <el-container>
@@ -101,6 +115,8 @@
 </template>
 
 <script>
+import { logout } from '@/api/audit_log'
+
 export default {
   name: 'Layout',
   data() {
@@ -120,11 +136,22 @@ export default {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
-        }).then(() => {
+        }).then(async () => {
+          try {
+            await logout()
+          } catch (error) {
+            // 忽略错误（包括401），继续执行退出流程
+          }
+          
+          // 请求完成后才清除本地存储
           localStorage.removeItem('token')
           localStorage.removeItem('username')
           localStorage.removeItem('display_name')
-          this.$router.push('/login')
+          
+          // 如果当前不在登录页才跳转
+          if (this.$route.path !== '/login') {
+            this.$router.replace('/login').catch(() => {})
+          }
         }).catch(() => {})
       }
     }

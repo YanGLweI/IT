@@ -12,6 +12,7 @@ import (
 	"it-platform-server/config"
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -73,6 +74,19 @@ func CreatePolicy(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	details := []services.LogDetail{
+		{FieldName: "Title", FieldLabel: "标题", NewValue: policy.Title},
+		{FieldName: "Description", FieldLabel: "描述", NewValue: policy.Description},
+		{FieldName: "FileName", FieldLabel: "文件名", NewValue: policy.FileName},
+		{FieldName: "FilePath", FieldLabel: "文件路径", NewValue: policy.FilePath},
+		{FieldName: "FileSize", FieldLabel: "文件大小", NewValue: fmt.Sprintf("%d", policy.FileSize)},
+		{FieldName: "FileType", FieldLabel: "文件类型", NewValue: policy.FileType},
+	}
+	services.LogOperation(username.(string), displayName.(string), "创建政策", "policy", policy.ID, policy.Title, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": policy})
 }
 
@@ -84,6 +98,9 @@ func UpdatePolicy(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "政策不存在"})
 		return
 	}
+
+	// 保存旧值快照
+	oldPolicy := policy
 
 	var input struct {
 		Title       string `json:"title" binding:"required"`
@@ -102,6 +119,14 @@ func UpdatePolicy(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	approver, _ := c.Get("dual_control_verified_by")
+	fieldLabels := services.GetFieldLabels("policy")
+	details := services.DiffStructs(oldPolicy, policy, fieldLabels)
+	services.LogOperation(username.(string), displayName.(string), "更新政策", "policy", policy.ID, policy.Title, approver.(string), c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": policy})
 }
 
@@ -113,6 +138,9 @@ func ReplacePolicyFile(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "政策不存在"})
 		return
 	}
+
+	// 保存旧值快照
+	oldPolicy := policy
 
 	// 获取新文件
 	file, err := c.FormFile("file")
@@ -146,6 +174,14 @@ func ReplacePolicyFile(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	approver, _ := c.Get("dual_control_verified_by")
+	fieldLabels := services.GetFieldLabels("policy")
+	details := services.DiffStructs(oldPolicy, policy, fieldLabels)
+	services.LogOperation(username.(string), displayName.(string), "替换政策文件", "policy", policy.ID, policy.Title, approver.(string), c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "文件替换成功", "data": policy})
 }
 
@@ -165,6 +201,14 @@ func DeletePolicy(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	approver, _ := c.Get("dual_control_verified_by")
+	fieldLabels := services.GetFieldLabels("policy")
+	details := services.DiffStructs(policy, models.Policy{}, fieldLabels)
+	services.LogOperation(username.(string), displayName.(string), "删除政策", "policy", policy.ID, policy.Title, approver.(string), c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

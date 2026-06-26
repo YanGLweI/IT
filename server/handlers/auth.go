@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"it-platform-server/config"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ldap/ldap/v3"
@@ -33,12 +34,16 @@ func Login(c *gin.Context) {
 	// LDAP 认证
 	userDN, displayName, err := ldapAuthenticate(req.Username, req.Password)
 	if err != nil {
+		// 记录登录失败日志
+		services.LogLogin(req.Username, "", "login_failure", c.ClientIP(), c.Request.UserAgent(), "认证失败: "+err.Error())
 		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "认证失败: " + err.Error()})
 		return
 	}
 
 	// 检查安全组
 	if err := checkSecurityGroup(userDN); err != nil {
+		// 记录登录失败日志
+		services.LogLogin(req.Username, displayName, "login_failure", c.ClientIP(), c.Request.UserAgent(), "无权限访问: "+err.Error())
 		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "无权限访问: " + err.Error()})
 		return
 	}
@@ -46,9 +51,14 @@ func Login(c *gin.Context) {
 	// 生成 JWT Token
 	token, err := generateJWT(req.Username, displayName)
 	if err != nil {
+		// 记录登录失败日志
+		services.LogLogin(req.Username, displayName, "login_failure", c.ClientIP(), c.Request.UserAgent(), "生成令牌失败")
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成令牌失败"})
 		return
 	}
+
+	// 记录登录成功日志
+	services.LogLogin(req.Username, displayName, "login_success", c.ClientIP(), c.Request.UserAgent(), "登录成功")
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,

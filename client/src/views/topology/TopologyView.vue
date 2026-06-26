@@ -46,6 +46,7 @@
         <el-form-item label="图片">
           <el-upload
             drag
+            action=""
             :auto-upload="false"
             :on-change="handleFileChange"
             :on-remove="handleFileRemove"

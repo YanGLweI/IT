@@ -6,6 +6,7 @@ import (
 
 	"it-platform-server/database"
 	"it-platform-server/models"
+	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,6 +41,14 @@ func CreateOSType(c *gin.Context) {
 		return
 	}
 
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	details := []services.LogDetail{
+		{FieldName: "Name", FieldLabel: "名称", NewValue: osType.Name},
+	}
+	services.LogOperation(username.(string), displayName.(string), "创建操作系统类型", "os_type", osType.ID, osType.Name, "", c.ClientIP(), details)
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": osType})
 }
 
@@ -51,6 +60,9 @@ func UpdateOSType(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "操作系统类型不存在"})
 		return
 	}
+
+	// 保存旧值快照
+	oldOsType := osType
 
 	var input struct {
 		Name string `json:"name" binding:"required"`
@@ -66,6 +78,14 @@ func UpdateOSType(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	approver, _ := c.Get("dual_control_verified_by")
+	fieldLabels := services.GetFieldLabels("os_type")
+	details := services.DiffStructs(oldOsType, osType, fieldLabels)
+	services.LogOperation(username.(string), displayName.(string), "更新操作系统类型", "os_type", osType.ID, osType.Name, approver.(string), c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": osType})
 }
@@ -91,6 +111,14 @@ func DeleteOSType(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
 	}
+
+	// 记录操作日志
+	username, _ := c.Get("username")
+	displayName, _ := c.Get("display_name")
+	approver, _ := c.Get("dual_control_verified_by")
+	fieldLabels := services.GetFieldLabels("os_type")
+	details := services.DiffStructs(osType, models.OSType{}, fieldLabels)
+	services.LogOperation(username.(string), displayName.(string), "删除操作系统类型", "os_type", osType.ID, osType.Name, approver.(string), c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

@@ -89,6 +89,12 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/asset-software", handlers.ListAssetSoftware)
 			protected.GET("/asset-software/:id/links", handlers.GetAssetSoftwareLinks)
 
+			// 日志管理 - 查询（不需要双控）
+			protected.GET("/login-logs", handlers.ListLoginLogs)
+			protected.GET("/operation-logs", handlers.ListOperationLogs)
+			protected.GET("/operation-logs/:id/details", handlers.GetOperationLogDetails)
+			protected.POST("/logout", handlers.Logout)
+
 			// ============ 双控保护接口（需要JWT + 双控验证）============
 			dual := protected.Group("")
 			dual.Use(middleware.DualControl())
