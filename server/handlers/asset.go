@@ -116,9 +116,7 @@ func CreateAsset(c *gin.Context) {
 	database.GetDB().Preload("Region").First(&asset, asset.ID)
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
-	approver, _ := c.Get("dual_control_verified_by")
+	username, displayName, approver := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "ComputerName", FieldLabel: "计算机名", NewValue: asset.ComputerName},
 		{FieldName: "RegionID", FieldLabel: "区域ID", NewValue: fmt.Sprintf("%d", asset.RegionID)},
@@ -129,7 +127,7 @@ func CreateAsset(c *gin.Context) {
 		{FieldName: "Status", FieldLabel: "状态", NewValue: asset.Status},
 		{FieldName: "Remark", FieldLabel: "备注", NewValue: asset.Remark},
 	}
-	services.LogOperation(username.(string), displayName.(string), "创建资产", "asset", asset.ID, asset.ComputerName, approver.(string), c.ClientIP(), details)
+	services.LogOperation(username, displayName, "创建资产", "asset", asset.ID, asset.ComputerName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": asset})
 }
@@ -179,12 +177,10 @@ func UpdateAsset(c *gin.Context) {
 	database.GetDB().Preload("Region").First(&asset, asset.ID)
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
-	approver, _ := c.Get("dual_control_verified_by")
+	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("asset")
 	details := services.DiffStructs(oldAsset, asset, fieldLabels)
-	services.LogOperation(username.(string), displayName.(string), "更新资产", "asset", asset.ID, asset.ComputerName, approver.(string), c.ClientIP(), details)
+	services.LogOperation(username, displayName, "更新资产", "asset", asset.ID, asset.ComputerName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": asset})
 }

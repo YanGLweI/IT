@@ -80,8 +80,7 @@ func CreateTopology(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
+	username, displayName, _ := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "Name", FieldLabel: "名称", NewValue: topology.Name},
 		{FieldName: "Description", FieldLabel: "描述", NewValue: topology.Description},
@@ -89,7 +88,7 @@ func CreateTopology(c *gin.Context) {
 		{FieldName: "FilePath", FieldLabel: "文件路径", NewValue: topology.FilePath},
 		{FieldName: "FileSize", FieldLabel: "文件大小", NewValue: fmt.Sprintf("%d", topology.FileSize)},
 	}
-	services.LogOperation(username.(string), displayName.(string), "创建拓扑图", "topology", topology.ID, topology.Name, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "创建拓扑图", "topology", topology.ID, topology.Name, "", c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": topology})
 }
@@ -124,12 +123,10 @@ func UpdateTopology(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
-	approver, _ := c.Get("dual_control_verified_by")
+	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("topology")
 	details := services.DiffStructs(oldTopology, topology, fieldLabels)
-	services.LogOperation(username.(string), displayName.(string), "更新拓扑图", "topology", topology.ID, topology.Name, approver.(string), c.ClientIP(), details)
+	services.LogOperation(username, displayName, "更新拓扑图", "topology", topology.ID, topology.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": topology})
 }
@@ -185,12 +182,10 @@ func ReplaceTopologyFile(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
-	approver, _ := c.Get("dual_control_verified_by")
+	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("topology")
 	details := services.DiffStructs(oldTopology, topology, fieldLabels)
-	services.LogOperation(username.(string), displayName.(string), "替换拓扑图文件", "topology", topology.ID, topology.Name, approver.(string), c.ClientIP(), details)
+	services.LogOperation(username, displayName, "替换拓扑图文件", "topology", topology.ID, topology.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "文件替换成功", "data": topology})
 }
@@ -213,12 +208,10 @@ func DeleteTopology(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
-	approver, _ := c.Get("dual_control_verified_by")
+	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("topology")
 	details := services.DiffStructs(topology, models.Topology{}, fieldLabels)
-	services.LogOperation(username.(string), displayName.(string), "删除拓扑图", "topology", topology.ID, topology.Name, approver.(string), c.ClientIP(), details)
+	services.LogOperation(username, displayName, "删除拓扑图", "topology", topology.ID, topology.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

@@ -289,12 +289,11 @@ func RemoveSystemFromPermissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移除成功", "data": gin.H{"updated_count": updatedCount}})
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
+	username, displayName, _ := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "SystemName", FieldLabel: "系统名称", NewValue: req.SystemName},
 	}
-	services.LogOperation(username.(string), displayName.(string), "从权限移除系统", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "从权限移除系统", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
 }
 
 // RenameSystemInPermissions 重命名系统
@@ -332,12 +331,11 @@ func RenameSystemInPermissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "重命名成功", "data": gin.H{"updated_count": updatedCount}})
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
+	username, displayName, _ := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "OldName", FieldLabel: "旧名称", OldValue: req.OldName, NewValue: req.NewName},
 	}
-	services.LogOperation(username.(string), displayName.(string), "重命名系统", "permission_rule", 0, req.OldName+"->"+req.NewName, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "重命名系统", "permission_rule", 0, req.OldName+"->"+req.NewName, "", c.ClientIP(), details)
 }
 
 // ManageRolesInSystem 管理系统内的角色（新增/重命名/删除）
@@ -423,13 +421,12 @@ func ManageRolesInSystem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "操作成功", "data": gin.H{"updated_count": updatedCount}})
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
+	username, displayName, _ := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "SystemName", FieldLabel: "系统名称", NewValue: req.SystemName},
 		{FieldName: "Action", FieldLabel: "操作", NewValue: req.Action},
 	}
-	services.LogOperation(username.(string), displayName.(string), "管理角色", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "管理角色", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
 }
 
 // ReorderPermissionRule 调整岗位排序（上移/下移）
@@ -478,13 +475,12 @@ func ReorderPermissionRule(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移动成功"})
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
+	username, displayName, _ := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "PositionName", FieldLabel: "岗位名称", NewValue: current.PositionName},
 		{FieldName: "Direction", FieldLabel: "方向", NewValue: req.Direction},
 	}
-	services.LogOperation(username.(string), displayName.(string), "调整岗位排序", "permission_rule", current.ID, current.PositionName, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "调整岗位排序", "permission_rule", current.ID, current.PositionName, "", c.ClientIP(), details)
 }
 
 // ReorderSystemInPermissions 调整系统在所有岗位中的排序
@@ -546,11 +542,10 @@ func ReorderSystemInPermissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移动成功", "data": gin.H{"updated_count": updatedCount}})
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
+	username, displayName, _ := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "SystemName", FieldLabel: "系统名称", NewValue: req.SystemName},
 		{FieldName: "Direction", FieldLabel: "方向", NewValue: req.Direction},
 	}
-	services.LogOperation(username.(string), displayName.(string), "调整系统排序", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "调整系统排序", "permission_rule", 0, req.SystemName, "", c.ClientIP(), details)
 }

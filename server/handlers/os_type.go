@@ -42,12 +42,11 @@ func CreateOSType(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
+	username, displayName, _ := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "Name", FieldLabel: "名称", NewValue: osType.Name},
 	}
-	services.LogOperation(username.(string), displayName.(string), "创建操作系统类型", "os_type", osType.ID, osType.Name, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "创建操作系统类型", "os_type", osType.ID, osType.Name, "", c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": osType})
 }
@@ -80,12 +79,10 @@ func UpdateOSType(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
-	approver, _ := c.Get("dual_control_verified_by")
+	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("os_type")
 	details := services.DiffStructs(oldOsType, osType, fieldLabels)
-	services.LogOperation(username.(string), displayName.(string), "更新操作系统类型", "os_type", osType.ID, osType.Name, approver.(string), c.ClientIP(), details)
+	services.LogOperation(username, displayName, "更新操作系统类型", "os_type", osType.ID, osType.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": osType})
 }
@@ -113,12 +110,10 @@ func DeleteOSType(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, _ := c.Get("username")
-	displayName, _ := c.Get("display_name")
-	approver, _ := c.Get("dual_control_verified_by")
+	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("os_type")
 	details := services.DiffStructs(osType, models.OSType{}, fieldLabels)
-	services.LogOperation(username.(string), displayName.(string), "删除操作系统类型", "os_type", osType.ID, osType.Name, approver.(string), c.ClientIP(), details)
+	services.LogOperation(username, displayName, "删除操作系统类型", "os_type", osType.ID, osType.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
