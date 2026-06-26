@@ -79,6 +79,11 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/user-permissions/:id", handlers.GetUserPermission)
 			protected.GET("/user-permissions/export-confirmation", handlers.ExportDepartmentConfirmation)
 
+			// SFTP账号管理 - 查询（不需要双控）
+			protected.GET("/sftp-servers", handlers.ListSftpServers)
+			protected.GET("/sftp-accounts", handlers.ListSftpAccounts)
+			protected.GET("/sftp-accounts/export-confirmation", handlers.ExportSftpConfirmation)
+
 			// ============ 双控保护接口（需要JWT + 双控验证）============
 			dual := protected.Group("")
 			dual.Use(middleware.DualControl())
@@ -118,6 +123,16 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/user-permissions", handlers.CreateUserPermission)
 				dual.PUT("/user-permissions/:id", handlers.UpdateUserPermission)
 				dual.DELETE("/user-permissions/:id", handlers.DeleteUserPermission)
+
+				// SFTP服务器管理 - 写操作（需要双控）
+				dual.POST("/sftp-servers", handlers.CreateSftpServer)
+				dual.PUT("/sftp-servers/:id", handlers.UpdateSftpServer)
+				dual.DELETE("/sftp-servers/:id", handlers.DeleteSftpServer)
+
+				// SFTP账号管理 - 写操作（需要双控）
+				dual.POST("/sftp-accounts", handlers.CreateSftpAccount)
+				dual.PUT("/sftp-accounts/:id", handlers.UpdateSftpAccount)
+				dual.DELETE("/sftp-accounts/:id", handlers.DeleteSftpAccount)
 			}
 		}
 	}

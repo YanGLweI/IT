@@ -54,6 +54,10 @@
             <i class="el-icon-user"></i>
             <span>用户权限一览</span>
           </el-menu-item>
+          <el-menu-item index="/sftp-accounts">
+            <i class="el-icon-connection"></i>
+            <span>SFTP账号一览</span>
+          </el-menu-item>
         </el-submenu>
       </el-menu>
     </el-aside>
