@@ -69,6 +69,7 @@
         <el-form-item label="文件" prop="file" v-if="!isEdit">
           <el-upload
             ref="uploader"
+            action=""
             :auto-upload="false"
             :limit="1"
             accept=".pdf"
