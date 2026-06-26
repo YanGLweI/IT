@@ -16,6 +16,7 @@ upload:
   path: "./uploads"
   policy_path: "./uploads/policies"
   topology_path: "./uploads/topologies"
+  check_history_path: "./uploads/check_history"
   max_size: 33554432  # 32MB
 
 # LDAP 配置

@@ -43,6 +43,8 @@ func InitDB() {
 		&models.LoginLog{},
 		&models.OperationLog{},
 		&models.OperationLogDetail{},
+		&models.MonthlyCheckHistory{},
+		&models.QuarterlyCheckHistory{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

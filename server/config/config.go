@@ -32,10 +32,11 @@ type DatabaseConfig struct {
 
 // UploadConfig 上传配置
 type UploadConfig struct {
-	Path         string `yaml:"path"`
-	PolicyPath   string `yaml:"policy_path"`
-	TopologyPath string `yaml:"topology_path"`
-	MaxSize      int64  `yaml:"max_size"`
+	Path             string `yaml:"path"`
+	PolicyPath       string `yaml:"policy_path"`
+	TopologyPath     string `yaml:"topology_path"`
+	CheckHistoryPath string `yaml:"check_history_path"`
+	MaxSize          int64  `yaml:"max_size"`
 }
 
 // LDAPConfig LDAP配置
@@ -80,6 +81,9 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.TopologyPath == "" {
 		Cfg.Upload.TopologyPath = "./uploads/topologies"
+	}
+	if Cfg.Upload.CheckHistoryPath == "" {
+		Cfg.Upload.CheckHistoryPath = "./uploads/check_history"
 	}
 	if Cfg.Upload.MaxSize == 0 {
 		Cfg.Upload.MaxSize = 32 << 20

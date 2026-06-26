@@ -58,6 +58,10 @@
             <i class="el-icon-connection"></i>
             <span>SFTP账号一览</span>
           </el-menu-item>
+          <el-menu-item index="/monthly-check-history">
+            <i class="el-icon-document-checked"></i>
+            <span>月度检查历史</span>
+          </el-menu-item>
         </el-submenu>
         <el-submenu index="third-party">
           <template slot="title">
@@ -71,6 +75,10 @@
           <el-menu-item index="/asset-software">
             <i class="el-icon-s-grid"></i>
             <span>资产对应表</span>
+          </el-menu-item>
+          <el-menu-item index="/quarterly-check-history">
+            <i class="el-icon-document-checked"></i>
+            <span>季度检查历史</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="log">

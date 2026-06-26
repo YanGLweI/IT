@@ -248,6 +248,26 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"AssetID":            "资产ID",
 			"ApprovedSoftwareID": "核准软件ID",
 		}
+	case "monthly_check_history":
+		return map[string]string{
+			"Year":        "年份",
+			"Month":       "月份",
+			"Description": "描述",
+			"FileName":    "文件名",
+			"FilePath":    "文件路径",
+			"FileSize":    "文件大小",
+			"FileType":    "文件类型",
+		}
+	case "quarterly_check_history":
+		return map[string]string{
+			"Year":        "年份",
+			"Quarter":     "季度",
+			"Description": "描述",
+			"FileName":    "文件名",
+			"FilePath":    "文件路径",
+			"FileSize":    "文件大小",
+			"FileType":    "文件类型",
+		}
 	default:
 		return make(map[string]string)
 	}

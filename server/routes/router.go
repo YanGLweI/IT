@@ -90,6 +90,16 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/asset-software/export-patch-update", handlers.ExportPatchUpdateRecord)
 			protected.GET("/asset-software/:id/links", handlers.GetAssetSoftwareLinks)
 
+			// 月度检查历史 - 查询（不需要双控）
+			protected.GET("/monthly-checks", handlers.ListMonthlyChecks)
+			protected.GET("/monthly-checks/:id/download", handlers.DownloadMonthlyCheck)
+			protected.GET("/monthly-checks/:id/preview", handlers.PreviewMonthlyCheck)
+
+			// 季度检查历史 - 查询（不需要双控）
+			protected.GET("/quarterly-checks", handlers.ListQuarterlyChecks)
+			protected.GET("/quarterly-checks/:id/download", handlers.DownloadQuarterlyCheck)
+			protected.GET("/quarterly-checks/:id/preview", handlers.PreviewQuarterlyCheck)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -151,6 +161,14 @@ func SetupRouter() *gin.Engine {
 				dual.PUT("/approved-software/:id", handlers.UpdateApprovedSoftware)
 				dual.DELETE("/approved-software/:id", handlers.DeleteApprovedSoftware)
 				dual.PUT("/asset-software/:id/links", handlers.UpdateAssetSoftwareLinks)
+
+				// 月度检查历史 - 写操作（需要双控）
+				dual.POST("/monthly-checks", handlers.CreateMonthlyCheck)
+				dual.DELETE("/monthly-checks/:id", handlers.DeleteMonthlyCheck)
+
+				// 季度检查历史 - 写操作（需要双控）
+				dual.POST("/quarterly-checks", handlers.CreateQuarterlyCheck)
+				dual.DELETE("/quarterly-checks/:id", handlers.DeleteQuarterlyCheck)
 			}
 		}
 	}
