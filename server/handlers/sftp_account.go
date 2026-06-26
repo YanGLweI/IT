@@ -265,17 +265,23 @@ func ExportSftpConfirmation(c *gin.Context) {
 
 	f.SetRowHeight(sheetName, 2, 30)
 
-	// ---- Row 3: 表头 ----
+	// ---- Row 3: 备注 ----
+	f.SetCellValue(sheetName, "A3", "注：A:保留  B:不保留  C:账号有误")
+	f.MergeCell(sheetName, "A3", lastCol+"3")
+	f.SetCellStyle(sheetName, "A3", lastCol+"3", headerInfoStyle)
+	f.SetRowHeight(sheetName, 3, 22)
+
+	// ---- Row 4: 表头 ----
 	headers := []string{"序号", "账号名", "创建时间", "有效期", "权限", "所属对接人", "所属部门", "白名单IP", "确认结果", "确认人", "确认时间"}
 	for i, h := range headers {
 		col := string(rune('A' + i))
-		f.SetCellValue(sheetName, col+"3", h)
-		f.SetCellStyle(sheetName, col+"3", col+"3", tableHeaderStyle)
+		f.SetCellValue(sheetName, col+"4", h)
+		f.SetCellStyle(sheetName, col+"4", col+"4", tableHeaderStyle)
 	}
-	f.SetRowHeight(sheetName, 3, 28)
+	f.SetRowHeight(sheetName, 4, 28)
 
-	// ---- Row 4+: 数据行 ----
-	rowNum := 4
+	// ---- Row 5+: 数据行 ----
+	rowNum := 5
 	for i, account := range accounts {
 		// 解析权限
 		permissions := "-"
@@ -321,8 +327,8 @@ func ExportSftpConfirmation(c *gin.Context) {
 		f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), account.ContactPerson)
 		f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), deptName)
 		f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), whitelist)
-		// I列: 确认结果 - 留空供勾选
-		f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowNum), "")
+		// I列: 确认结果 - □A □B □C 供勾选
+		f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowNum), "□A  □B  □C")
 		// J列: 确认人 - 留空
 		f.SetCellValue(sheetName, fmt.Sprintf("J%d", rowNum), "")
 		// K列: 确认时间 - 留空
