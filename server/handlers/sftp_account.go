@@ -339,6 +339,8 @@ func ExportSftpConfirmation(c *gin.Context) {
 			col := string(rune('A' + j))
 			f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 		}
+		// 设置数据行最小高度，确保有足够空间签名
+		f.SetRowHeight(sheetName, rowNum, 30)
 
 		rowNum++
 	}
@@ -364,7 +366,7 @@ func ExportSftpConfirmation(c *gin.Context) {
 		"G": 14,  // 所属部门
 		"H": 25,  // 白名单IP
 		"I": 12,  // 确认结果
-		"J": 14,  // 确认人
+		"J": 20,  // 确认人（加宽以便签名）
 		"K": 14,  // 确认时间
 	}
 	for col, width := range colWidths {
