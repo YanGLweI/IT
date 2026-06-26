@@ -29,7 +29,7 @@ type SftpAccount struct {
 	Validity        string         `gorm:"type:varchar(100)" json:"validity"`
 	PermissionsJSON string         `gorm:"type:text" json:"permissions_json"`
 	ContactPerson   string         `gorm:"type:varchar(100)" json:"contact_person"`
-	DepartmentID    uint           `gorm:"index" json:"department_id"`
+	Department      string         `gorm:"type:varchar(100)" json:"department"`
 	WhitelistJSON   string         `gorm:"type:text" json:"whitelist_json"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`

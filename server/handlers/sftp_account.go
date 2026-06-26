@@ -83,7 +83,7 @@ func UpdateSftpAccount(c *gin.Context) {
 		Validity        string `json:"validity"`
 		PermissionsJSON string `json:"permissions_json"`
 		ContactPerson   string `json:"contact_person"`
-		DepartmentID    uint   `json:"department_id"`
+		Department      string `json:"department"`
 		WhitelistJSON   string `json:"whitelist_json"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -104,7 +104,7 @@ func UpdateSftpAccount(c *gin.Context) {
 	account.Validity = input.Validity
 	account.PermissionsJSON = input.PermissionsJSON
 	account.ContactPerson = input.ContactPerson
-	account.DepartmentID = input.DepartmentID
+	account.Department = input.Department
 	account.WhitelistJSON = input.WhitelistJSON
 
 	if err := database.GetDB().Save(&account).Error; err != nil {
@@ -158,14 +158,6 @@ func ExportSftpConfirmation(c *gin.Context) {
 	if err := database.GetDB().Where("server_id = ?", serverID).Order("created_at ASC").Find(&accounts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询账号失败"})
 		return
-	}
-
-	// 查询部门列表（用于显示部门名称）
-	var departments []models.Department
-	database.GetDB().Find(&departments)
-	deptMap := make(map[uint]string)
-	for _, dept := range departments {
-		deptMap[dept.ID] = dept.Name
 	}
 
 	// 当前年月
@@ -243,8 +235,8 @@ func ExportSftpConfirmation(c *gin.Context) {
 		},
 	})
 
-	// 列数: 序号/账号名/创建时间/有效期/权限/所属对接人/所属部门/白名单IP/确认人/确认时间 = 10列
-	lastColIndex := 9 // J列 (0-indexed)
+	// 列数: 序号/账号名/创建时间/有效期/权限/所属对接人/所属部门/白名单IP/确认结果/确认人/确认时间 = 11列
+	lastColIndex := 10 // K列 (0-indexed)
 	lastCol := string(rune('A' + lastColIndex))
 
 	// ---- Row 1: 标题 ----
@@ -261,10 +253,11 @@ func ExportSftpConfirmation(c *gin.Context) {
 	f.SetCellValue(sheetName, "F2", fmt.Sprintf("确认月份：%s", yearMonth))
 	f.MergeCell(sheetName, "F2", lastCol+"2")
 	f.SetCellStyle(sheetName, "F2", lastCol+"2", headerInfoStyle)
+
 	f.SetRowHeight(sheetName, 2, 30)
 
 	// ---- Row 3: 表头 ----
-	headers := []string{"序号", "账号名", "创建时间", "有效期", "权限", "所属对接人", "所属部门", "白名单IP", "确认人", "确认时间"}
+	headers := []string{"序号", "账号名", "创建时间", "有效期", "权限", "所属对接人", "所属部门", "白名单IP", "确认结果", "确认人", "确认时间"}
 	for i, h := range headers {
 		col := string(rune('A' + i))
 		f.SetCellValue(sheetName, col+"3", h)
@@ -307,10 +300,8 @@ func ExportSftpConfirmation(c *gin.Context) {
 
 		// 部门名称
 		deptName := "-"
-		if account.DepartmentID > 0 {
-			if name, ok := deptMap[account.DepartmentID]; ok {
-				deptName = name
-			}
+		if account.Department != "" {
+			deptName = account.Department
 		}
 
 		f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), i+1)
@@ -321,13 +312,15 @@ func ExportSftpConfirmation(c *gin.Context) {
 		f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), account.ContactPerson)
 		f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), deptName)
 		f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), whitelist)
-		// I列: 确认人 - 留空
+		// I列: 确认结果 - 留空供勾选
 		f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowNum), "")
-		// J列: 确认时间 - 留空
+		// J列: 确认人 - 留空
 		f.SetCellValue(sheetName, fmt.Sprintf("J%d", rowNum), "")
+		// K列: 确认时间 - 留空
+		f.SetCellValue(sheetName, fmt.Sprintf("K%d", rowNum), "")
 
 		// 设置数据行样式
-		for j := 0; j < 10; j++ {
+		for j := 0; j < 11; j++ {
 			col := string(rune('A' + j))
 			f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 		}
@@ -355,8 +348,9 @@ func ExportSftpConfirmation(c *gin.Context) {
 		"F": 14,  // 所属对接人
 		"G": 14,  // 所属部门
 		"H": 25,  // 白名单IP
-		"I": 14,  // 确认人
-		"J": 14,  // 确认时间
+		"I": 12,  // 确认结果
+		"J": 14,  // 确认人
+		"K": 14,  // 确认时间
 	}
 	for col, width := range colWidths {
 		f.SetColWidth(sheetName, col, col, width)

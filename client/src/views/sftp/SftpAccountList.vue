@@ -53,11 +53,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="contact_person" label="所属对接人" width="120" />
-        <el-table-column label="所属部门" width="120">
-          <template slot-scope="{ row }">
-            {{ getDeptName(row.department_id) }}
-          </template>
-        </el-table-column>
+        <el-table-column prop="department" label="所属部门" width="120" />
         <el-table-column label="白名单IP" min-width="180">
           <template slot-scope="{ row }">
             <template v-if="parseWhitelist(row.whitelist_json).length > 0">
@@ -111,7 +107,18 @@
           <el-input v-model="accountForm.created_time" placeholder="如：2024-01-15" />
         </el-form-item>
         <el-form-item label="有效期" prop="validity">
-          <el-input v-model="accountForm.validity" placeholder="如：2025-12-31 或 长期有效" />
+          <el-radio-group v-model="validityType" style="margin-bottom: 8px">
+            <el-radio label="long">长期有效</el-radio>
+            <el-radio label="date">指定日期</el-radio>
+          </el-radio-group>
+          <el-date-picker
+            v-if="validityType === 'date'"
+            v-model="accountForm.validityDate"
+            type="date"
+            placeholder="请选择有效期日期"
+            value-format="yyyy-MM-dd"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="权限" prop="permissions">
           <el-checkbox-group v-model="accountForm.permissions">
@@ -122,10 +129,8 @@
         <el-form-item label="所属对接人" prop="contact_person">
           <el-input v-model="accountForm.contact_person" placeholder="请输入对接人姓名" />
         </el-form-item>
-        <el-form-item label="所属部门" prop="department_id">
-          <el-select v-model="accountForm.department_id" placeholder="请选择部门" style="width:100%">
-            <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
-          </el-select>
+        <el-form-item label="所属部门" prop="department">
+          <el-input v-model="accountForm.department" placeholder="请输入所属部门" />
         </el-form-item>
         <el-form-item label="白名单IP" prop="whitelist">
           <el-input v-model="accountForm.whitelist" type="textarea" :rows="3" placeholder="每行一个IP地址，或用逗号分隔" />
@@ -144,7 +149,6 @@
 
 <script>
 import { getSftpServers, createSftpServer, updateSftpServer, deleteSftpServer, getSftpAccounts, createSftpAccount, updateSftpAccount, deleteSftpAccount, exportSftpConfirmation } from '@/api/sftp'
-import { getDepartments } from '@/api/department'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -157,7 +161,6 @@ export default {
       servers: [],
       activeServerId: '',
       accounts: [],
-      departments: [],
       // 服务器管理
       showServerManage: false,
       newServerName: '',
@@ -170,14 +173,15 @@ export default {
         account_name: '',
         created_time: '',
         validity: '',
+        validityDate: '',
         permissions: [],
         contact_person: '',
-        department_id: null,
+        department: '',
         whitelist: ''
       },
+      validityType: 'long',
       accountRules: {
-        account_name: [{ required: true, message: '请输入账号名', trigger: 'blur' }],
-        validity: [{ required: true, message: '请输入有效期', trigger: 'blur' }]
+        account_name: [{ required: true, message: '请输入账号名', trigger: 'blur' }]
       },
       // 导出
       exporting: false
@@ -185,7 +189,6 @@ export default {
   },
   mounted() {
     this.fetchData()
-    this.fetchDepartments()
   },
   methods: {
     async fetchData() {
@@ -197,10 +200,6 @@ export default {
         // 如果有服务器且当前没有选中，选中第一个
         if (this.servers.length > 0 && !this.activeServerId) {
           this.activeServerId = String(this.servers[0].id)
-        }
-        
-        // 加载当前服务器的账号
-        if (this.activeServerId) {
           await this.fetchAccounts()
         }
       } catch (e) {
@@ -220,23 +219,8 @@ export default {
       }
     },
 
-    async fetchDepartments() {
-      try {
-        const res = await getDepartments()
-        this.departments = res.data || []
-      } catch (e) {
-        console.error('获取部门列表失败:', e)
-      }
-    },
-
     handleTabClick() {
       this.fetchAccounts()
-    },
-
-    getDeptName(deptId) {
-      if (!deptId) return '-'
-      const dept = this.departments.find(d => d.id === deptId)
-      return dept ? dept.name : '-'
     },
 
     parsePermissions(json) {
@@ -322,13 +306,20 @@ export default {
       if (row) {
         this.isEdit = true
         this.editingAccountId = row.id
+        // 恢复有效期类型
+        if (row.validity === '长期有效') {
+          this.validityType = 'long'
+        } else {
+          this.validityType = 'date'
+        }
         this.accountForm = {
           account_name: row.account_name,
           created_time: row.created_time || '',
           validity: row.validity || '',
+          validityDate: row.validity !== '长期有效' ? (row.validity || '') : '',
           permissions: this.parsePermissions(row.permissions_json),
           contact_person: row.contact_person || '',
-          department_id: row.department_id,
+          department: row.department || '',
           whitelist: this.parseWhitelist(row.whitelist_json).join('\n')
         }
       } else {
@@ -343,11 +334,13 @@ export default {
         account_name: '',
         created_time: '',
         validity: '',
+        validityDate: '',
         permissions: [],
         contact_person: '',
-        department_id: null,
+        department: '',
         whitelist: ''
       }
+      this.validityType = 'long'
       this.editingAccountId = null
       this.isEdit = false
     },
@@ -355,6 +348,12 @@ export default {
     async submitAccountForm() {
       this.$refs.accountForm.validate(async valid => {
         if (!valid) return
+
+        // 验证有效期
+        if (this.validityType === 'date' && !this.accountForm.validityDate) {
+          this.$message.warning('请选择有效期日期')
+          return
+        }
 
         this.saving = true
         try {
@@ -366,13 +365,16 @@ export default {
             .map(ip => ip.trim())
             .filter(ip => ip)
 
+          // 处理有效期
+          const validity = this.validityType === 'long' ? '长期有效' : this.accountForm.validityDate
+
           const submitData = {
             account_name: this.accountForm.account_name,
             created_time: this.accountForm.created_time,
-            validity: this.accountForm.validity,
+            validity: validity,
             permissions_json: JSON.stringify(this.accountForm.permissions),
             contact_person: this.accountForm.contact_person,
-            department_id: this.accountForm.department_id,
+            department: this.accountForm.department,
             whitelist_json: JSON.stringify(whitelistArr),
             server_id: Number(this.activeServerId)
           }
