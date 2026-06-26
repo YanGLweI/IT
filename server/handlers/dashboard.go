@@ -50,8 +50,9 @@ func DashboardSummary(c *gin.Context) {
 	// 操作系统统计
 	var osStats []OSStat
 	db.Model(&models.Asset{}).
-		Select("os_type, count(*) as count").
-		Group("os_type").
+		Select("os_types.name as os_type, count(assets.id) as count").
+		Joins("LEFT JOIN os_types ON assets.os_type_id = os_types.id").
+		Group("os_types.name").
 		Scan(&osStats)
 
 	// 状态统计

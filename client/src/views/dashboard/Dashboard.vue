@@ -50,13 +50,13 @@
       <el-col :span="12">
         <el-card shadow="hover">
           <div slot="header">区域资产分布</div>
-          <div ref="regionChart" style="height: 350px"></div>
+          <div ref="regionChart" style="height: 420px"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card shadow="hover">
           <div slot="header">操作系统分布</div>
-          <div ref="osChart" style="height: 350px"></div>
+          <div ref="osChart" style="height: 420px"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -120,15 +120,17 @@ export default {
       const stats = this.summary.region_stats || []
       this.regionChartInstance.setOption({
         tooltip: { trigger: 'axis' },
+        grid: { left: 50, right: 20, top: 30, bottom: 80 },
         xAxis: {
           type: 'category',
           data: stats.map(s => s.region_name || '未分配'),
-          axisLabel: { interval: 0, rotate: 30 }
+          axisLabel: { interval: 0, rotate: 35, fontSize: 11 }
         },
         yAxis: { type: 'value', name: '资产数量' },
         series: [{
           type: 'bar',
           data: stats.map(s => s.count),
+          barMaxWidth: 40,
           itemStyle: { color: '#409EFF' }
         }]
       })
@@ -139,11 +141,13 @@ export default {
       const stats = this.summary.os_stats || []
       this.osChartInstance.setOption({
         tooltip: { trigger: 'item' },
-        legend: { bottom: 0 },
+        legend: { bottom: 10, type: 'scroll', itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
         series: [{
           type: 'pie',
-          radius: ['40%', '70%'],
+          radius: ['35%', '60%'],
+          center: ['50%', '45%'],
           data: stats.map(s => ({ name: s.os_type, value: s.count })),
+          label: { formatter: '{b}: {c} ({d}%)', fontSize: 11 },
           emphasis: {
             itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
           }
