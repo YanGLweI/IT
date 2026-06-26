@@ -110,9 +110,9 @@ func DashboardSummary(c *gin.Context) {
 	var trendStats []TrendStat
 	thirtyDaysAgo := now.AddDate(0, 0, -29)
 	db.Model(&models.OperationLog{}).
-		Select("DATE(created_at) as date, count(*) as count").
+		Select("DATE_FORMAT(created_at, '%Y-%m-%d') as date, count(*) as count").
 		Where("created_at >= ?", thirtyDaysAgo).
-		Group("DATE(created_at)").
+		Group("DATE_FORMAT(created_at, '%Y-%m-%d')").
 		Order("date ASC").
 		Scan(&trendStats)
 
