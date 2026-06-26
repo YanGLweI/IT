@@ -13,9 +13,9 @@
       <el-form-item label="IP地址">
         <el-input v-model="form.ip_address" placeholder="请输入IP地址" />
       </el-form-item>
-      <el-form-item label="操作系统" prop="os_type">
-        <el-select v-model="form.os_type" placeholder="请选择操作系统" filterable allow-create style="width: 100%">
-          <el-option v-for="os in osTypes" :key="os.id" :label="os.name" :value="os.name" />
+      <el-form-item label="操作系统" prop="os_type_id">
+        <el-select v-model="form.os_type_id" placeholder="请选择操作系统" filterable style="width: 100%">
+          <el-option v-for="os in osTypes" :key="os.id" :label="os.name" :value="os.id" />
         </el-select>
       </el-form-item>
       <el-form-item label="用途">
@@ -66,7 +66,7 @@ export default {
       rules: {
         computer_name: [{ required: true, message: '请输入计算机名', trigger: 'blur' }],
         region_id: [{ required: true, message: '请选择区域', trigger: 'change' }],
-        os_type: [{ required: true, message: '请选择操作系统', trigger: 'change' }]
+        os_type_id: [{ required: true, message: '请选择操作系统', trigger: 'change' }]
       }
     }
   },
@@ -90,7 +90,7 @@ export default {
             computer_name: this.editData.computer_name || '',
             region_id: this.editData.region_id || null,
             ip_address: this.editData.ip_address || '',
-            os_type: this.editData.os_type || '',
+            os_type_id: this.editData.os_type_id || null,
             purpose: this.editData.purpose || '',
             asset_level: this.editData.asset_level || '',
             status: this.editData.status || '在用',
@@ -116,7 +116,7 @@ export default {
         computer_name: '',
         region_id: null,
         ip_address: '',
-        os_type: '',
+        os_type_id: null,
         purpose: '',
         asset_level: '',
         status: '在用',
@@ -134,7 +134,7 @@ export default {
             computer_name: this.form.computer_name,
             region_id: this.form.region_id,
             ip_address: this.form.ip_address,
-            os_type: this.form.os_type,
+            os_type_id: this.form.os_type_id,
             purpose: this.form.purpose,
             asset_level: this.form.asset_level,
             status: this.form.status,

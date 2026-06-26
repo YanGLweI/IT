@@ -98,7 +98,7 @@ func DeleteOSType(c *gin.Context) {
 
 	// 检查是否有关联资产
 	var count int64
-	database.GetDB().Model(&models.Asset{}).Where("os_type = ?", osType.Name).Count(&count)
+	database.GetDB().Model(&models.Asset{}).Where("os_type_id = ?", osType.ID).Count(&count)
 	if count > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "该操作系统下还有资产，无法删除"})
 		return

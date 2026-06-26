@@ -28,7 +28,7 @@ func ListAssets(c *gin.Context) {
 	// 允许的排序字段
 	allowedSort := map[string]bool{
 		"id": true, "computer_name": true, "ip_address": true,
-		"os_type": true, "purpose": true, "asset_level": true,
+		"os_type_id": true, "purpose": true, "asset_level": true,
 		"status": true, "created_at": true,
 	}
 	if !allowedSort[sortBy] {
@@ -38,7 +38,7 @@ func ListAssets(c *gin.Context) {
 		sortOrder = "desc"
 	}
 
-	query := database.GetDB().Model(&models.Asset{}).Preload("Region")
+	query := database.GetDB().Model(&models.Asset{}).Preload("Region").Preload("OSType")
 
 	// 支持按区域过滤
 	regionID := c.Query("region_id")
@@ -72,7 +72,7 @@ func ListAssets(c *gin.Context) {
 func GetAsset(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var asset models.Asset
-	if err := database.GetDB().Preload("Region").First(&asset, id).Error; err != nil {
+	if err := database.GetDB().Preload("Region").Preload("OSType").First(&asset, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "资产不存在"})
 		return
 	}
@@ -85,7 +85,7 @@ func CreateAsset(c *gin.Context) {
 		ComputerName string `json:"computer_name" binding:"required"`
 		RegionID     uint   `json:"region_id" binding:"required"`
 		IPAddress    string `json:"ip_address"`
-		OSType       string `json:"os_type" binding:"required"`
+		OSTypeID     uint   `json:"os_type_id" binding:"required"`
 		Purpose      string `json:"purpose"`
 		AssetLevel   string `json:"asset_level"`
 		Status       string `json:"status"`
@@ -100,7 +100,7 @@ func CreateAsset(c *gin.Context) {
 		ComputerName: input.ComputerName,
 		RegionID:     input.RegionID,
 		IPAddress:    input.IPAddress,
-		OSType:       input.OSType,
+		OSTypeID:     input.OSTypeID,
 		Purpose:      input.Purpose,
 		AssetLevel:   input.AssetLevel,
 		Status:       input.Status,
@@ -112,16 +112,20 @@ func CreateAsset(c *gin.Context) {
 		return
 	}
 
-	// 重新查询以获取关联的区域信息
-	database.GetDB().Preload("Region").First(&asset, asset.ID)
+	// 重新查询以获取关联的区域和操作系统信息
+	database.GetDB().Preload("Region").Preload("OSType").First(&asset, asset.ID)
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)
+	osTypeName := ""
+	if asset.OSType.ID > 0 {
+		osTypeName = asset.OSType.Name
+	}
 	details := []services.LogDetail{
 		{FieldName: "ComputerName", FieldLabel: "计算机名", NewValue: asset.ComputerName},
 		{FieldName: "RegionID", FieldLabel: "区域ID", NewValue: fmt.Sprintf("%d", asset.RegionID)},
 		{FieldName: "IPAddress", FieldLabel: "IP地址", NewValue: asset.IPAddress},
-		{FieldName: "OSType", FieldLabel: "操作系统", NewValue: asset.OSType},
+		{FieldName: "OSTypeID", FieldLabel: "操作系统", NewValue: osTypeName},
 		{FieldName: "Purpose", FieldLabel: "用途", NewValue: asset.Purpose},
 		{FieldName: "AssetLevel", FieldLabel: "资产等级", NewValue: asset.AssetLevel},
 		{FieldName: "Status", FieldLabel: "状态", NewValue: asset.Status},
@@ -136,7 +140,7 @@ func CreateAsset(c *gin.Context) {
 func UpdateAsset(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var asset models.Asset
-	if err := database.GetDB().First(&asset, id).Error; err != nil {
+	if err := database.GetDB().Preload("OSType").First(&asset, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "资产不存在"})
 		return
 	}
@@ -148,7 +152,7 @@ func UpdateAsset(c *gin.Context) {
 		ComputerName string `json:"computer_name" binding:"required"`
 		RegionID     uint   `json:"region_id" binding:"required"`
 		IPAddress    string `json:"ip_address"`
-		OSType       string `json:"os_type" binding:"required"`
+		OSTypeID     uint   `json:"os_type_id" binding:"required"`
 		Purpose      string `json:"purpose"`
 		AssetLevel   string `json:"asset_level"`
 		Status       string `json:"status"`
@@ -162,7 +166,7 @@ func UpdateAsset(c *gin.Context) {
 	asset.ComputerName = input.ComputerName
 	asset.RegionID = input.RegionID
 	asset.IPAddress = input.IPAddress
-	asset.OSType = input.OSType
+	asset.OSTypeID = input.OSTypeID
 	asset.Purpose = input.Purpose
 	asset.AssetLevel = input.AssetLevel
 	asset.Status = input.Status
@@ -173,8 +177,8 @@ func UpdateAsset(c *gin.Context) {
 		return
 	}
 
-	// 重新查询以获取关联的区域信息
-	database.GetDB().Preload("Region").First(&asset, asset.ID)
+	// 重新查询以获取关联的区域和操作系统信息
+	database.GetDB().Preload("Region").Preload("OSType").First(&asset, asset.ID)
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)

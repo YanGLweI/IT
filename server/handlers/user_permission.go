@@ -205,14 +205,14 @@ func CreateUserPermission(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	username, displayName, _ := services.GetUserContext(c)
+	username, displayName, approver := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "Name", FieldLabel: "姓名", NewValue: user.Name},
 		{FieldName: "DepartmentID", FieldLabel: "部门ID", NewValue: fmt.Sprintf("%d", user.DepartmentID)},
 		{FieldName: "PositionName", FieldLabel: "岗位名称", NewValue: user.PositionName},
 		{FieldName: "SystemRolesJSON", FieldLabel: "系统角色", NewValue: user.SystemRolesJSON},
 	}
-	services.LogOperation(username, displayName, "创建用户权限", "user_permission", user.ID, user.Name, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "创建用户权限", "user_permission", user.ID, user.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": user, "message": "创建成功"})
 }
