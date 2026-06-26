@@ -171,13 +171,14 @@ export default {
           formData.append('description', this.uploadForm.description || '')
           formData.append('file', this.selectedFile)
 
-          await createQuarterlyCheck(formData)
+          const dualToken = await this.$refs.dualControl.open()
+          await createQuarterlyCheck(formData, dualToken)
           this.$message.success('上传成功')
           this.showUpload = false
           this.resetUploadForm()
           this.fetchData()
         } catch (e) {
-          console.error(e)
+          if (e.message !== 'canceled') console.error(e)
         } finally {
           this.uploading = false
         }
