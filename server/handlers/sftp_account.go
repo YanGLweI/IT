@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -339,8 +340,27 @@ func ExportSftpConfirmation(c *gin.Context) {
 			col := string(rune('A' + j))
 			f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
 		}
-		// 设置数据行最小高度，确保有足够空间签名
-		f.SetRowHeight(sheetName, rowNum, 30)
+
+		// 动态计算行高：取签名最小高度和内容所需高度的较大值
+		minRowHeight := 30.0
+		lineHeight := 15.0
+		charsPerLine := 17.0 // H列宽度25下约可容纳17个ASCII字符
+		totalLines := 1.0
+		if account.WhitelistJSON != "" && account.WhitelistJSON != "[]" {
+			var ips []string
+			if err := json.Unmarshal([]byte(account.WhitelistJSON), &ips); err == nil {
+				for _, ip := range ips {
+					lines := math.Ceil(float64(len(ip)) / charsPerLine)
+					if lines < 1 {
+						lines = 1
+					}
+					totalLines += lines
+				}
+			}
+		}
+		contentHeight := totalLines * lineHeight
+		rowHeight := math.Max(minRowHeight, contentHeight)
+		f.SetRowHeight(sheetName, rowNum, rowHeight)
 
 		rowNum++
 	}
