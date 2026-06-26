@@ -52,12 +52,12 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="年份" prop="year">
-              <el-input-number v-model="uploadForm.year" :min="2020" :max="2100" :step="1" controls-position="right" style="width: 100%" :disabled="isEdit" />
+              <el-input-number v-model="uploadForm.year" :min="2020" :max="2100" :step="1" controls-position="right" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="月份" prop="month">
-              <el-select v-model="uploadForm.month" placeholder="请选择" style="width: 100%" :disabled="isEdit">
+              <el-select v-model="uploadForm.month" placeholder="请选择" style="width: 100%">
                 <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
               </el-select>
             </el-form-item>

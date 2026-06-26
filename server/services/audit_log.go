@@ -2,7 +2,9 @@ package services
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"reflect"
 	"time"
 
@@ -271,4 +273,22 @@ func GetFieldLabels(resourceType string) map[string]string {
 	default:
 		return make(map[string]string)
 	}
+}
+
+// CopyFile 复制文件
+func CopyFile(src, dst string) error {
+	input, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer input.Close()
+
+	output, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer output.Close()
+
+	_, err = io.Copy(output, input)
+	return err
 }

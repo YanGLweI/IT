@@ -153,7 +153,7 @@ func DeleteMonthlyCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
 
-// UpdateMonthlyCheck 更新月度检查记录（仅描述）
+// UpdateMonthlyCheck 更新月度检查记录
 func UpdateMonthlyCheck(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var record models.MonthlyCheckHistory
@@ -162,9 +162,58 @@ func UpdateMonthlyCheck(c *gin.Context) {
 		return
 	}
 
+	yearStr := c.PostForm("year")
+	monthStr := c.PostForm("month")
 	description := c.PostForm("description")
 
+	if yearStr == "" || monthStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "年份和月份不能为空"})
+		return
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil || year < 2000 || year > 2100 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "年份格式不正确"})
+		return
+	}
+
+	month, err := strconv.Atoi(monthStr)
+	if err != nil || month < 1 || month > 12 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "月份格式不正确，应为1-12"})
+		return
+	}
+
 	oldRecord := record
+	oldYear := record.Year
+	oldFilePath := record.FilePath
+
+	// 如果年份变化，需要移动文件到新目录
+	if year != oldYear {
+		oldYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, monthlyCheckModule, strconv.Itoa(oldYear))
+		newYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, monthlyCheckModule, strconv.Itoa(year))
+		os.MkdirAll(newYearDir, 0755)
+
+		// 移动文件
+		fileName := filepath.Base(record.FilePath)
+		newFilePath := filepath.Join(newYearDir, fileName)
+		if err := os.Rename(oldFilePath, newFilePath); err != nil {
+			// 如果rename失败（跨分区），尝试复制后删除
+			if copyErr := services.CopyFile(oldFilePath, newFilePath); copyErr != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件移动失败"})
+				return
+			}
+			os.Remove(oldFilePath)
+			record.FilePath = newFilePath
+		} else {
+			record.FilePath = newFilePath
+		}
+
+		// 清理旧的空目录
+		os.Remove(oldYearDir)
+	}
+
+	record.Year = year
+	record.Month = month
 	record.Description = description
 
 	if err := database.GetDB().Save(&record).Error; err != nil {

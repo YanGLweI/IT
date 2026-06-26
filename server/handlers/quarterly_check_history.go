@@ -153,7 +153,7 @@ func DeleteQuarterlyCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
 
-// UpdateQuarterlyCheck 更新季度检查记录（仅描述）
+// UpdateQuarterlyCheck 更新季度检查记录
 func UpdateQuarterlyCheck(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var record models.QuarterlyCheckHistory
@@ -162,9 +162,58 @@ func UpdateQuarterlyCheck(c *gin.Context) {
 		return
 	}
 
+	yearStr := c.PostForm("year")
+	quarterStr := c.PostForm("quarter")
 	description := c.PostForm("description")
 
+	if yearStr == "" || quarterStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "年份和季度不能为空"})
+		return
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil || year < 2000 || year > 2100 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "年份格式不正确"})
+		return
+	}
+
+	quarter, err := strconv.Atoi(quarterStr)
+	if err != nil || quarter < 1 || quarter > 4 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "季度格式不正确，应为1-4"})
+		return
+	}
+
 	oldRecord := record
+	oldYear := record.Year
+	oldFilePath := record.FilePath
+
+	// 如果年份变化，需要移动文件到新目录
+	if year != oldYear {
+		oldYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, quarterlyCheckModule, strconv.Itoa(oldYear))
+		newYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, quarterlyCheckModule, strconv.Itoa(year))
+		os.MkdirAll(newYearDir, 0755)
+
+		// 移动文件
+		fileName := filepath.Base(record.FilePath)
+		newFilePath := filepath.Join(newYearDir, fileName)
+		if err := os.Rename(oldFilePath, newFilePath); err != nil {
+			// 如果rename失败（跨分区），尝试复制后删除
+			if copyErr := services.CopyFile(oldFilePath, newFilePath); copyErr != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件移动失败"})
+				return
+			}
+			os.Remove(oldFilePath)
+			record.FilePath = newFilePath
+		} else {
+			record.FilePath = newFilePath
+		}
+
+		// 清理旧的空目录
+		os.Remove(oldYearDir)
+	}
+
+	record.Year = year
+	record.Quarter = quarter
 	record.Description = description
 
 	if err := database.GetDB().Save(&record).Error; err != nil {
