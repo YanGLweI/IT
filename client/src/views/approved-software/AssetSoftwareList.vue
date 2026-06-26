@@ -1,8 +1,9 @@
 <template>
   <div class="asset-software-list">
     <el-card>
-      <div slot="header">
+      <div slot="header" style="display: flex; align-items: center; justify-content: space-between">
         <span>资产对应表 — 第三方软件与资产关联</span>
+        <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出补丁更新记录表</el-button>
       </div>
       <el-table :data="list" border stripe v-loading="loading">
         <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
@@ -78,7 +79,8 @@ import {
   getAssetSoftwareList,
   getAssetSoftwareLinks,
   updateAssetSoftwareLinks,
-  getApprovedSoftware
+  getApprovedSoftware,
+  exportPatchUpdateRecord
 } from '@/api/approved_software'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
@@ -96,7 +98,8 @@ export default {
       editDialogVisible: false,
       editRow: null,
       selectedSoftwareIds: [],
-      submitting: false
+      submitting: false,
+      exporting: false
     }
   },
   mounted() {
@@ -162,6 +165,32 @@ export default {
         if (e.message !== 'canceled') console.error(e)
       } finally {
         this.submitting = false
+      }
+    },
+    async handleExport() {
+      this.exporting = true
+      try {
+        const res = await exportPatchUpdateRecord()
+        // 检查是否返回了错误JSON（blob情况下需要转换）
+        if (res instanceof Blob) {
+          const link = document.createElement('a')
+          link.href = URL.createObjectURL(res)
+          const now = new Date()
+          const yearMonth = `${now.getFullYear()}年${now.getMonth() + 1}月`
+          link.download = `第三方应用补丁更新记录表(${yearMonth}).xlsx`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(link.href)
+          this.$message.success('导出成功')
+        } else {
+          this.$message.warning('当前没有需要更新的软件')
+        }
+      } catch (e) {
+        console.error('导出失败:', e)
+        this.$message.error('导出失败，请重试')
+      } finally {
+        this.exporting = false
       }
     }
   }

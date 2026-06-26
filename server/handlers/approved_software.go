@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"it-platform-server/database"
 	"it-platform-server/models"
 	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/xuri/excelize/v2"
 )
 
 // ListApprovedSoftware 获取核准软件列表
@@ -205,6 +207,186 @@ func GetAssetSoftwareLinks(c *gin.Context) {
 		ids = []uint{}
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": ids})
+}
+
+// ExportPatchUpdateRecord 导出第三方应用补丁更新记录表
+func ExportPatchUpdateRecord(c *gin.Context) {
+	// 查询所有需要更新的核准软件
+	var needUpdateSoftware []models.ApprovedSoftware
+	if err := database.GetDB().Where("need_update = ?", true).Find(&needUpdateSoftware).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
+		return
+	}
+
+	if len(needUpdateSoftware) == 0 {
+		c.JSON(http.StatusOK, gin.H{"code": 200, "message": "当前没有需要更新的软件"})
+		return
+	}
+
+	// 构建软件ID集合
+	var swIDs []uint
+	for _, sw := range needUpdateSoftware {
+		swIDs = append(swIDs, sw.ID)
+	}
+
+	// 查询关联的资产软件记录
+	var assetSoftwareLinks []models.AssetSoftware
+	database.GetDB().Preload("Asset").Preload("ApprovedSoftware").
+		Where("approved_software_id IN ?", swIDs).
+		Find(&assetSoftwareLinks)
+
+	// 构建导出数据行
+	type PatchRow struct {
+		ComputerName   string
+		SoftwareName   string
+		Version        string
+		LatestVersion  string
+	}
+	var rows []PatchRow
+	for _, link := range assetSoftwareLinks {
+		if link.Asset.ID == 0 || link.ApprovedSoftware.ID == 0 {
+			continue
+		}
+		rows = append(rows, PatchRow{
+			ComputerName:  link.Asset.ComputerName,
+			SoftwareName:  link.ApprovedSoftware.Name,
+			Version:       link.ApprovedSoftware.Version,
+			LatestVersion: link.ApprovedSoftware.LatestVersion,
+		})
+	}
+
+	// 创建Excel
+	f := excelize.NewFile()
+	sheetName := "补丁更新记录"
+	f.SetSheetName("Sheet1", sheetName)
+
+	now := time.Now()
+	yearMonth := fmt.Sprintf("%d年%d月", now.Year(), now.Month())
+
+	// ---- 样式定义 ----
+	titleStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Bold: true, Size: 16, Family: "微软雅黑"},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
+	})
+
+	headerInfoStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Size: 11, Family: "微软雅黑"},
+		Alignment: &excelize.Alignment{Vertical: "center", WrapText: true},
+	})
+
+	tableHeaderStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Bold: true, Size: 11, Family: "微软雅黑"},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center", WrapText: true},
+		Border: []excelize.Border{
+			{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+		},
+		Fill: excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"#D9E1F2"}},
+	})
+
+	dataCellStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Size: 10, Family: "微软雅黑"},
+		Alignment: &excelize.Alignment{Vertical: "center", WrapText: true, Horizontal: "center"},
+		Border: []excelize.Border{
+			{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+		},
+	})
+
+	signCellStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Size: 10, Family: "微软雅黑"},
+		Alignment: &excelize.Alignment{Vertical: "center", Horizontal: "left"},
+		Border: []excelize.Border{
+			{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+		},
+	})
+
+	// ---- Row 1: 标题 ----
+	f.SetCellValue(sheetName, "A1", "第三方应用补丁更新记录表")
+	f.MergeCell(sheetName, "A1", "I1")
+	f.SetCellStyle(sheetName, "A1", "I1", titleStyle)
+	f.SetRowHeight(sheetName, 1, 36)
+
+	// ---- Row 2: 信息行 ----
+	f.SetCellValue(sheetName, "A2", fmt.Sprintf("导出日期：%s", yearMonth))
+	f.MergeCell(sheetName, "A2", "C2")
+	f.SetCellStyle(sheetName, "A2", "C2", headerInfoStyle)
+	f.SetRowHeight(sheetName, 2, 28)
+
+	// ---- Row 3: 表头 ----
+	headers := []string{"序号", "计算机名", "软件名", "软件版本", "更新后版本", "实施人", "实施日期", "确认人", "确认日期"}
+	for i, h := range headers {
+		col := string(rune('A' + i))
+		f.SetCellValue(sheetName, col+"3", h)
+		f.SetCellStyle(sheetName, col+"3", col+"3", tableHeaderStyle)
+	}
+	f.SetRowHeight(sheetName, 3, 28)
+
+	// ---- 数据行 ----
+	rowNum := 4
+	for i, row := range rows {
+		f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), i+1)
+		f.SetCellValue(sheetName, fmt.Sprintf("B%d", rowNum), row.ComputerName)
+		f.SetCellValue(sheetName, fmt.Sprintf("C%d", rowNum), row.SoftwareName)
+		f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), row.Version)
+		f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), row.LatestVersion)
+		// 实施人、实施日期、确认人、确认日期 留空供签名
+		f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), "")
+		f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), "")
+		f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), "")
+		f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowNum), "")
+
+		// 设置样式：前5列居中，后4列左对齐（签名区）
+		for j := 0; j < 5; j++ {
+			col := string(rune('A' + j))
+			f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), dataCellStyle)
+		}
+		for j := 5; j < 9; j++ {
+			col := string(rune('A' + j))
+			f.SetCellStyle(sheetName, fmt.Sprintf("%s%d", col, rowNum), fmt.Sprintf("%s%d", col, rowNum), signCellStyle)
+		}
+		// 签名行高度加大，留出足够签字空间
+		f.SetRowHeight(sheetName, rowNum, 36)
+		rowNum++
+	}
+
+	// 如果没有数据，显示空提示
+	if len(rows) == 0 {
+		f.SetCellValue(sheetName, "A4", "（暂无需要更新的软件记录）")
+		f.MergeCell(sheetName, "A4", "I4")
+		f.SetCellStyle(sheetName, "A4", "I4", dataCellStyle)
+		rowNum = 5
+	}
+
+	// ---- 设置列宽 ----
+	f.SetColWidth(sheetName, "A", "A", 8)   // 序号
+	f.SetColWidth(sheetName, "B", "B", 22)  // 计算机名
+	f.SetColWidth(sheetName, "C", "C", 22)  // 软件名
+	f.SetColWidth(sheetName, "D", "D", 16)  // 软件版本
+	f.SetColWidth(sheetName, "E", "E", 16)  // 更新后版本
+	f.SetColWidth(sheetName, "F", "F", 18)  // 实施人
+	f.SetColWidth(sheetName, "G", "G", 16)  // 实施日期
+	f.SetColWidth(sheetName, "H", "H", 18)  // 确认人
+	f.SetColWidth(sheetName, "I", "I", 16)  // 确认日期
+
+	// 输出Excel文件
+	fileName := fmt.Sprintf("第三方应用补丁更新记录表(%s).xlsx", yearMonth)
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename*=UTF-8''%s", fileName))
+	c.Header("Access-Control-Expose-Headers", "Content-Disposition")
+
+	if err := f.Write(c.Writer); err != nil {
+		fmt.Printf("导出Excel失败: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "导出失败"})
+		return
+	}
 }
 
 // UpdateAssetSoftwareLinks 更新资产的软件关联（全量替换）

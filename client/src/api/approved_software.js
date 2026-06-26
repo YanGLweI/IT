@@ -37,3 +37,9 @@ export function updateAssetSoftwareLinks(assetId, softwareIds, dualToken) {
   if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
   return request.put(`/asset-software/${assetId}/links`, { software_ids: softwareIds }, config)
 }
+
+export function exportPatchUpdateRecord() {
+  return request.get('/asset-software/export-patch-update', {
+    responseType: 'blob'
+  })
+}
