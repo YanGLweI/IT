@@ -197,19 +197,41 @@ export default {
         this.$refs.uploader.clearFiles()
       }
     },
-    handlePreview(row) {
-      this.previewUrl = getMonthlyCheckPreviewUrl(row.id)
-      this.previewVisible = true
+    async handlePreview(row) {
+      const url = getMonthlyCheckPreviewUrl(row.id)
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('预览失败')
+        const blob = await response.blob()
+        this.previewUrl = URL.createObjectURL(blob)
+        this.previewVisible = true
+      } catch (e) {
+        console.error('预览失败:', e)
+        this.$message.error('预览失败')
+      }
     },
-    handleDownload(row) {
-      const token = localStorage.getItem('token')
+    async handleDownload(row) {
       const url = getMonthlyCheckDownloadUrl(row.id)
-      const link = document.createElement('a')
-      link.href = url + '?token=' + encodeURIComponent(token)
-      link.setAttribute('download', row.file_name)
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const downloadUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = row.file_name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(downloadUrl)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
     },
     async handleDelete(row) {
       try {
