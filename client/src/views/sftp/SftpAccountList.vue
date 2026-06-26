@@ -5,7 +5,7 @@
         <span>SFTP账号一览</span>
         <div class="page-header-right">
           <el-button type="primary" size="small" icon="el-icon-setting" @click="showServerManage = true">配置管理</el-button>
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openAccountForm" :disabled="!activeServerId">新增账号</el-button>
+          <el-button type="primary" size="small" icon="el-icon-plus" @click="openAccountForm" :disabled="servers.length === 0">新增账号</el-button>
           <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
@@ -100,6 +100,11 @@
     <!-- 账号表单弹窗 -->
     <el-dialog :title="isEdit ? '编辑账号' : '新增账号'" :visible.sync="accountFormVisible" width="600px" @close="resetAccountForm">
       <el-form :model="accountForm" :rules="accountRules" ref="accountForm" label-width="100px">
+        <el-form-item label="所属服务器" prop="server_id">
+          <el-select v-model="accountForm.server_id" placeholder="请选择所属服务器" style="width:100%">
+            <el-option v-for="s in servers" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="账号名" prop="account_name">
           <el-input v-model="accountForm.account_name" placeholder="请输入账号名" />
         </el-form-item>
@@ -170,6 +175,7 @@ export default {
       isEdit: false,
       editingAccountId: null,
       accountForm: {
+        server_id: null,
         account_name: '',
         created_time: '',
         validity: '',
@@ -181,6 +187,7 @@ export default {
       },
       validityType: 'long',
       accountRules: {
+        server_id: [{ required: true, message: '请选择所属服务器', trigger: 'change' }],
         account_name: [{ required: true, message: '请输入账号名', trigger: 'blur' }]
       },
       // 导出
@@ -200,6 +207,7 @@ export default {
         // 如果有服务器且当前没有选中，选中第一个
         if (this.servers.length > 0 && !this.activeServerId) {
           this.activeServerId = String(this.servers[0].id)
+          await this.$nextTick()
           await this.fetchAccounts()
         }
       } catch (e) {
@@ -303,6 +311,14 @@ export default {
 
     // === 账号管理 ===
     openAccountForm(row) {
+      // 先重置表单状态，避免残留上次编辑数据
+      this.validityType = 'long'
+      this.$nextTick(() => {
+        if (this.$refs.accountForm) {
+          this.$refs.accountForm.clearValidate()
+        }
+      })
+
       if (row) {
         this.isEdit = true
         this.editingAccountId = row.id
@@ -313,6 +329,7 @@ export default {
           this.validityType = 'date'
         }
         this.accountForm = {
+          server_id: row.server_id,
           account_name: row.account_name,
           created_time: row.created_time || '',
           validity: row.validity || '',
@@ -325,12 +342,24 @@ export default {
       } else {
         this.isEdit = false
         this.editingAccountId = null
+        this.accountForm = {
+          server_id: this.activeServerId ? Number(this.activeServerId) : null,
+          account_name: '',
+          created_time: '',
+          validity: '',
+          validityDate: '',
+          permissions: [],
+          contact_person: '',
+          department: '',
+          whitelist: ''
+        }
       }
       this.accountFormVisible = true
     },
 
     resetAccountForm() {
       this.accountForm = {
+        server_id: null,
         account_name: '',
         created_time: '',
         validity: '',
@@ -376,7 +405,7 @@ export default {
             contact_person: this.accountForm.contact_person,
             department: this.accountForm.department,
             whitelist_json: JSON.stringify(whitelistArr),
-            server_id: Number(this.activeServerId)
+            server_id: Number(this.accountForm.server_id)
           }
 
           if (this.isEdit) {
