@@ -133,6 +133,11 @@ func DiffStructs(old interface{}, new interface{}, fieldLabels map[string]string
 		oldFieldValue := oldVal.Field(i)
 		newFieldValue := newVal.Field(i)
 
+		// 跳过struct/interface类型字段（如GORM preload关联对象），避免输出原始结构体dump
+		if oldFieldValue.Kind() == reflect.Struct || oldFieldValue.Kind() == reflect.Interface {
+			continue
+		}
+
 		// 转换为字符串进行比较
 		oldStr := fmt.Sprintf("%v", oldFieldValue.Interface())
 		newStr := fmt.Sprintf("%v", newFieldValue.Interface())

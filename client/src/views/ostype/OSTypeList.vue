@@ -28,14 +28,19 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </span>
     </el-dialog>
+
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </div>
 </template>
 
 <script>
 import { getOSTypes, createOSType, updateOSType, deleteOSType } from '@/api/os_type'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
   name: 'OSTypeList',
+  components: { DualControlDialog },
   data() {
     return {
       osTypes: [],
@@ -73,28 +78,30 @@ export default {
       this.$refs.formRef.validate(async valid => {
         if (!valid) return
         try {
+          const dualToken = await this.$refs.dualControl.open()
           if (this.form.id) {
-            await updateOSType(this.form.id, { name: this.form.name })
+            await updateOSType(this.form.id, { name: this.form.name }, dualToken)
             this.$message.success('更新成功')
           } else {
-            await createOSType({ name: this.form.name })
+            await createOSType({ name: this.form.name }, dualToken)
             this.$message.success('创建成功')
           }
           this.dialogVisible = false
           this.fetchData()
         } catch (e) {
-          console.error(e)
+          if (e.message !== 'canceled') console.error(e)
         }
       })
     },
     handleDelete(row) {
       this.$confirm('确定要删除该操作系统类型吗？', '提示', { type: 'warning' }).then(async () => {
         try {
-          await deleteOSType(row.id)
+          const dualToken = await this.$refs.dualControl.open()
+          await deleteOSType(row.id, dualToken)
           this.$message.success('删除成功')
           this.fetchData()
         } catch (e) {
-          console.error(e)
+          if (e.message !== 'canceled') console.error(e)
         }
       }).catch(() => {})
     }

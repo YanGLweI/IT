@@ -33,17 +33,11 @@ func SetupRouter() *gin.Engine {
 			// 双控验证（需要JWT但不需要双控token）
 			protected.POST("/dual-control/verify", handlers.VerifyDualControl)
 
-			// 区域管理
+			// 区域管理 - 查询（不需要双控）
 			protected.GET("/regions", handlers.ListRegions)
-			protected.POST("/regions", handlers.CreateRegion)
-			protected.PUT("/regions/:id", handlers.UpdateRegion)
-			protected.DELETE("/regions/:id", handlers.DeleteRegion)
 
-			// 操作系统类型管理
+			// 操作系统类型管理 - 查询（不需要双控）
 			protected.GET("/os-types", handlers.ListOSTypes)
-			protected.POST("/os-types", handlers.CreateOSType)
-			protected.PUT("/os-types/:id", handlers.UpdateOSType)
-			protected.DELETE("/os-types/:id", handlers.DeleteOSType)
 
 			// 资产管理 - 查询（不需要双控）
 			protected.GET("/assets", handlers.ListAssets)
@@ -110,6 +104,16 @@ func SetupRouter() *gin.Engine {
 			dual := protected.Group("")
 			dual.Use(middleware.DualControl())
 			{
+				// 区域管理 - 写操作（需要双控）
+				dual.POST("/regions", handlers.CreateRegion)
+				dual.PUT("/regions/:id", handlers.UpdateRegion)
+				dual.DELETE("/regions/:id", handlers.DeleteRegion)
+
+				// 操作系统类型管理 - 写操作（需要双控）
+				dual.POST("/os-types", handlers.CreateOSType)
+				dual.PUT("/os-types/:id", handlers.UpdateOSType)
+				dual.DELETE("/os-types/:id", handlers.DeleteOSType)
+
 				// 资产管理 - 修改删除
 				dual.POST("/assets", handlers.CreateAsset)
 				dual.PUT("/assets/:id", handlers.UpdateAsset)

@@ -93,8 +93,12 @@
           <h4>变更明细</h4>
           <el-table :data="currentDetails" border stripe size="small">
             <el-table-column prop="field_label" label="字段名" width="150" />
-            <el-table-column prop="old_value" label="旧值" show-overflow-tooltip />
-            <el-table-column prop="new_value" label="新值" show-overflow-tooltip />
+            <el-table-column prop="old_value" label="旧值" show-overflow-tooltip>
+              <template slot-scope="scope">{{ formatFieldValue(scope.row.field_name, scope.row.old_value) }}</template>
+            </el-table-column>
+            <el-table-column prop="new_value" label="新值" show-overflow-tooltip>
+              <template slot-scope="scope">{{ formatFieldValue(scope.row.field_name, scope.row.new_value) }}</template>
+            </el-table-column>
           </el-table>
         </div>
       </div>
@@ -214,6 +218,22 @@ export default {
         minute: '2-digit', 
         second: '2-digit' 
       })
+    },
+    formatFieldValue(fieldName, value) {
+      if (!value) return '-'
+      // 系统角色JSON解析为可读格式
+      if (fieldName === 'SystemRolesJSON') {
+        try {
+          const roles = JSON.parse(value)
+          if (Array.isArray(roles) && roles.length > 0) {
+            return roles.map(r => r.system + ': ' + (Array.isArray(r.roles) ? r.roles.join(', ') : r.roles)).join('; ')
+          }
+          return '-'
+        } catch (e) {
+          return value
+        }
+      }
+      return value
     }
   }
 }

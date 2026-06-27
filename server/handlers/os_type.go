@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"it-platform-server/database"
 	"it-platform-server/models"
@@ -28,6 +29,9 @@ func CreateOSType(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
 		return
 	}
+
+	// 清理名称前后空格
+	osType.Name = strings.TrimSpace(osType.Name)
 
 	// 清理软删除的同名记录（避免唯一索引冲突）
 	var softDeleted models.OSType
@@ -71,7 +75,7 @@ func UpdateOSType(c *gin.Context) {
 		return
 	}
 
-	osType.Name = input.Name
+	osType.Name = strings.TrimSpace(input.Name)
 
 	if err := database.GetDB().Save(&osType).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})

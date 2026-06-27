@@ -32,14 +32,19 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </span>
     </el-dialog>
+
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </div>
 </template>
 
 <script>
 import { getRegions, createRegion, updateRegion, deleteRegion } from '@/api/region'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
   name: 'RegionList',
+  components: { DualControlDialog },
   data() {
     return {
       regions: [],
@@ -78,28 +83,30 @@ export default {
       this.$refs.formRef.validate(async valid => {
         if (!valid) return
         try {
+          const dualToken = await this.$refs.dualControl.open()
           if (this.form.id) {
-            await updateRegion(this.form.id, { name: this.form.name, description: this.form.description })
+            await updateRegion(this.form.id, { name: this.form.name, description: this.form.description }, dualToken)
             this.$message.success('更新成功')
           } else {
-            await createRegion({ name: this.form.name, description: this.form.description })
+            await createRegion({ name: this.form.name, description: this.form.description }, dualToken)
             this.$message.success('创建成功')
           }
           this.dialogVisible = false
           this.fetchData()
         } catch (e) {
-          console.error(e)
+          if (e.message !== 'canceled') console.error(e)
         }
       })
     },
     handleDelete(row) {
       this.$confirm('确定要删除该区域吗？', '提示', { type: 'warning' }).then(async () => {
         try {
-          await deleteRegion(row.id)
+          const dualToken = await this.$refs.dualControl.open()
+          await deleteRegion(row.id, dualToken)
           this.$message.success('删除成功')
           this.fetchData()
         } catch (e) {
-          console.error(e)
+          if (e.message !== 'canceled') console.error(e)
         }
       }).catch(() => {})
     }

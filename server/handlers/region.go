@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"it-platform-server/database"
 	"it-platform-server/models"
@@ -28,6 +29,10 @@ func CreateRegion(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
 		return
 	}
+
+	// 清理名称前后空格
+	region.Name = strings.TrimSpace(region.Name)
+	region.Description = strings.TrimSpace(region.Description)
 
 	// 清理软删除的同名记录（避免唯一索引冲突）
 	var softDeleted models.Region
@@ -73,8 +78,8 @@ func UpdateRegion(c *gin.Context) {
 		return
 	}
 
-	region.Name = input.Name
-	region.Description = input.Description
+	region.Name = strings.TrimSpace(input.Name)
+	region.Description = strings.TrimSpace(input.Description)
 
 	if err := database.GetDB().Save(&region).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})

@@ -154,17 +154,12 @@ func CreateUserPermission(c *gin.Context) {
 		return
 	}
 
-	// 调试日志
-	fmt.Printf("创建用户请求: Name=%s, DepartmentID=%d, PositionName=%s\n", req.Name, req.DepartmentID, req.PositionName)
-
 	// 检查部门是否存在
 	var dept models.Department
 	if err := database.GetDB().First(&dept, req.DepartmentID).Error; err != nil {
-		fmt.Printf("查找部门失败: DepartmentID=%d, Error=%v\n", req.DepartmentID, err)
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": fmt.Sprintf("部门不存在 (ID=%d)", req.DepartmentID)})
 		return
 	}
-	fmt.Printf("找到部门: ID=%d, Name=%s\n", dept.ID, dept.Name)
 
 	// 检查所有岗位是否都属于该部门（多个岗位用逗号分隔）
 	positionNames := strings.Split(req.PositionName, ",")
@@ -208,7 +203,7 @@ func CreateUserPermission(c *gin.Context) {
 	username, displayName, approver := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "Name", FieldLabel: "姓名", NewValue: user.Name},
-		{FieldName: "DepartmentID", FieldLabel: "部门ID", NewValue: fmt.Sprintf("%d", user.DepartmentID)},
+		{FieldName: "DepartmentID", FieldLabel: "部门", NewValue: dept.Name},
 		{FieldName: "PositionName", FieldLabel: "岗位名称", NewValue: user.PositionName},
 		{FieldName: "SystemRolesJSON", FieldLabel: "系统角色", NewValue: user.SystemRolesJSON},
 	}
@@ -219,11 +214,8 @@ func CreateUserPermission(c *gin.Context) {
 
 // UpdateUserPermission 编辑用户权限
 func UpdateUserPermission(c *gin.Context) {
-	idStr := c.Param("id")
-	fmt.Printf("更新用户请求: ID参数=%s\n", idStr)
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		fmt.Printf("解析ID失败: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的用户ID"})
 		return
 	}
