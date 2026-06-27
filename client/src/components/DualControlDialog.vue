@@ -94,8 +94,7 @@ export default {
           this.rejectPromise = null
         }
       } catch (e) {
-        const msg = e.response?.data?.message || '验证失败'
-        this.$message.error(msg)
+        // request.js拦截器已统一显示错误提示，此处无需重复弹出
       } finally {
         this.verifying = false
       }
