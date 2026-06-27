@@ -305,6 +305,10 @@ func DeleteUserPermission(c *gin.Context) {
 	var user models.UserPermission
 	database.GetDB().First(&user, id)
 
+	// 查询部门名称用于日志显示
+	var dept models.Department
+	database.GetDB().First(&dept, user.DepartmentID)
+
 	if err := database.GetDB().Delete(&models.UserPermission{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
 		return
@@ -312,8 +316,16 @@ func DeleteUserPermission(c *gin.Context) {
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)
-	fieldLabels := services.GetFieldLabels("user_permission")
-	details := services.DiffStructs(user, models.UserPermission{}, fieldLabels)
+	deptName := dept.Name
+	if deptName == "" {
+		deptName = fmt.Sprintf("%d", user.DepartmentID)
+	}
+	details := []services.LogDetail{
+		{FieldName: "Name", FieldLabel: "姓名", OldValue: user.Name},
+		{FieldName: "DepartmentID", FieldLabel: "部门", OldValue: deptName},
+		{FieldName: "PositionName", FieldLabel: "岗位名称", OldValue: user.PositionName},
+		{FieldName: "SystemRolesJSON", FieldLabel: "系统角色", OldValue: user.SystemRolesJSON},
+	}
 	services.LogOperation(username, displayName, "删除用户权限", "user_permission", user.ID, user.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
