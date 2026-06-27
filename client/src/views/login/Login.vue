@@ -8,6 +8,9 @@
       </div>
     </div>
 
+    <!-- 鼠标轨迹粒子画布 -->
+    <canvas ref="trailCanvas" class="trail-canvas"></canvas>
+
     <!-- 登录卡片 -->
     <div class="login-card">
       <div class="login-header">
@@ -72,13 +75,27 @@ export default {
         username: [{ required: true, message: '请输入域账号', trigger: 'blur' }],
         password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
       },
-      loading: false
+      loading: false,
+      // 鼠标轨迹粒子相关
+      trailParticles: [],
+      trailLastX: 0,
+      trailLastY: 0,
+      trailAnimId: null
     }
   },
   mounted() {
     this.$nextTick(() => {
       if (this.$refs.usernameInput) this.$refs.usernameInput.focus()
     })
+    this.initTrailCanvas()
+  },
+  beforeDestroy() {
+    if (this.trailAnimId) {
+      cancelAnimationFrame(this.trailAnimId)
+    }
+    window.removeEventListener('resize', this.resizeTrailCanvas)
+    window.removeEventListener('mousemove', this.onMouseMove)
+    window.removeEventListener('click', this.onMouseClick)
   },
   methods: {
     handleLogin() {
@@ -118,12 +135,117 @@ export default {
         width: `${size}px`,
         height: `${size}px`
       }
+    },
+    // ---- 鼠标轨迹粒子效果 ----
+    initTrailCanvas() {
+      const canvas = this.$refs.trailCanvas
+      if (!canvas) return
+      this.trailCtx = canvas.getContext('2d')
+      this.resizeTrailCanvas()
+      window.addEventListener('resize', this.resizeTrailCanvas)
+      window.addEventListener('mousemove', this.onMouseMove)
+      window.addEventListener('click', this.onMouseClick)
+      this.animateTrail()
+    },
+    resizeTrailCanvas() {
+      const canvas = this.$refs.trailCanvas
+      if (!canvas) return
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    },
+    onMouseMove(e) {
+      const charList = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}/_+=[];:.,@#$&'
+      const minDistance = 12
+      const dx = e.clientX - this.trailLastX
+      const dy = e.clientY - this.trailLastY
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      if (distance > minDistance) {
+        // 每次鼠标移动生成一圈 3~5 个字符围绕鼠标
+        const count = 3 + Math.floor(Math.random() * 3)
+        const radius = 15 + Math.random() * 20
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5
+          const px = e.clientX + Math.cos(angle) * radius
+          const py = e.clientY + Math.sin(angle) * radius
+          const text = charList.charAt(Math.floor(Math.random() * charList.length))
+          this.trailParticles.push({
+            x: px,
+            y: py,
+            text: text,
+            alpha: 0.7 + Math.random() * 0.3,
+            fadeSpeed: 0.012 + Math.random() * 0.008,
+            size: Math.random() * 4 + 12,
+            velocityY: -0.2 - Math.random() * 0.3,
+            velocityX: (Math.random() - 0.5) * 0.2
+          })
+        }
+        this.trailLastX = e.clientX
+        this.trailLastY = e.clientY
+      }
+    },
+    onMouseClick(e) {
+      const charList = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}/_+=[];:.,@#$&*()'
+      // 点击时以鼠标为圆心向外扩散 2~3 圈
+      const rings = 2 + Math.floor(Math.random() * 2)
+      for (let ring = 0; ring < rings; ring++) {
+        const count = 8 + ring * 5 + Math.floor(Math.random() * 4)
+        const baseRadius = 10 + ring * 25
+        const speed = 1.5 + ring * 0.8
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 / count) * i + Math.random() * 0.3
+          const radius = baseRadius + Math.random() * 10
+          const px = e.clientX + Math.cos(angle) * 5
+          const py = e.clientY + Math.sin(angle) * 5
+          const text = charList.charAt(Math.floor(Math.random() * charList.length))
+          this.trailParticles.push({
+            x: px,
+            y: py,
+            text: text,
+            alpha: 1.0,
+            fadeSpeed: 0.015 + Math.random() * 0.01,
+            size: Math.random() * 5 + 13,
+            velocityY: Math.sin(angle) * speed,
+            velocityX: Math.cos(angle) * speed
+          })
+        }
+      }
+    },
+    animateTrail() {
+      const ctx = this.trailCtx
+      const canvas = this.$refs.trailCanvas
+      if (!ctx || !canvas) return
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      for (let i = this.trailParticles.length - 1; i >= 0; i--) {
+        const p = this.trailParticles[i]
+        ctx.fillStyle = `rgba(0, 200, 255, ${p.alpha})`
+        ctx.font = `${p.size}px 'Courier New', monospace`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(p.text, p.x, p.y)
+        p.x += (p.velocityX || 0)
+        p.y += p.velocityY
+        p.alpha -= p.fadeSpeed
+        if (p.alpha <= 0) {
+          this.trailParticles.splice(i, 1)
+        }
+      }
+      this.trailAnimId = requestAnimationFrame(this.animateTrail)
     }
   }
 }
 </script>
 
 <style scoped>
+.trail-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .login-container {
   width: 100%;
   height: 100vh;
@@ -188,7 +310,7 @@ export default {
     0 20px 60px rgba(0, 0, 0, 0.3),
     0 0 40px rgba(0, 120, 255, 0.1);
   position: relative;
-  z-index: 1;
+  z-index: 2;
   backdrop-filter: blur(10px);
 }
 
