@@ -80,7 +80,10 @@ export default {
       trailParticles: [],
       trailLastX: 0,
       trailLastY: 0,
-      trailAnimId: null
+      trailAnimId: null,
+      // 点击爆发范围（持续点击会递增）
+      clickBurstRadius: 60,
+      clickDecayTimer: null
     }
   },
   mounted() {
@@ -96,6 +99,7 @@ export default {
     window.removeEventListener('resize', this.resizeTrailCanvas)
     window.removeEventListener('mousemove', this.onMouseMove)
     window.removeEventListener('click', this.onMouseClick)
+    if (this.clickDecayTimer) clearTimeout(this.clickDecayTimer)
   },
   methods: {
     handleLogin() {
@@ -185,30 +189,34 @@ export default {
     },
     onMouseClick(e) {
       const charList = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}/_+=[];:.,@#$&*()'
-      // 点击时以鼠标为圆心向外扩散 2~3 圈
-      const rings = 2 + Math.floor(Math.random() * 2)
-      for (let ring = 0; ring < rings; ring++) {
-        const count = 8 + ring * 5 + Math.floor(Math.random() * 4)
-        const baseRadius = 10 + ring * 25
-        const speed = 1.5 + ring * 0.8
-        for (let i = 0; i < count; i++) {
-          const angle = (Math.PI * 2 / count) * i + Math.random() * 0.3
-          const radius = baseRadius + Math.random() * 10
-          const px = e.clientX + Math.cos(angle) * 5
-          const py = e.clientY + Math.sin(angle) * 5
-          const text = charList.charAt(Math.floor(Math.random() * charList.length))
-          this.trailParticles.push({
-            x: px,
-            y: py,
-            text: text,
-            alpha: 1.0,
-            fadeSpeed: 0.015 + Math.random() * 0.01,
-            size: Math.random() * 5 + 13,
-            velocityY: Math.sin(angle) * speed,
-            velocityX: Math.cos(angle) * speed
-          })
-        }
+      const radius = this.clickBurstRadius
+      // 在鼠标为圆心、当前半径的圆形区域内随机生成字符
+      const count = Math.floor(radius / 3) + 8
+      for (let i = 0; i < count; i++) {
+        // 极坐标随机：角度随机，半径取 sqrt 使分布更均匀
+        const angle = Math.random() * Math.PI * 2
+        const r = Math.sqrt(Math.random()) * radius
+        const px = e.clientX + Math.cos(angle) * r
+        const py = e.clientY + Math.sin(angle) * r
+        const text = charList.charAt(Math.floor(Math.random() * charList.length))
+        this.trailParticles.push({
+          x: px,
+          y: py,
+          text: text,
+          alpha: 0.9 + Math.random() * 0.1,
+          fadeSpeed: 0.008 + Math.random() * 0.008,
+          size: Math.random() * 5 + 12,
+          velocityY: -0.15 - Math.random() * 0.25,
+          velocityX: (Math.random() - 0.5) * 0.15
+        })
       }
+      // 每次点击扩大范围，上限 300px
+      this.clickBurstRadius = Math.min(this.clickBurstRadius + 20, 300)
+      // 重置衰减计时器：2秒无点击则恢复初始范围
+      if (this.clickDecayTimer) clearTimeout(this.clickDecayTimer)
+      this.clickDecayTimer = setTimeout(() => {
+        this.clickBurstRadius = 60
+      }, 2000)
     },
     animateTrail() {
       const ctx = this.trailCtx
