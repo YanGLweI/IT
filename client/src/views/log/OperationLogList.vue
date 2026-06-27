@@ -233,6 +233,31 @@ export default {
           return value
         }
       }
+      // 权限JSON解析为可读格式
+      if (fieldName === 'PermissionsJSON') {
+        try {
+          const perms = JSON.parse(value)
+          if (Array.isArray(perms) && perms.length > 0) {
+            const labels = perms.map(p => p === 'read' ? '读' : p === 'write' ? '写' : p)
+            return labels.join('、')
+          }
+          return '-'
+        } catch (e) {
+          return value
+        }
+      }
+      // 白名单JSON解析为可读格式
+      if (fieldName === 'WhitelistJSON') {
+        try {
+          const ips = JSON.parse(value)
+          if (Array.isArray(ips) && ips.length > 0) {
+            return ips.join(', ')
+          }
+          return '-'
+        } catch (e) {
+          return value
+        }
+      }
       return value
     }
   }

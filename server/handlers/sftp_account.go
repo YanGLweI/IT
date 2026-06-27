@@ -70,14 +70,14 @@ func CreateSftpAccount(c *gin.Context) {
 	// 记录操作日志
 	username, displayName, _ := services.GetUserContext(c)
 	details := []services.LogDetail{
-		{FieldName: "ServerID", FieldLabel: "服务器ID", NewValue: fmt.Sprintf("%d", account.ServerID)},
+		{FieldName: "ServerID", FieldLabel: "服务器", NewValue: server.Name},
 		{FieldName: "AccountName", FieldLabel: "账号名称", NewValue: account.AccountName},
 		{FieldName: "CreatedTime", FieldLabel: "创建时间", NewValue: account.CreatedTime},
 		{FieldName: "Validity", FieldLabel: "有效期", NewValue: account.Validity},
-		{FieldName: "PermissionsJSON", FieldLabel: "权限", NewValue: account.PermissionsJSON},
+		{FieldName: "PermissionsJSON", FieldLabel: "权限", NewValue: formatPermissions(account.PermissionsJSON)},
 		{FieldName: "ContactPerson", FieldLabel: "联系人", NewValue: account.ContactPerson},
 		{FieldName: "Department", FieldLabel: "部门", NewValue: account.Department},
-		{FieldName: "WhitelistJSON", FieldLabel: "白名单", NewValue: account.WhitelistJSON},
+		{FieldName: "WhitelistJSON", FieldLabel: "白名单", NewValue: formatWhitelist(account.WhitelistJSON)},
 	}
 	services.LogOperation(username, displayName, "创建SFTP账号", "sftp_account", account.ID, account.AccountName, "", c.ClientIP(), details)
 
@@ -142,8 +142,18 @@ func UpdateSftpAccount(c *gin.Context) {
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)
-	fieldLabels := services.GetFieldLabels("sftp_account")
-	details := services.DiffStructs(oldAccount, account, fieldLabels)
+	oldServerName := getServerName(oldAccount.ServerID)
+	newServerName := getServerName(account.ServerID)
+	details := []services.LogDetail{
+		{FieldName: "ServerID", FieldLabel: "服务器", OldValue: oldServerName, NewValue: newServerName},
+		{FieldName: "AccountName", FieldLabel: "账号名称", OldValue: oldAccount.AccountName, NewValue: account.AccountName},
+		{FieldName: "CreatedTime", FieldLabel: "创建时间", OldValue: oldAccount.CreatedTime, NewValue: account.CreatedTime},
+		{FieldName: "Validity", FieldLabel: "有效期", OldValue: oldAccount.Validity, NewValue: account.Validity},
+		{FieldName: "PermissionsJSON", FieldLabel: "权限", OldValue: formatPermissions(oldAccount.PermissionsJSON), NewValue: formatPermissions(account.PermissionsJSON)},
+		{FieldName: "ContactPerson", FieldLabel: "联系人", OldValue: oldAccount.ContactPerson, NewValue: account.ContactPerson},
+		{FieldName: "Department", FieldLabel: "部门", OldValue: oldAccount.Department, NewValue: account.Department},
+		{FieldName: "WhitelistJSON", FieldLabel: "白名单", OldValue: formatWhitelist(oldAccount.WhitelistJSON), NewValue: formatWhitelist(account.WhitelistJSON)},
+	}
 	services.LogOperation(username, displayName, "更新SFTP账号", "sftp_account", account.ID, account.AccountName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": account})
@@ -165,8 +175,17 @@ func DeleteSftpAccount(c *gin.Context) {
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)
-	fieldLabels := services.GetFieldLabels("sftp_account")
-	details := services.DiffStructs(account, models.SftpAccount{}, fieldLabels)
+	serverName := getServerName(account.ServerID)
+	details := []services.LogDetail{
+		{FieldName: "ServerID", FieldLabel: "服务器", OldValue: serverName},
+		{FieldName: "AccountName", FieldLabel: "账号名称", OldValue: account.AccountName},
+		{FieldName: "CreatedTime", FieldLabel: "创建时间", OldValue: account.CreatedTime},
+		{FieldName: "Validity", FieldLabel: "有效期", OldValue: account.Validity},
+		{FieldName: "PermissionsJSON", FieldLabel: "权限", OldValue: formatPermissions(account.PermissionsJSON)},
+		{FieldName: "ContactPerson", FieldLabel: "联系人", OldValue: account.ContactPerson},
+		{FieldName: "Department", FieldLabel: "部门", OldValue: account.Department},
+		{FieldName: "WhitelistJSON", FieldLabel: "白名单", OldValue: formatWhitelist(account.WhitelistJSON)},
+	}
 	services.LogOperation(username, displayName, "删除SFTP账号", "sftp_account", account.ID, account.AccountName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
@@ -440,4 +459,51 @@ func joinWithSep(strs []string, sep string) string {
 		result += s
 	}
 	return result
+}
+
+// formatPermissions 将权限JSON转为可读格式
+func formatPermissions(jsonStr string) string {
+	if jsonStr == "" || jsonStr == "[]" {
+		return "-"
+	}
+	var perms []string
+	if err := json.Unmarshal([]byte(jsonStr), &perms); err != nil {
+		return jsonStr
+	}
+	labels := []string{}
+	for _, p := range perms {
+		if p == "read" {
+			labels = append(labels, "读")
+		} else if p == "write" {
+			labels = append(labels, "写")
+		}
+	}
+	if len(labels) == 0 {
+		return "-"
+	}
+	return joinWithSep(labels, "、")
+}
+
+// formatWhitelist 将白名单JSON转为可读格式
+func formatWhitelist(jsonStr string) string {
+	if jsonStr == "" || jsonStr == "[]" {
+		return "-"
+	}
+	var ips []string
+	if err := json.Unmarshal([]byte(jsonStr), &ips); err != nil {
+		return jsonStr
+	}
+	if len(ips) == 0 {
+		return "-"
+	}
+	return joinWithSep(ips, ", ")
+}
+
+// getServerName 根据服务器ID获取名称
+func getServerName(serverID uint) string {
+	var server models.SftpServer
+	if err := database.GetDB().First(&server, serverID).Error; err == nil {
+		return server.Name
+	}
+	return fmt.Sprintf("%d", serverID)
 }
