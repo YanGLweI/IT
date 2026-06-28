@@ -8,6 +8,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "animejs": "^4.5.0",
     "axios": "^1.7.2",
     "docx-preview": "^0.3.7",
     "echarts": "^5.5.0",

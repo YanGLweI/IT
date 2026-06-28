@@ -17,7 +17,7 @@
         <div class="logo-icon">
           <i class="el-icon-monitor"></i>
         </div>
-        <h1>IT 管理平台</h1>
+        <h1 ref="titleText">IT 管理平台</h1>
         <p class="subtitle">IT Management Platform</p>
       </div>
 
@@ -62,6 +62,7 @@
 
 <script>
 import { login } from '@/api/auth'
+import { animate, stagger, splitText } from 'animejs'
 
 export default {
   name: 'Login',
@@ -76,6 +77,7 @@ export default {
         password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
       },
       loading: false,
+      titleAnimation: null,
       // 鼠标轨迹粒子相关
       trailParticles: [],
       trailLastX: 0,
@@ -91,8 +93,12 @@ export default {
       if (this.$refs.usernameInput) this.$refs.usernameInput.focus()
     })
     this.initTrailCanvas()
+    this.initTitleAnimation()
   },
   beforeDestroy() {
+    if (this.titleAnimation) {
+      this.titleAnimation.pause()
+    }
     if (this.trailAnimId) {
       cancelAnimationFrame(this.trailAnimId)
     }
@@ -139,6 +145,25 @@ export default {
         width: `${size}px`,
         height: `${size}px`
       }
+    },
+    initTitleAnimation() {
+      const el = this.$refs.titleText
+      if (!el) return
+      const { chars } = splitText(el, { words: false, chars: true })
+      this.titleAnimation = animate(chars, {
+        y: [
+          { to: '-1.5rem', ease: 'outExpo', duration: 500 },
+          { to: 0, ease: 'outBounce', duration: 700, delay: 80 }
+        ],
+        rotate: {
+          from: '-1turn',
+          delay: 0
+        },
+        delay: stagger(50),
+        ease: 'inOutCirc',
+        loopDelay: 1500,
+        loop: true
+      })
     },
     // ---- 鼠标轨迹粒子效果 ----
     initTrailCanvas() {
