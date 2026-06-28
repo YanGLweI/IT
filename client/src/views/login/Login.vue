@@ -18,7 +18,7 @@
           <i class="el-icon-monitor"></i>
         </div>
         <h1 ref="titleText">IT 管理平台</h1>
-        <p class="subtitle">IT Management Platform</p>
+        <p ref="subtitleText" class="subtitle">IT Management Platform</p>
       </div>
 
       <el-form :model="loginForm" :rules="loginRules" ref="loginFormRef" class="login-form">
@@ -62,7 +62,7 @@
 
 <script>
 import { login } from '@/api/auth'
-import { animate, stagger, splitText } from 'animejs'
+import { animate, stagger, splitText, scrambleText } from 'animejs'
 
 export default {
   name: 'Login',
@@ -78,6 +78,7 @@ export default {
       },
       loading: false,
       titleAnimation: null,
+      subtitleAnimation: null,
       // 鼠标轨迹粒子相关
       trailParticles: [],
       trailLastX: 0,
@@ -94,10 +95,14 @@ export default {
     })
     this.initTrailCanvas()
     this.initTitleAnimation()
+    this.initSubtitleAnimation()
   },
   beforeDestroy() {
     if (this.titleAnimation) {
       this.titleAnimation.pause()
+    }
+    if (this.subtitleAnimation) {
+      this.subtitleAnimation.pause()
     }
     if (this.trailAnimId) {
       cancelAnimationFrame(this.trailAnimId)
@@ -163,6 +168,15 @@ export default {
         ease: 'inOutCirc',
         loopDelay: 1500,
         loop: true
+      })
+    },
+    initSubtitleAnimation() {
+      const el = this.$refs.subtitleText
+      if (!el) return
+      this.subtitleAnimation = animate(el, {
+        innerHTML: scrambleText(),
+        loop: true,
+        loopDelay: 2000
       })
     },
     // ---- 鼠标轨迹粒子效果 ----
