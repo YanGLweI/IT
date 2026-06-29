@@ -13,6 +13,13 @@ type Config struct {
 	Database DatabaseConfig `yaml:"database"`
 	Upload   UploadConfig   `yaml:"upload"`
 	LDAP     LDAPConfig     `yaml:"ldap"`
+	Document DocumentConfig `yaml:"document"`
+}
+
+// DocumentConfig 文档配置
+type DocumentConfig struct {
+	PermissionDocumentVersion      string `yaml:"permission_document_version"`
+	UserPermissionDocumentVersion string `yaml:"user_permission_document_version"`
 }
 
 // ServerConfig 服务器配置

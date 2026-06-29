@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"it-platform-server/config"
 	"it-platform-server/database"
 	"it-platform-server/models"
 	"it-platform-server/services"
@@ -484,6 +485,12 @@ func ExportSftpConfirmation(c *gin.Context) {
 	for col, width := range colWidths {
 		f.SetColWidth(sheetName, col, col, width)
 	}
+
+	// 设置右侧页脚：版本号 + 信息等级（淡灰色）
+	footerText := fmt.Sprintf("&R&K999999%s\n信息等级：内部公开 Info Class: Internal Disclosure", config.Cfg.Document.UserPermissionDocumentVersion)
+	f.SetHeaderFooter(sheetName, &excelize.HeaderFooterOptions{
+		OddFooter: footerText,
+	})
 
 	// 输出
 	fileName := fmt.Sprintf("SFTP账号确认表(%s)-%s.xlsx", yearMonth, server.Name)

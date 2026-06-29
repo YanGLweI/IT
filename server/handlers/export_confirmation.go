@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"it-platform-server/config"
 	"it-platform-server/database"
 	"it-platform-server/models"
 
@@ -349,6 +350,12 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	f.SetColWidth(sheetName, "E", "E", 35)  // 角色
 	f.SetColWidth(sheetName, "F", "F", 14)  // 确认结果
 	f.SetColWidth(sheetName, "G", "G", 20)  // 特殊确认人（增加宽度，留出签字空间）
+
+	// 设置右侧页脚：版本号 + 信息等级（淡灰色）
+	footerText = fmt.Sprintf("&R&K999999%s\n信息等级：内部公开 Info Class: Internal Disclosure", config.Cfg.Document.UserPermissionDocumentVersion)
+	f.SetHeaderFooter(sheetName, &excelize.HeaderFooterOptions{
+		OddFooter: footerText,
+	})
 
 	// 输出Excel文件
 	fileName := fmt.Sprintf("IT07-2.0 用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)

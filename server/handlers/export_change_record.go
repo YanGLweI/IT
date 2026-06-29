@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"it-platform-server/config"
 	"it-platform-server/database"
 	"it-platform-server/models"
 
@@ -106,7 +107,7 @@ func ExportChangeRecord(c *gin.Context) {
 			Family: "微软雅黑",
 		},
 		Alignment: &excelize.Alignment{
-			Vertical: "center",
+			Vertical: "bottom",
 			WrapText: true,
 		},
 	})
@@ -187,7 +188,7 @@ func ExportChangeRecord(c *gin.Context) {
 			Family: "微软雅黑",
 		},
 		Alignment: &excelize.Alignment{
-			Vertical: "center",
+			Vertical: "bottom",
 		},
 	})
 
@@ -197,43 +198,45 @@ func ExportChangeRecord(c *gin.Context) {
 
 	// Row 1: 标题
 	f.SetCellValue(sheet1, "A1", "用户变更记录表")
-	f.MergeCell(sheet1, "A1", "D1")
-	f.SetCellStyle(sheet1, "A1", "D1", titleStyle)
+	f.MergeCell(sheet1, "A1", "C1")
+	f.SetCellStyle(sheet1, "A1", "C1", titleStyle)
 	f.SetRowHeight(sheet1, 1, 36)
 
-	// Row 2: 申请信息
-	f.SetCellValue(sheet1, "A2", "申请部门：                                   申请人：                                    申请日期：")
-	f.MergeCell(sheet1, "A2", "D2")
-	f.SetCellStyle(sheet1, "A2", "D2", infoStyle)
-	f.SetRowHeight(sheet1, 2, 30)
+	// Row 2: 申请信息（带下划线）
+	f.SetCellValue(sheet1, "A2", "申请部门：_________  申请人：_________  申请日期：_________")
+	f.MergeCell(sheet1, "A2", "C2")
+	f.SetCellStyle(sheet1, "A2", "C2", infoStyle)
+	f.SetRowHeight(sheet1, 2, 28)
 
-	// Row 3: 岗位(下拉) + 审批人
+	// Row 3: 岗位(下拉)
 	f.SetCellValue(sheet1, "A3", "岗位：")
 	f.SetCellStyle(sheet1, "A3", "A3", infoStyle)
-	// C3 将由数据验证设置为下拉选择
-	f.SetCellValue(sheet1, "B3", "")
+	// B3: 岗位下拉选择（设置占位提示文字，选择后自动替换）
+	f.SetCellValue(sheet1, "B3", "▼ 请下拉选择岗位")
 	f.SetCellStyle(sheet1, "B3", "B3", infoStyle)
-	f.SetCellValue(sheet1, "C3", "部门审批人：                           审批日期：")
-	f.MergeCell(sheet1, "C3", "D3")
-	f.SetCellStyle(sheet1, "C3", "D3", infoStyle)
 	f.SetRowHeight(sheet1, 3, 30)
 
-	// Row 4: 注释
-	f.SetCellValue(sheet1, "A4", "注：不需要的权限请划竖线丨，删除的权限请打×，需要的权限请打√")
-	f.MergeCell(sheet1, "A4", "D4")
-	f.SetCellStyle(sheet1, "A4", "D4", noteStyle)
-	f.SetRowHeight(sheet1, 4, 22)
+	// Row 4: 审批人 + 审批日期（带下划线）
+	f.SetCellValue(sheet1, "A4", "部门审批人：_________              审批日期：_________")
+	f.MergeCell(sheet1, "A4", "C4")
+	f.SetCellStyle(sheet1, "A4", "C4", infoStyle)
+	f.SetRowHeight(sheet1, 4, 28)
 
-	// Row 5: 表头
-	headers := []string{"系统", "角色", "账号名", "备注"}
+	// Row 5: 注释
+	f.SetCellValue(sheet1, "A5", "注：不需要的权限请划竖线丨，删除的权限请打×，需要的权限请打√")
+	f.SetCellStyle(sheet1, "A5", "A5", noteStyle)
+	f.SetRowHeight(sheet1, 5, 22)
+
+	// Row 6: 表头
+	headers := []string{"系统", "角色", "账号名"}
 	for i, h := range headers {
 		col := string(rune('A' + i))
-		f.SetCellValue(sheet1, col+"5", h)
-		f.SetCellStyle(sheet1, col+"5", col+"5", tableHeaderStyle)
+		f.SetCellValue(sheet1, col+"6", h)
+		f.SetCellStyle(sheet1, col+"6", col+"6", tableHeaderStyle)
 	}
-	f.SetRowHeight(sheet1, 5, 28)
+	f.SetRowHeight(sheet1, 6, 26)
 
-	// Row 6~25: 数据行（公式），预留20行
+	// Row 7~23: 数据行（公式），预留17行
 	// 查找表起始行（Sheet2 的 Row 29 + 1 表头 = 数据从 Row 30 开始）
 	lookupStartRow := 30
 	lookupEndRow := lookupStartRow + len(lookupRows) - 1
@@ -244,12 +247,12 @@ func ExportChangeRecord(c *gin.Context) {
 	// Sheet2 名称（后面创建）
 	sheet2Name := "权限规则参考"
 
-	for row := 6; row <= 25; row++ {
-		n := row - 5 // 第几个匹配项 (1, 2, 3, ...)
+	for row := 7; row <= 23; row++ {
+		n := row - 6 // 第几个匹配项 (1, 2, 3, ...)
 
-		// A列公式: 系统名 - 使用 INDEX + SMALL + IF 数组公式
+		// A列公式: 系统名 - 排除占位提示文字
 		formulaA := fmt.Sprintf(
-			`IFERROR(INDEX('%s'!B:B,SMALL(IF('%s'!$A$%d:$A$%d=$B$3,ROW('%s'!$A$%d:$A$%d)),%d)),"")`,
+			`IF(OR($B$3="",$B$3="▼ 请下拉选择岗位"),"",IFERROR(INDEX('%s'!B:B,SMALL(IF('%s'!$A$%d:$A$%d=$B$3,ROW('%s'!$A$%d:$A$%d)),%d)),""))`,
 			sheet2Name, sheet2Name, lookupStartRow, lookupEndRow, sheet2Name, lookupStartRow, lookupEndRow, n,
 		)
 		cellA := fmt.Sprintf("A%d", row)
@@ -270,23 +273,52 @@ func ExportChangeRecord(c *gin.Context) {
 		f.SetCellStyle(sheet1, cellA, cellA, dataCellStyle)
 		f.SetCellStyle(sheet1, cellB, cellB, dataCellStyle)
 		f.SetCellStyle(sheet1, fmt.Sprintf("C%d", row), fmt.Sprintf("C%d", row), centerDataStyle)
-		f.SetCellStyle(sheet1, fmt.Sprintf("D%d", row), fmt.Sprintf("D%d", row), dataCellStyle)
-		f.SetRowHeight(sheet1, row, 30)
+		f.SetRowHeight(sheet1, row, 28)
 	}
 
-	// Row 26: 签字栏
-	signRow := 26
-	f.SetCellValue(sheet1, fmt.Sprintf("A%d", signRow),
-		"开通人：                          开通日期：                          复核人：                          复核日期：                          申请人确认：                          确认日期：")
-	f.MergeCell(sheet1, fmt.Sprintf("A%d", signRow), fmt.Sprintf("D%d", signRow))
-	f.SetCellStyle(sheet1, fmt.Sprintf("A%d", signRow), fmt.Sprintf("D%d", signRow), footerStyle)
-	f.SetRowHeight(sheet1, signRow, 30)
+	// Row 24: 备注行（带全边框）
+	noteRow := 24
+	f.SetCellValue(sheet1, fmt.Sprintf("A%d", noteRow), "备注：")
+	f.MergeCell(sheet1, fmt.Sprintf("A%d", noteRow), fmt.Sprintf("C%d", noteRow))
+	// 创建带全边框的备注样式
+	noteBorderStyle, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{
+			Size:   11,
+			Family: "微软雅黑",
+		},
+		Alignment: &excelize.Alignment{
+			Vertical: "center",
+		},
+		Border: []excelize.Border{
+			{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+		},
+	})
+	f.SetCellStyle(sheet1, fmt.Sprintf("A%d", noteRow), fmt.Sprintf("C%d", noteRow), noteBorderStyle)
+	f.SetRowHeight(sheet1, noteRow, 28)
 
-	// 设置列宽
-	f.SetColWidth(sheet1, "A", "A", 20)  // 系统
+	// Row 25: 签字栏第一行（开通人、复核人）- 合并显示，带下划线
+	signRow1 := 25
+	f.SetCellValue(sheet1, fmt.Sprintf("A%d", signRow1),
+		"开通人：_________  开通日期：_________  复核人：_________  复核日期：_________")
+	f.MergeCell(sheet1, fmt.Sprintf("A%d", signRow1), fmt.Sprintf("C%d", signRow1))
+	f.SetCellStyle(sheet1, fmt.Sprintf("A%d", signRow1), fmt.Sprintf("C%d", signRow1), footerStyle)
+	f.SetRowHeight(sheet1, signRow1, 28)
+
+	// Row 26: 签字栏第二行（申请人确认）- 合并显示，带下划线
+	signRow2 := 26
+	f.SetCellValue(sheet1, fmt.Sprintf("A%d", signRow2),
+		"申请人确认：_________              确认日期：_________")
+	f.MergeCell(sheet1, fmt.Sprintf("A%d", signRow2), fmt.Sprintf("C%d", signRow2))
+	f.SetCellStyle(sheet1, fmt.Sprintf("A%d", signRow2), fmt.Sprintf("C%d", signRow2), footerStyle)
+	f.SetRowHeight(sheet1, signRow2, 28)
+
+	// 设置列宽（仅A-C三列，适配A4打印）
+	f.SetColWidth(sheet1, "A", "A", 18)  // 系统
 	f.SetColWidth(sheet1, "B", "B", 35)  // 角色
-	f.SetColWidth(sheet1, "C", "C", 18)  // 账号名
-	f.SetColWidth(sheet1, "D", "D", 18)  // 备注
+	f.SetColWidth(sheet1, "C", "C", 20)  // 账号名
 
 	// 设置Sheet1页面: A4纵向
 	f.SetPageLayout(sheet1, &excelize.PageLayoutOptions{
@@ -306,12 +338,19 @@ func ExportChangeRecord(c *gin.Context) {
 		Top:    float64Ptr(0.5),
 	})
 
+	// 设置右侧页脚：版本号 + 信息等级（淡灰色）
+	footerText := fmt.Sprintf("&R&K999999%s\n信息等级：内部公开 Info Class: Internal Disclosure", config.Cfg.Document.PermissionDocumentVersion)
+	f.SetHeaderFooter(sheet1, &excelize.HeaderFooterOptions{
+		OddFooter: footerText,
+	})
+
 	// 为 B3 设置数据验证（岗位下拉框）
 	// 数据源在 Sheet2 的 H1:H{posCount}
 	posCount := len(rules)
 	dv := excelize.NewDataValidation(true)
 	dv.Sqref = "B3"
 	dv.SetSqrefDropList(fmt.Sprintf("'%s'!$H$1:$H$%d", sheet2Name, posCount))
+	dv.SetError(excelize.DataValidationErrorStyleWarning, "提示", "请从下拉列表中选择岗位")
 	f.AddDataValidation(sheet1, dv)
 
 	// ==================== Sheet2: 权限规则参考 ====================
