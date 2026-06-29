@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"it-platform-server/database"
@@ -39,6 +41,44 @@ func ListSftpAccounts(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": accounts})
 }
 
+// normalizeDate 解析多种日期格式，统一返回 yyyy-MM-dd 格式
+// 支持: yyyy-MM-dd, yyyy/MM/dd, yyyy.MM.dd, yyyyMMdd
+func normalizeDate(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+
+	// yyyy-MM-dd
+	if m := regexp.MustCompile(`^(\d{4})-(\d{1,2})-(\d{1,2})$`).FindStringSubmatch(s); m != nil {
+		return buildDate(m[1], m[2], m[3])
+	}
+	// yyyy/MM/dd
+	if m := regexp.MustCompile(`^(\d{4})/(\d{1,2})/(\d{1,2})$`).FindStringSubmatch(s); m != nil {
+		return buildDate(m[1], m[2], m[3])
+	}
+	// yyyy.MM.dd
+	if m := regexp.MustCompile(`^(\d{4})\.(\d{1,2})\.(\d{1,2})$`).FindStringSubmatch(s); m != nil {
+		return buildDate(m[1], m[2], m[3])
+	}
+	// yyyyMMdd
+	if m := regexp.MustCompile(`^(\d{4})(\d{2})(\d{2})$`).FindStringSubmatch(s); m != nil {
+		return buildDate(m[1], m[2], m[3])
+	}
+	// 无法解析，返回原值
+	return s
+}
+
+func buildDate(y, m, d string) string {
+	year, _ := strconv.Atoi(y)
+	month, _ := strconv.Atoi(m)
+	day, _ := strconv.Atoi(d)
+	if month < 1 || month > 12 || day < 1 || day > 31 {
+		return fmt.Sprintf("%s-%s-%s", y, m, d)
+	}
+	return fmt.Sprintf("%04d-%02d-%02d", year, month, day)
+}
+
 // CreateSftpAccount 创建SFTP账号
 func CreateSftpAccount(c *gin.Context) {
 	var account models.SftpAccount
@@ -46,6 +86,9 @@ func CreateSftpAccount(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
 		return
 	}
+
+	// 规范化创建时间日期格式
+	account.CreatedTime = normalizeDate(account.CreatedTime)
 
 	// 检查服务器是否存在
 	var server models.SftpServer
@@ -128,7 +171,7 @@ func UpdateSftpAccount(c *gin.Context) {
 
 	account.AccountName = input.AccountName
 	account.ServerID = input.ServerID
-	account.CreatedTime = input.CreatedTime
+	account.CreatedTime = normalizeDate(input.CreatedTime)
 	account.Validity = input.Validity
 	account.PermissionsJSON = input.PermissionsJSON
 	account.ContactPerson = input.ContactPerson

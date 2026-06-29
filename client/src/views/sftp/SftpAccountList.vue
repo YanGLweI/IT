@@ -110,7 +110,12 @@
           <el-input v-model="accountForm.account_name" placeholder="请输入账号名" />
         </el-form-item>
         <el-form-item label="创建时间" prop="created_time">
-          <el-input v-model="accountForm.created_time" placeholder="如：2024-01-15" />
+          <el-input
+            v-model="accountForm.created_time"
+            placeholder="如：2024-01-15 或 2024/1/15"
+            @blur="normalizeCreatedTime"
+          />
+          <div class="field-hint">支持格式：2026-01-15、2026/01/15、2026.01.15、20260115</div>
         </el-form-item>
         <el-form-item label="有效期" prop="validity">
           <el-radio-group v-model="validityType" style="margin-bottom: 8px">
@@ -189,7 +194,13 @@ export default {
       validityType: 'long',
       accountRules: {
         server_id: [{ required: true, message: '请选择所属服务器', trigger: 'change' }],
-        account_name: [{ required: true, message: '请输入账号名', trigger: 'blur' }]
+        account_name: [{ required: true, message: '请输入账号名', trigger: 'blur' }],
+        created_time: [{ validator: (rule, value, callback) => {
+          if (!value) return callback()
+          const parsed = this.parseDate(value)
+          if (!parsed) return callback(new Error('请输入有效的日期'))
+          callback()
+        }, trigger: 'blur' }]
       },
       // 导出
       exporting: false
@@ -249,6 +260,42 @@ export default {
         return JSON.parse(json)
       } catch {
         return []
+      }
+    },
+
+    // 多格式日期解析，返回 yyyy-MM-dd 或 null
+    parseDate(str) {
+      if (!str) return null
+      str = String(str).trim()
+      // 已经是标准格式 yyyy-MM-dd
+      let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+      if (m) return this.formatDate(m[1], m[2], m[3])
+      // yyyy/MM/dd
+      m = str.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/)
+      if (m) return this.formatDate(m[1], m[2], m[3])
+      // yyyy.MM.dd
+      m = str.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/)
+      if (m) return this.formatDate(m[1], m[2], m[3])
+      // yyyyMMdd
+      m = str.match(/^(\d{4})(\d{2})(\d{2})$/)
+      if (m) return this.formatDate(m[1], m[2], m[3])
+      return null
+    },
+    formatDate(y, m, d) {
+      const year = parseInt(y)
+      const month = parseInt(m)
+      const day = parseInt(d)
+      if (month < 1 || month > 12 || day < 1 || day > 31) return null
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    },
+    normalizeCreatedTime() {
+      const val = this.accountForm.created_time
+      if (!val || !val.trim()) return
+      const parsed = this.parseDate(val)
+      if (parsed) {
+        this.accountForm.created_time = parsed
+      } else {
+        this.$message.warning('创建时间格式无法识别，请使用如 2024-01-15 的格式')
       }
     },
 
@@ -400,9 +447,12 @@ export default {
           // 处理有效期
           const validity = this.validityType === 'long' ? '长期有效' : this.accountForm.validityDate
 
+          // 规范化创建时间格式
+          const normalizedTime = this.parseDate(this.accountForm.created_time) || this.accountForm.created_time
+
           const submitData = {
             account_name: this.accountForm.account_name,
-            created_time: this.accountForm.created_time,
+            created_time: normalizedTime,
             validity: validity,
             permissions_json: JSON.stringify(this.accountForm.permissions),
             contact_person: this.accountForm.contact_person,
@@ -524,5 +574,11 @@ export default {
   text-align: center;
   color: #999;
   padding: 20px;
+}
+.field-hint {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+  margin-top: 4px;
 }
 </style>
