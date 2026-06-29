@@ -273,7 +273,13 @@ export default {
       const stats = this.summary.region_stats || []
       this.regionChartInstance.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', textStyle: { color: '#fff' } },
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(64, 158, 255, 0.3)',
+          textStyle: { color: '#fff', fontSize: 12 },
+          padding: [8, 12]
+        },
         grid: { left: 50, right: 20, top: 30, bottom: 80 },
         xAxis: {
           type: 'category',
@@ -296,7 +302,13 @@ export default {
       const stats = this.summary.os_stats || []
       this.osChartInstance.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'item', textStyle: { color: '#fff' } },
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(64, 158, 255, 0.3)',
+          textStyle: { color: '#fff', fontSize: 12 },
+          padding: [8, 12]
+        },
         legend: { bottom: 10, type: 'scroll', itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12, color: 'rgba(255,255,255,0.8)' } },
         series: [{
           type: 'pie',
@@ -321,7 +333,13 @@ export default {
       const colorMap = { '高': '#F56C6C', '中': '#E6A23C', '低': '#67C23A', '未分级': '#909399' }
       this.levelChartInstance.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'item', textStyle: { color: '#fff' } },
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(64, 158, 255, 0.3)',
+          textStyle: { color: '#fff', fontSize: 12 },
+          padding: [8, 12]
+        },
         legend: { bottom: 10, textStyle: { fontSize: 12, color: 'rgba(255,255,255,0.8)' } },
         series: [{
           type: 'pie',
@@ -355,7 +373,13 @@ export default {
       }
       this.trendChartInstance.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', textStyle: { color: '#fff' } },
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(64, 158, 255, 0.3)',
+          textStyle: { color: '#fff', fontSize: 12 },
+          padding: [8, 12]
+        },
         grid: { left: 50, right: 20, top: 30, bottom: 40 },
         xAxis: {
           type: 'category',
@@ -388,7 +412,13 @@ export default {
       ]
       this.softwareChartInstance.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'item', textStyle: { color: '#fff' } },
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderColor: 'rgba(64, 158, 255, 0.3)',
+          textStyle: { color: '#fff', fontSize: 12 },
+          padding: [8, 12]
+        },
         legend: { bottom: 10, textStyle: { fontSize: 12, color: 'rgba(255,255,255,0.8)' } },
         series: [{
           type: 'pie',
