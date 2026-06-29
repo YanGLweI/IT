@@ -18,7 +18,7 @@ import (
 )
 
 // userChangeModule 模块名称，用于文件存储路径
-const userChangeModule = "permission"
+const userChangeModule = "user_change"
 
 // ListUserChangeHistories 获取用户变更记录历史列表
 func ListUserChangeHistories(c *gin.Context) {

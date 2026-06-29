@@ -6,6 +6,7 @@ import (
 
 	"it-platform-server/config"
 	"it-platform-server/database"
+	"it-platform-server/handlers"
 	"it-platform-server/routes"
 )
 
@@ -15,6 +16,11 @@ func main() {
 		log.Fatalf("加载配置失败: %v", err)
 	}
 	fmt.Println("配置文件加载成功!")
+
+	// 初始化RSA密钥对
+	if err := handlers.InitRSAKeys(); err != nil {
+		log.Fatalf("加载RSA密钥对失败: %v", err)
+	}
 
 	// 初始化数据库
 	database.InitDB()

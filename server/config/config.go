@@ -14,6 +14,7 @@ type Config struct {
 	Upload   UploadConfig   `yaml:"upload"`
 	LDAP     LDAPConfig     `yaml:"ldap"`
 	Document DocumentConfig `yaml:"document"`
+	RSA      RSAConfig      `yaml:"rsa"`
 }
 
 // DocumentConfig 文档配置
@@ -61,6 +62,12 @@ type LDAPConfig struct {
 	CertPath        string `yaml:"cert_path"`
 }
 
+// RSAConfig RSA加密配置
+type RSAConfig struct {
+	PrivateKeyPath string `yaml:"private_key_path"`
+	PublicKeyPath  string `yaml:"public_key_path"`
+}
+
 var Cfg *Config
 
 // LoadConfig 加载配置文件
@@ -96,6 +103,12 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.MaxSize == 0 {
 		Cfg.Upload.MaxSize = 32 << 20
+	}
+	if Cfg.RSA.PrivateKeyPath == "" {
+		Cfg.RSA.PrivateKeyPath = "./certificate/rsa_private.pem"
+	}
+	if Cfg.RSA.PublicKeyPath == "" {
+		Cfg.RSA.PublicKeyPath = "./certificate/rsa_public.pem"
 	}
 
 	return nil

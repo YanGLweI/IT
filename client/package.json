@@ -13,6 +13,7 @@
     "docx-preview": "^0.3.7",
     "echarts": "^5.5.0",
     "element-ui": "^2.15.14",
+    "node-forge": "^1.4.0",
     "vue": "^2.7.16",
     "vue-router": "^3.6.5"
   },

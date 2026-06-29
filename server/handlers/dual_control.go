@@ -21,6 +21,13 @@ func VerifyDualControl(c *gin.Context) {
 		return
 	}
 
+	// RSA解密密码
+	password, err := DecryptPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码解密失败"})
+		return
+	}
+
 	// 不能使用当前登录用户作为双控审批人
 	currentUsername, _ := c.Get("username")
 	if currentUsername == req.Username {
@@ -29,7 +36,7 @@ func VerifyDualControl(c *gin.Context) {
 	}
 
 	// LDAP验证（仅验证账号密码有效性，不检查安全组）
-	_, _, err := ldapAuthenticate(req.Username, req.Password)
+	_, _, err = ldapAuthenticate(req.Username, password)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "验证失败: " + err.Error()})
 		return

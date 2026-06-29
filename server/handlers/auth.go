@@ -31,8 +31,15 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// RSA解密密码
+	password, err := DecryptPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码解密失败"})
+		return
+	}
+
 	// LDAP 认证
-	userDN, displayName, err := ldapAuthenticate(req.Username, req.Password)
+	userDN, displayName, err := ldapAuthenticate(req.Username, password)
 	if err != nil {
 		// 记录登录失败日志
 		services.LogLogin(req.Username, "", "login_failure", c.ClientIP(), c.Request.UserAgent(), "认证失败: "+err.Error())

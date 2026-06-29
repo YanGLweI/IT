@@ -30,6 +30,11 @@ upload:
   check_history_path: "./uploads/check_history"
   max_size: 33554432  # 32MB
 
+# RSA 加密配置
+rsa:
+  private_key_path: "./certificate/rsa_private.pem"
+  public_key_path: "./certificate/rsa_public.pem"
+
 # LDAP 配置
 ldap:
   server: "ldaps://10.60.254.252:636"

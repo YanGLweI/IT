@@ -27,3 +27,6 @@ client/client.log
 
 # Config with sensitive info (optional, uncomment if needed)
 # server/config.yml
+
+# RSA private key
+server/certificate/rsa_private.pem
