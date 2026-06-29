@@ -523,11 +523,12 @@ export default {
 
 <style>
 /* 全局样式 - 确保玻璃效果 */
-.dashboard .el-card {
+.dashboard .el-card.el-card {
   background: rgba(13, 33, 55, 0.45) !important;
+  border-color: rgba(64, 158, 255, 0.2) !important;
 }
-.dashboard .el-card__header,
-.dashboard .el-card__body {
+.dashboard .el-card .el-card__header,
+.dashboard .el-card .el-card__body {
   background: transparent !important;
 }
 </style>
