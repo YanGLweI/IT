@@ -151,9 +151,11 @@ export default {
         'asset_software': '资产软件关联',
         'change_record': '变更记录',
         'change_record_template': '变更记录模板',
+        'change_type': '变更类型',
         'monthly_check_history': '月度检查记录',
         'quarterly_check_history': '季度检查记录',
-        'user_change_history': '用户变更记录'
+        'user_change_history': '用户变更记录',
+        'vulnerability_scan': '漏洞扫描'
       }
     }
   },
