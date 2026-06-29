@@ -186,11 +186,7 @@ export default {
   methods: {
     initBgCanvas() {
       const canvas = this.$refs.bgCanvas
-      if (!canvas) {
-        console.error('Canvas ref not found!')
-        return
-      }
-      console.log('Canvas initialized:', canvas.width, 'x', canvas.height)
+      if (!canvas) return
       const ctx = canvas.getContext('2d')
       const resize = () => {
         canvas.width = canvas.parentElement.offsetWidth
@@ -530,10 +526,6 @@ export default {
 .dashboard .el-card.el-card {
   background: rgba(13, 33, 55, 0.2) !important;
   border-color: rgba(64, 158, 255, 0.2) !important;
-}
-/* 临时调试：给卡片添加明显的边框颜色以便观察 */
-.dashboard .el-card.el-card {
-  outline: 2px solid rgba(255, 0, 0, 0.3) !important;
 }
 .dashboard .el-card .el-card__header,
 .dashboard .el-card .el-card__body {
