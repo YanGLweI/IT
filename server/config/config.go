@@ -50,6 +50,7 @@ type UploadConfig struct {
 	PermissionUserChangePath      string `yaml:"permission_user_change_path"`
 	ChangeRecordTemplatePath      string `yaml:"change_record_template_path"`
 	ChangeRecordPath              string `yaml:"change_record_path"`
+	VulnerabilityScanPath         string `yaml:"vulnerability_scan_path"`
 	MaxSize                       int64  `yaml:"max_size"`
 }
 
@@ -116,6 +117,9 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.ChangeRecordPath == "" {
 		Cfg.Upload.ChangeRecordPath = "./uploads/change_records"
+	}
+	if Cfg.Upload.VulnerabilityScanPath == "" {
+		Cfg.Upload.VulnerabilityScanPath = "./uploads/vulnerability_scans"
 	}
 	if Cfg.Upload.MaxSize == 0 {
 		Cfg.Upload.MaxSize = 32 << 20

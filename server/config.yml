@@ -39,6 +39,8 @@ upload:
   change_record_template_path: "./uploads/change_record_templates"
   # 变更记录扫描件上传路径
   change_record_path: "./uploads/change_records"
+  # 漏洞扫描报告上传路径
+  vulnerability_scan_path: "./uploads/vulnerability_scans"
   max_size: 33554432  # 32MB
 
 # RSA 加密配置

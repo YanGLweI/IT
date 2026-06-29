@@ -310,6 +310,27 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FileSize":    "文件大小",
 			"FileType":    "文件类型",
 		}
+	case "vulnerability_scan":
+		return map[string]string{
+			"Year":             "年份",
+			"Quarter":          "季度",
+			"ReportDate":       "报告日期",
+			"AssetCount":       "资产数量",
+			"CriticalCount":    "关键漏洞",
+			"HighCount":        "严重漏洞",
+			"MediumCount":      "中等漏洞",
+			"FileName":         "文件名",
+			"FilePath":         "文件路径",
+			"FileSize":         "文件大小",
+			"FileType":         "文件类型",
+			"Status":           "状态",
+			"FixFileName":      "修复报告",
+			"FixFilePath":      "修复报告路径",
+			"FixFileSize":      "修复报告大小",
+			"FixCriticalCount": "修复后关键漏洞",
+			"FixHighCount":     "修复后严重漏洞",
+			"FixMediumCount":   "修复后中等漏洞",
+		}
 	default:
 		return make(map[string]string)
 	}

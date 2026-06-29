@@ -112,6 +112,12 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/change-records/:id/preview", handlers.PreviewChangeRecord)
 			protected.GET("/change-records/:id/download", handlers.DownloadChangeRecord)
 
+			// 漏洞扫描 - 查询（不需要双控）
+			protected.GET("/vulnerability-scans", handlers.ListVulnerabilityScans)
+			protected.GET("/vulnerability-scans/:id/download", handlers.DownloadVulnerabilityScan)
+			protected.GET("/vulnerability-scans/:id/preview", handlers.PreviewVulnerabilityScan)
+			protected.GET("/vulnerability-scans/:id/fix-preview", handlers.PreviewFixReport)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -208,6 +214,13 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/change-records", handlers.CreateChangeRecord)
 				dual.PUT("/change-records/:id", handlers.UpdateChangeRecord)
 				dual.DELETE("/change-records/:id", handlers.DeleteChangeRecord)
+
+				// 漏洞扫描 - 写操作（需要双控）
+				dual.POST("/vulnerability-scans", handlers.CreateVulnerabilityScan)
+				dual.PUT("/vulnerability-scans/:id", handlers.UpdateVulnerabilityScan)
+				dual.DELETE("/vulnerability-scans/:id", handlers.DeleteVulnerabilityScan)
+				dual.PUT("/vulnerability-scans/:id/fix", handlers.FixVulnerabilityScan)
+				dual.DELETE("/vulnerability-scans/:id/fix", handlers.DeleteFixReport)
 			}
 		}
 	}
