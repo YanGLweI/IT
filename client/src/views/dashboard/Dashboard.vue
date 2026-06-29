@@ -197,14 +197,14 @@ export default {
 
       // 生成粒子
       const particles = []
-      for (let i = 0; i < 80; i++) {
+      for (let i = 0; i < 150; i++) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          r: Math.random() * 2.5 + 1,
+          r: Math.random() * 3 + 1.5,
           dx: (Math.random() - 0.5) * 0.5,
           dy: (Math.random() - 0.5) * 0.5,
-          opacity: Math.random() * 0.4 + 0.4
+          opacity: Math.random() * 0.3 + 0.6
         })
       }
 
@@ -463,8 +463,8 @@ export default {
 .dashboard ::v-deep .el-card {
   background: rgba(13, 33, 55, 0.2) !important;
   border: 1px solid rgba(64, 158, 255, 0.2) !important;
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(5px) saturate(1.4);
+  -webkit-backdrop-filter: blur(5px) saturate(1.4);
   border-radius: 12px !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
@@ -487,7 +487,7 @@ export default {
   transform: translateY(-6px);
   box-shadow: 0 12px 40px rgba(64, 158, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
   border-color: rgba(64, 158, 255, 0.5) !important;
-  background: rgba(13, 33, 55, 0.6) !important;
+  background: rgba(13, 33, 55, 0.35) !important;
 }
 
 .stat-card {
