@@ -15,6 +15,10 @@
           <i class="el-icon-data-board"></i>
           <span slot="title">看板</span>
         </el-menu-item>
+        <el-menu-item index="/policies">
+          <i class="el-icon-document"></i>
+          <span slot="title">IT政策</span>
+        </el-menu-item>
         <el-submenu index="asset">
           <template slot="title">
             <i class="el-icon-monitor"></i>
@@ -33,14 +37,36 @@
             <span>操作系统管理</span>
           </el-menu-item>
         </el-submenu>
-        <el-menu-item index="/policies">
-          <i class="el-icon-document"></i>
-          <span slot="title">IT政策</span>
-        </el-menu-item>
-        <el-menu-item index="/topology">
-          <i class="el-icon-share"></i>
-          <span slot="title">网络拓扑图</span>
-        </el-menu-item>
+        <el-submenu index="network-security">
+          <template slot="title">
+            <i class="el-icon-lock"></i>
+            <span>网络安全</span>
+          </template>
+          <el-menu-item index="/topology">
+            <i class="el-icon-share"></i>
+            <span>网络拓扑图</span>
+          </el-menu-item>
+          <el-menu-item index="/change-management">
+            <i class="el-icon-document-copy"></i>
+            <span>变更管理</span>
+          </el-menu-item>
+          <el-menu-item index="/vulnerability-scan">
+            <i class="el-icon-search"></i>
+            <span>漏洞扫描</span>
+          </el-menu-item>
+          <el-menu-item index="/penetration-test">
+            <i class="el-icon-cpu"></i>
+            <span>渗透测试</span>
+          </el-menu-item>
+          <el-menu-item index="/firewall-check">
+            <i class="el-icon-s-check"></i>
+            <span>防火墙检查</span>
+          </el-menu-item>
+          <el-menu-item index="/security-rectification">
+            <i class="el-icon-edit"></i>
+            <span>安全整改记录</span>
+          </el-menu-item>
+        </el-submenu>
         <el-submenu index="permission">
           <template slot="title">
             <i class="el-icon-s-check"></i>
