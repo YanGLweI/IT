@@ -114,6 +114,7 @@ func SetupRouter() *gin.Engine {
 
 			// 漏洞扫描 - 查询（不需要双控）
 			protected.GET("/vulnerability-scans", handlers.ListVulnerabilityScans)
+			protected.GET("/vulnerability-scans/stats", handlers.GetVulnerabilityScanStats)
 			protected.GET("/vulnerability-scans/:id/download", handlers.DownloadVulnerabilityScan)
 			protected.GET("/vulnerability-scans/:id/preview", handlers.PreviewVulnerabilityScan)
 			protected.GET("/vulnerability-scans/:id/fix-preview", handlers.PreviewFixReport)
