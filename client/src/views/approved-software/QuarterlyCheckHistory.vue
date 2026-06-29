@@ -11,11 +11,11 @@
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
-        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="fetchData" style="width: 120px">
+        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
           <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="fetchData" @clear="fetchData" style="width: 200px" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="fetchData">搜索</el-button>
+        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
+        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
       </div>
 
       <!-- 数据表格 -->
@@ -44,6 +44,19 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页 -->
+      <el-pagination
+        style="margin-top: 16px; text-align: right"
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+        :page-size.sync="pageSize"
+        :current-page.sync="page"
+        :page-sizes="[10, 20, 50]"
+        @size-change="handleSizeChange"
+        @current-change="fetchData"
+      />
     </el-card>
 
     <!-- 上传弹窗 -->
@@ -113,6 +126,9 @@ export default {
     return {
       records: [],
       loading: false,
+      page: 1,
+      pageSize: 10,
+      total: 0,
       filterYear: '',
       keyword: '',
       yearOptions: Array.from({ length: 10 }, (_, i) => now.getFullYear() - i),
@@ -144,16 +160,25 @@ export default {
     async fetchData() {
       this.loading = true
       try {
-        const params = {}
+        const params = { page: this.page, page_size: this.pageSize }
         if (this.filterYear) params.year = this.filterYear
         if (this.keyword) params.keyword = this.keyword
         const res = await getQuarterlyChecks(params)
         this.records = res.data || []
+        this.total = res.total || 0
       } catch (e) {
         console.error(e)
       } finally {
         this.loading = false
       }
+    },
+    handleSizeChange() {
+      this.page = 1
+      this.fetchData()
+    },
+    handleFilterChange() {
+      this.page = 1
+      this.fetchData()
     },
     handleFileChange(file) {
       this.selectedFile = file.raw

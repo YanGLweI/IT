@@ -175,7 +175,7 @@ func DeleteChangeRecordTemplate(c *gin.Context) {
 func ListChangeRecords(c *gin.Context) {
 	var records []models.ChangeRecord
 
-	query := database.GetDB().Order("year DESC, month DESC")
+	query := database.GetDB().Model(&models.ChangeRecord{})
 
 	if yearStr := c.Query("year"); yearStr != "" {
 		if year, err := strconv.Atoi(yearStr); err == nil {
@@ -187,12 +187,25 @@ func ListChangeRecords(c *gin.Context) {
 		query = query.Where("description LIKE ?", "%"+keyword+"%")
 	}
 
-	if err := query.Find(&records).Error; err != nil {
+	// 分页
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	var total int64
+	query.Count(&total)
+
+	if err := query.Order("year DESC, month DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 200, "data": records})
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": records, "total": total, "page_size": pageSize})
 }
 
 // CreateChangeRecord 上传变更记录扫描件

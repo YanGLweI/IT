@@ -65,11 +65,11 @@
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
-        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="fetchRecords" style="width: 120px">
+        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleRecordFilterChange" style="width: 120px">
           <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="fetchRecords" @clear="fetchRecords" style="width: 200px" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="fetchRecords">搜索</el-button>
+        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="handleRecordFilterChange" @clear="handleRecordFilterChange" style="width: 200px" />
+        <el-button size="small" type="primary" icon="el-icon-search" @click="handleRecordFilterChange">搜索</el-button>
       </div>
 
       <!-- 数据表格 -->
@@ -98,6 +98,19 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页 -->
+      <el-pagination
+        style="margin-top: 16px; text-align: right"
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="recordsTotal"
+        :page-size.sync="recordsPageSize"
+        :current-page.sync="recordsPage"
+        :page-sizes="[10, 20, 50]"
+        @size-change="handleRecordSizeChange"
+        @current-change="fetchRecords"
+      />
     </el-card>
 
     <!-- ==================== 弹窗：上传新版本模板 ==================== -->
@@ -198,6 +211,9 @@ export default {
       // 扫描件相关
       records: [],
       recordsLoading: false,
+      recordsPage: 1,
+      recordsPageSize: 10,
+      recordsTotal: 0,
       filterYear: '',
       keyword: '',
       yearOptions: Array.from({ length: 10 }, (_, i) => now.getFullYear() - i),
@@ -305,16 +321,25 @@ export default {
     async fetchRecords() {
       this.recordsLoading = true
       try {
-        const params = {}
+        const params = { page: this.recordsPage, page_size: this.recordsPageSize }
         if (this.filterYear) params.year = this.filterYear
         if (this.keyword) params.keyword = this.keyword
         const res = await getChangeRecords(params)
         this.records = res.data || []
+        this.recordsTotal = res.total || 0
       } catch (e) {
         console.error(e)
       } finally {
         this.recordsLoading = false
       }
+    },
+    handleRecordSizeChange() {
+      this.recordsPage = 1
+      this.fetchRecords()
+    },
+    handleRecordFilterChange() {
+      this.recordsPage = 1
+      this.fetchRecords()
     },
     openRecordUpload() {
       this.recordIsEdit = false
