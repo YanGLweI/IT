@@ -463,7 +463,7 @@ export default {
     radial-gradient(circle, #914fe7 20%, transparent 20%);
   background-size: 10px 10px, 20px 20px, 15px 15px, 20px 20px, 18px 18px, 10px 10px, 15px 15px, 10px 10px, 18px 18px;
   background-position: 50% 120%;
-  animation: topBubbles 0.6s ease;
+  animation: topBubbles 1.2s ease;
 }
 
 @keyframes topBubbles {
@@ -491,7 +491,7 @@ export default {
     radial-gradient(circle, #f8d3a9 20%, transparent 20%);
   background-size: 15px 15px, 20px 20px, 18px 18px, 20px 20px, 15px 15px, 20px 20px, 18px 18px;
   background-position: 50% 0%;
-  animation: bottomBubbles 0.6s ease;
+  animation: bottomBubbles 1.2s ease;
 }
 
 @keyframes bottomBubbles {
