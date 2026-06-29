@@ -1,28 +1,6 @@
 <template>
   <div class="change-management">
 
-    <!-- ==================== 区块零：变更类型管理 ==================== -->
-    <el-card style="margin-bottom: 20px">
-      <el-collapse v-model="typeCollapseActive">
-        <el-collapse-item title="变更类型管理" name="types">
-          <div style="margin-bottom: 12px">
-            <el-button type="primary" size="small" icon="el-icon-plus" @click="openTypeDialog()">新增类型</el-button>
-          </div>
-          <el-table :data="changeTypes" border size="small">
-            <el-table-column type="index" label="序号" width="60" align="center" />
-            <el-table-column prop="name" label="类型名称" min-width="200" />
-            <el-table-column prop="sort_order" label="排序" width="100" align="center" />
-            <el-table-column label="操作" width="160" align="center">
-              <template slot-scope="{ row }">
-                <el-button size="mini" type="text" icon="el-icon-edit" @click="openTypeDialog(row)">编辑</el-button>
-                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteType(row)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-collapse-item>
-      </el-collapse>
-    </el-card>
-
     <!-- ==================== 区块一：模板管理 ==================== -->
     <el-card style="margin-bottom: 20px">
       <div slot="header" class="page-header">
@@ -82,6 +60,7 @@
       <div slot="header" class="page-header">
         <span>变更记录扫描件</span>
         <div class="page-header-right">
+          <el-button type="default" size="small" icon="el-icon-s-operation" @click="showTypeManager = true">类型管理</el-button>
           <el-button type="primary" size="small" icon="el-icon-upload2" @click="openRecordUpload">上传记录</el-button>
           <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchRecords" :loading="recordsLoading">刷新</el-button>
         </div>
@@ -211,6 +190,24 @@
       </span>
     </el-dialog>
 
+    <!-- ==================== 弹窗：类型管理 ==================== -->
+    <el-dialog title="变更类型管理" :visible.sync="showTypeManager" width="600px">
+      <div style="margin-bottom: 12px">
+        <el-button type="primary" size="small" icon="el-icon-plus" @click="openTypeDialog()">新增类型</el-button>
+      </div>
+      <el-table :data="changeTypes" border size="small">
+        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column prop="name" label="类型名称" min-width="200" />
+        <el-table-column prop="sort_order" label="排序" width="100" align="center" />
+        <el-table-column label="操作" width="160" align="center">
+          <template slot-scope="{ row }">
+            <el-button size="mini" type="text" icon="el-icon-edit" @click="openTypeDialog(row)">编辑</el-button>
+            <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteType(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
     <!-- ==================== 弹窗：新增/编辑类型 ==================== -->
     <el-dialog :title="typeIsEdit ? '编辑变更类型' : '新增变更类型'" :visible.sync="showTypeDialog" width="420px" :close-on-click-modal="false">
       <el-form :model="typeForm" ref="typeFormRef" :rules="typeRules" label-width="80px">
@@ -291,7 +288,7 @@ export default {
       templatePreviewRow: null,
       // 变更类型管理
       changeTypes: [],
-      typeCollapseActive: [],
+      showTypeManager: false,
       showTypeDialog: false,
       typeIsEdit: false,
       editingTypeId: null,
