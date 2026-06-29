@@ -20,14 +20,22 @@
         />
       </el-tabs>
 
-      <!-- 导出按钮 -->
-      <div v-if="activeServerId" class="export-bar">
+      <!-- 搜索与导出栏 -->
+      <div v-if="activeServerId" class="toolbar-bar">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索账号"
+          prefix-icon="el-icon-search"
+          clearable
+          size="small"
+          style="width: 240px"
+        />
         <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出月度确认表</el-button>
       </div>
 
       <!-- 账号表格 -->
       <el-table
-        :data="accounts"
+        :data="filteredAccounts"
         border
         stripe
         style="width: 100%"
@@ -203,7 +211,8 @@ export default {
         }, trigger: 'blur' }]
       },
       // 导出
-      exporting: false
+      exporting: false,
+      searchKeyword: ''
     }
   },
   mounted() {
@@ -434,6 +443,18 @@ export default {
           return
         }
 
+        // 前端预检：新增时检查同服务器下是否已存在同名账号
+        if (!this.isEdit) {
+          const trimmedName = this.accountForm.account_name.trim()
+          const duplicate = this.accounts.some(
+            a => a.account_name.trim() === trimmedName
+          )
+          if (duplicate) {
+            this.$message.error('该服务器下已存在同名账号')
+            return
+          }
+        }
+
         this.saving = true
         try {
           const dualToken = await this.$refs.dualControl.open()
@@ -473,6 +494,7 @@ export default {
           this.fetchAccounts()
         } catch (e) {
           if (e !== 'cancel') {
+            this.$message.error(e.response?.data?.message || '保存账号失败')
             console.error('保存账号失败:', e)
           }
         } finally {
@@ -527,6 +549,13 @@ export default {
         this.exporting = false
       }
     }
+  },
+  computed: {
+    filteredAccounts() {
+      if (!this.searchKeyword) return this.accounts
+      const keyword = this.searchKeyword.toLowerCase()
+      return this.accounts.filter(account => account.account_name.toLowerCase().includes(keyword))
+    }
   }
 }
 </script>
@@ -544,9 +573,9 @@ export default {
   display: flex;
   gap: 10px;
 }
-.export-bar {
+.toolbar-bar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-bottom: 10px;
 }
 .server-list {

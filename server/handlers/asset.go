@@ -46,6 +46,14 @@ func ListAssets(c *gin.Context) {
 		query = query.Where("region_id = ?", regionID)
 	}
 
+	// 支持按计算机名或IP地址模糊搜索（计算机名不区分大小写）
+	search := strings.TrimSpace(c.Query("search"))
+	if search != "" {
+		searchLower := strings.ToLower(search)
+		query = query.Where("LOWER(computer_name) LIKE ? OR ip_address LIKE ?",
+			"%"+searchLower+"%", "%"+search+"%")
+	}
+
 	// 查询总数
 	var total int64
 	query.Count(&total)

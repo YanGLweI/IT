@@ -3,7 +3,21 @@
     <el-card>
       <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
         <span>IT资产管理</span>
-        <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增资产</el-button>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <el-input
+            v-model="search"
+            placeholder="计算机名或IP地址"
+            size="small"
+            clearable
+            style="width: 220px"
+            @clear="handleSearch"
+            @keyup.enter.native="handleSearch"
+          >
+            <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
+          </el-input>
+          <el-button size="small" @click="handleReset">重置</el-button>
+          <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增资产</el-button>
+        </div>
       </div>
 
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
@@ -99,7 +113,8 @@ export default {
       pageSize: 10,
       // 排序
       sortBy: 'id',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
+      search: ''
     }
   },
   mounted() {
@@ -118,6 +133,9 @@ export default {
         }
         if (this.activeTab !== 'all') {
           params.region_id = this.activeTab
+        }
+        if (this.search) {
+          params.search = this.search
         }
         const res = await getAssets(params)
         this.assets = res.data || []
@@ -188,6 +206,15 @@ export default {
         case '报废': return 'danger'
         default: return 'info'
       }
+    },
+    handleSearch() {
+      this.currentPage = 1
+      this.fetchData()
+    },
+    handleReset() {
+      this.search = ''
+      this.currentPage = 1
+      this.fetchData()
     }
   }
 }

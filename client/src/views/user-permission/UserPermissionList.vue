@@ -4,6 +4,14 @@
       <div slot="header" class="page-header">
         <span>用户权限一览</span>
         <div class="page-header-right">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索姓名"
+            prefix-icon="el-icon-search"
+            clearable
+            size="small"
+            style="width: 220px; margin-right: 8px"
+          />
           <el-button type="primary" size="small" icon="el-icon-setting" @click="showDeptManage = true">管理配置</el-button>
           <el-button type="primary" size="small" icon="el-icon-plus" @click="openUserForm">新增用户</el-button>
           <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
@@ -164,6 +172,7 @@ export default {
       departments: [],
       users: [],
       activeTab: 'all',
+      searchKeyword: '',
       // 用户表单
       userFormVisible: false,
       isEdit: false,
@@ -198,8 +207,15 @@ export default {
   },
   computed: {
     filteredUsers() {
-      if (this.activeTab === 'all') return this.users
-      return this.users.filter(u => String(u.department_id) === this.activeTab)
+      let list = this.users
+      if (this.activeTab !== 'all') {
+        list = list.filter(u => String(u.department_id) === this.activeTab)
+      }
+      if (this.searchKeyword) {
+        const kw = this.searchKeyword.trim().toLowerCase()
+        if (kw) list = list.filter(u => u.name && u.name.toLowerCase().includes(kw))
+      }
+      return list
     },
     availablePositions() {
       if (!this.userForm.department_id) return []
