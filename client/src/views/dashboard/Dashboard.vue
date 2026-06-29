@@ -197,14 +197,14 @@ export default {
 
       // 生成粒子
       const particles = []
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0; i < 80; i++) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          r: Math.random() * 2 + 0.5,
-          dx: (Math.random() - 0.5) * 0.4,
-          dy: (Math.random() - 0.5) * 0.4,
-          opacity: Math.random() * 0.5 + 0.2
+          r: Math.random() * 2.5 + 1,
+          dx: (Math.random() - 0.5) * 0.5,
+          dy: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random() * 0.4 + 0.4
         })
       }
 
@@ -216,23 +216,28 @@ export default {
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
           ctx.fillStyle = `rgba(64, 158, 255, ${p.opacity})`
           ctx.fill()
+          // 光晕
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(64, 158, 255, ${p.opacity * 0.1})`
+          ctx.fill()
           p.x += p.dx
           p.y += p.dy
           if (p.x < 0 || p.x > canvas.width) p.dx *= -1
           if (p.y < 0 || p.y > canvas.height) p.dy *= -1
         })
-        // 连线（距离小于120px）
+        // 连线（距离小于150px）
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
             const dx = particles[i].x - particles[j].x
             const dy = particles[i].y - particles[j].y
             const dist = Math.sqrt(dx * dx + dy * dy)
-            if (dist < 120) {
+            if (dist < 150) {
               ctx.beginPath()
               ctx.moveTo(particles[i].x, particles[i].y)
               ctx.lineTo(particles[j].x, particles[j].y)
-              ctx.strokeStyle = `rgba(64, 158, 255, ${0.15 * (1 - dist / 120)})`
-              ctx.lineWidth = 0.5
+              ctx.strokeStyle = `rgba(64, 158, 255, ${0.25 * (1 - dist / 150)})`
+              ctx.lineWidth = 0.6
               ctx.stroke()
             }
           }
@@ -403,6 +408,7 @@ export default {
   position: relative;
   min-height: 100vh;
   background: linear-gradient(135deg, #0a1628 0%, #0d2137 30%, #0f1b2d 60%, #131a2e 100%);
+  background-attachment: fixed;
   padding: 20px;
   overflow: hidden;
 }
@@ -422,16 +428,16 @@ export default {
 
 /* 玻璃卡片效果 */
 .dashboard >>> .el-card {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(13, 33, 55, 0.45) !important;
+  border: 1px solid rgba(64, 158, 255, 0.2) !important;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border-radius: 12px !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 .dashboard >>> .el-card .el-card__header {
-  color: rgba(255, 255, 255, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(64, 158, 255, 0.15) !important;
   font-weight: 500;
 }
 
@@ -442,8 +448,9 @@ export default {
 }
 .stat-card-clickable:hover {
   transform: translateY(-6px);
-  box-shadow: 0 8px 32px rgba(64, 158, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(64, 158, 255, 0.4) !important;
+  box-shadow: 0 12px 40px rgba(64, 158, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(64, 158, 255, 0.5) !important;
+  background: rgba(13, 33, 55, 0.6) !important;
 }
 
 .stat-card {
