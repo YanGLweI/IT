@@ -520,3 +520,14 @@ export default {
   margin-top: 5px;
 }
 </style>
+
+<style>
+/* 全局样式 - 确保玻璃效果 */
+.dashboard .el-card {
+  background: rgba(13, 33, 55, 0.45) !important;
+}
+.dashboard .el-card__header,
+.dashboard .el-card__body {
+  background: transparent !important;
+}
+</style>
