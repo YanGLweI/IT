@@ -1,6 +1,6 @@
 <template>
   <el-container style="height: 100vh">
-    <el-aside width="200px" style="background-color: #304156">
+    <el-aside width="210px" style="background-color: #304156">
       <div style="padding: 20px; text-align: center; color: #fff; font-size: 18px; font-weight: bold">
         IT管理平台
       </div>

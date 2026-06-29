@@ -1,9 +1,42 @@
 <template>
   <div class="asset-software-list">
     <el-card>
-      <div slot="header" style="display: flex; align-items: center; justify-content: space-between">
-        <span>资产对应表 — 第三方软件与资产关联</span>
-        <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出补丁更新记录表</el-button>
+      <div slot="header">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
+          <span>资产对应表 — 第三方软件与资产关联</span>
+          <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出补丁更新记录表</el-button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+          <el-input
+            v-model="search"
+            placeholder="计算机名或IP地址"
+            size="small"
+            clearable
+            style="width: 240px"
+            @clear="handleSearch"
+            @keyup.enter.native="handleSearch"
+          >
+            <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
+          </el-input>
+          <el-select
+            v-model="selectedSoftwareFilter"
+            multiple
+            filterable
+            collapse-tags
+            size="small"
+            placeholder="按软件筛选"
+            style="flex: 1; min-width: 200px; max-width: 400px"
+            @change="handleSearch"
+          >
+            <el-option
+              v-for="sw in allSoftware"
+              :key="sw.id"
+              :label="sw.name + (sw.version ? ' (' + sw.version + ')' : '')"
+              :value="sw.id"
+            />
+          </el-select>
+          <el-button size="small" @click="handleResetFilter">重置</el-button>
+        </div>
       </div>
       <el-table :data="list" border stripe v-loading="loading">
         <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
@@ -94,6 +127,8 @@ export default {
       total: 0,
       currentPage: 1,
       pageSize: 10,
+      search: '',
+      selectedSoftwareFilter: [],
       allSoftware: [],
       editDialogVisible: false,
       editRow: null,
@@ -115,7 +150,9 @@ export default {
       try {
         const res = await getAssetSoftwareList({
           page: this.currentPage,
-          page_size: this.pageSize
+          page_size: this.pageSize,
+          search: this.search || undefined,
+          software_ids: this.selectedSoftwareFilter.length > 0 ? this.selectedSoftwareFilter.join(',') : undefined
         })
         this.list = res.data || []
         this.total = res.total || 0
@@ -140,6 +177,16 @@ export default {
     },
     handlePageChange(page) {
       this.currentPage = page
+      this.fetchData()
+    },
+    handleSearch() {
+      this.currentPage = 1
+      this.fetchData()
+    },
+    handleResetFilter() {
+      this.search = ''
+      this.selectedSoftwareFilter = []
+      this.currentPage = 1
       this.fetchData()
     },
     async handleEdit(row) {

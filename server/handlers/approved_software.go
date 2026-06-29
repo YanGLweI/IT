@@ -3,7 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"it-platform-server/database"
@@ -142,16 +144,97 @@ func ListAssetSoftware(c *gin.Context) {
 		pageSize = 10
 	}
 
-	// 查询资产总数
-	var total int64
-	database.GetDB().Model(&models.Asset{}).Count(&total)
+	search := c.Query("search")
+	softwareIDsParam := c.Query("software_ids") // 逗号分隔的软件ID
+	db := database.GetDB()
 
-	// 分页查询资产
+	var total int64
 	var assets []models.Asset
 	offset := (page - 1) * pageSize
-	if err := database.GetDB().Order("id desc").Offset(offset).Limit(pageSize).Find(&assets).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
-		return
+
+	hasSearch := search != ""
+	hasSoftwareIDs := softwareIDsParam != ""
+
+	if hasSearch || hasSoftwareIDs {
+		// 分别收集两种过滤条件的资产ID集合
+		var searchIDSet, swIDSet map[uint]bool
+
+		// 1. 文本搜索：按计算机名或IP地址模糊匹配
+		if hasSearch {
+			searchLower := strings.ToLower(search)
+			searchIDSet = make(map[uint]bool)
+			var directAssets []models.Asset
+			db.Where("LOWER(computer_name) LIKE ? OR ip_address LIKE ?",
+				"%"+searchLower+"%", "%"+search+"%").
+				Select("id").Find(&directAssets)
+			for _, a := range directAssets {
+				searchIDSet[a.ID] = true
+			}
+		}
+
+		// 2. 软件筛选：按选中的软件ID查找资产
+		if hasSoftwareIDs {
+			ids := parseUintList(softwareIDsParam)
+			if len(ids) > 0 {
+				swIDSet = make(map[uint]bool)
+				type assetIDRow struct {
+					AssetID uint `gorm:"column:asset_id"`
+				}
+				var swAssetIDs []assetIDRow
+				db.Model(&models.AssetSoftware{}).
+					Where("approved_software_id IN ?", ids).
+					Select("DISTINCT asset_software.asset_id").
+					Find(&swAssetIDs)
+				for _, r := range swAssetIDs {
+					swIDSet[r.AssetID] = true
+				}
+			}
+		}
+
+		// 取交集（AND逻辑）
+		finalSet := make(map[uint]bool)
+		if hasSearch && hasSoftwareIDs {
+			// 两个条件都指定时取交集
+			for id := range searchIDSet {
+				if swIDSet[id] {
+					finalSet[id] = true
+				}
+			}
+		} else if hasSearch {
+			finalSet = searchIDSet
+		} else {
+			finalSet = swIDSet
+		}
+
+		// 将ID集合转为有序切片（降序，与默认顺序一致）
+		var allIDs []uint
+		for id := range finalSet {
+			allIDs = append(allIDs, id)
+		}
+		sort.Slice(allIDs, func(i, j int) bool { return allIDs[i] > allIDs[j] })
+
+		total = int64(len(allIDs))
+
+		// 分页截取ID
+		var pageIDs []uint
+		if offset < len(allIDs) {
+			end := offset + pageSize
+			if end > len(allIDs) {
+				end = len(allIDs)
+			}
+			pageIDs = allIDs[offset:end]
+		}
+
+		if len(pageIDs) > 0 {
+			db.Where("id IN ?", pageIDs).Find(&assets)
+		}
+	} else {
+		// 无搜索条件，保持原有逻辑
+		db.Model(&models.Asset{}).Count(&total)
+		if err := db.Order("id desc").Offset(offset).Limit(pageSize).Find(&assets).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
+			return
+		}
 	}
 
 	// 为每个资产查询关联的核准软件
@@ -429,4 +512,19 @@ func UpdateAssetSoftwareLinks(c *gin.Context) {
 		{FieldName: "SoftwareIDs", FieldLabel: "软件ID列表", NewValue: fmt.Sprintf("%v", input.SoftwareIDs)},
 	}
 	services.LogOperation(username, displayName, "更新资产软件关联", "asset_software", uint(assetID), asset.ComputerName, approver, c.ClientIP(), details)
+}
+
+// parseUintList 将逗号分隔的字符串解析为 uint 切片
+func parseUintList(s string) []uint {
+	var result []uint
+	for _, part := range strings.Split(s, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if n, err := strconv.ParseUint(part, 10, 64); err == nil {
+			result = append(result, uint(n))
+		}
+	}
+	return result
 }
