@@ -472,6 +472,10 @@ export default {
   color: rgba(255, 255, 255, 0.95);
   border-bottom: 1px solid rgba(64, 158, 255, 0.15) !important;
   font-weight: 500;
+  background: transparent !important;
+}
+.dashboard ::v-deep .el-card .el-card__body {
+  background: transparent !important;
 }
 
 /* 可点击卡片 */
