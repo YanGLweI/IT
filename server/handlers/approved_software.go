@@ -3,11 +3,15 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	_ "image/png"
+
+	"it-platform-server/config"
 	"it-platform-server/database"
 	"it-platform-server/models"
 	"it-platform-server/services"
@@ -458,6 +462,32 @@ func ExportPatchUpdateRecord(c *gin.Context) {
 	f.SetColWidth(sheetName, "G", "G", 16)  // 实施日期
 	f.SetColWidth(sheetName, "H", "H", 18)  // 确认人
 	f.SetColWidth(sheetName, "I", "I", 16)  // 确认日期
+
+	// 设置右侧页脚：版本号 + 信息等级（淡灰色）
+	footerText := fmt.Sprintf("&R&K999999%s\n信息等级：内部公开 Info Class: Internal Disclosure", config.Cfg.Document.AssetDocumentVersion)
+	f.SetHeaderFooter(sheetName, &excelize.HeaderFooterOptions{
+		OddFooter: footerText,
+	})
+
+	// 设置左侧页头：插入Logo图片到左上角（缩小尺寸，避免遮挡文字）
+	logoPath := config.Cfg.Document.LogoPath
+	if logoPath != "" {
+		logoData, err := os.ReadFile(logoPath)
+		if err != nil {
+			fmt.Printf("读取Logo文件失败: %v\n", err)
+		} else {
+			if err := f.AddPictureFromBytes(sheetName, "A1", &excelize.Picture{
+				Extension: ".png",
+				File:      logoData,
+				Format: &excelize.GraphicOptions{
+					ScaleX:       0.08,
+					ScaleY:       0.08,
+				},
+			}); err != nil {
+				fmt.Printf("插入Logo失败: %v\n", err)
+			}
+		}
+	}
 
 	// 输出Excel文件
 	fileName := fmt.Sprintf("第三方应用补丁更新记录表(%s).xlsx", yearMonth)

@@ -5,10 +5,14 @@ server:
 
 # 文档版本号（用于导出文件页脚显示）
 document:
+  # Logo图片路径（用于导出文件页头显示）
+  logo_path: "./assets/logo.png"
   # 用户变更记录表页脚
   permission_document_version: "IT06-10.0"
   # 用户权限确认表/SFTP账号确认表页脚
-  user_permission_document_version: "IT07-2.0" 
+  user_permission_document_version: "IT07-3.0"
+  # 补丁更新记录表页脚
+  asset_document_version: "IT9-2.0" 
 
 # 数据库配置
 database:

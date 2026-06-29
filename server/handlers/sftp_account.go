@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	_ "image/png"
 
 	"it-platform-server/config"
 	"it-platform-server/database"
@@ -491,6 +494,26 @@ func ExportSftpConfirmation(c *gin.Context) {
 	f.SetHeaderFooter(sheetName, &excelize.HeaderFooterOptions{
 		OddFooter: footerText,
 	})
+
+	// 设置左侧页头：插入Logo图片到左上角（缩小尺寸，避免遮挡文字）
+	logoPath := config.Cfg.Document.LogoPath
+	if logoPath != "" {
+		logoData, err := os.ReadFile(logoPath)
+		if err != nil {
+			fmt.Printf("读取Logo文件失败: %v\n", err)
+		} else {
+			if err := f.AddPictureFromBytes(sheetName, "A1", &excelize.Picture{
+				Extension: ".png",
+				File:      logoData,
+				Format: &excelize.GraphicOptions{
+					ScaleX:       0.08,
+					ScaleY:       0.08,
+				},
+			}); err != nil {
+				fmt.Printf("插入Logo失败: %v\n", err)
+			}
+		}
+	}
 
 	// 输出
 	fileName := fmt.Sprintf("SFTP账号确认表(%s)-%s.xlsx", yearMonth, server.Name)

@@ -18,8 +18,10 @@ type Config struct {
 
 // DocumentConfig 文档配置
 type DocumentConfig struct {
-	PermissionDocumentVersion      string `yaml:"permission_document_version"`
-	UserPermissionDocumentVersion string `yaml:"user_permission_document_version"`
+	LogoPath                        string `yaml:"logo_path"`
+	PermissionDocumentVersion       string `yaml:"permission_document_version"`
+	UserPermissionDocumentVersion  string `yaml:"user_permission_document_version"`
+	AssetDocumentVersion           string `yaml:"asset_document_version"`
 }
 
 // ServerConfig 服务器配置
