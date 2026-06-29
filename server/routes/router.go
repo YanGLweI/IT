@@ -118,6 +118,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/vulnerability-scans/:id/download", handlers.DownloadVulnerabilityScan)
 			protected.GET("/vulnerability-scans/:id/preview", handlers.PreviewVulnerabilityScan)
 			protected.GET("/vulnerability-scans/:id/fix-preview", handlers.PreviewFixReport)
+			protected.GET("/vulnerability-scans/:id/fix-download", handlers.DownloadFixReport)
 
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
