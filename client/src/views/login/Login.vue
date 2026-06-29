@@ -461,7 +461,7 @@ export default {
     radial-gradient(circle, #30e82a 20%, transparent 20%),
     radial-gradient(circle, #e92c75 20%, transparent 20%),
     radial-gradient(circle, #914fe7 20%, transparent 20%);
-  background-size: 10% 10%, 20% 20%, 15% 15%, 20% 20%, 18% 18%, 10% 10%, 15% 15%, 10% 10%, 18% 18%;
+  background-size: 10px 10px, 20px 20px, 15px 15px, 20px 20px, 18px 18px, 10px 10px, 15px 15px, 10px 10px, 18px 18px;
   background-position: 50% 120%;
   animation: topBubbles 0.6s ease;
 }
@@ -489,7 +489,7 @@ export default {
     radial-gradient(circle, #7814fc 20%, transparent 20%),
     radial-gradient(circle, #73e4f8 20%, transparent 20%),
     radial-gradient(circle, #f8d3a9 20%, transparent 20%);
-  background-size: 15% 15%, 20% 20%, 18% 18%, 20% 20%, 15% 15%, 20% 20%, 18% 18%;
+  background-size: 15px 15px, 20px 20px, 18px 18px, 20px 20px, 15px 15px, 20px 20px, 18px 18px;
   background-position: 50% 0%;
   animation: bottomBubbles 0.6s ease;
 }
