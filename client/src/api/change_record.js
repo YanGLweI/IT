@@ -30,6 +30,11 @@ export function deleteChangeType(id, dualToken) {
   return request.delete(`/change-types/${id}`, config)
 }
 
+// 调整变更类型排序
+export function reorderChangeType(data) {
+  return request.post('/change-types/reorder', data)
+}
+
 // ============================================================
 // 模板管理
 // ============================================================

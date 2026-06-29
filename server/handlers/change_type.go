@@ -135,3 +135,49 @@ func DeleteChangeType(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
+
+// ReorderChangeType 调整变更类型排序（上移/下移）
+func ReorderChangeType(c *gin.Context) {
+	var req struct {
+		ID        uint   `json:"id" binding:"required"`
+		Direction string `json:"direction" binding:"required"` // "up" or "down"
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	var current models.ChangeType
+	if err := database.GetDB().First(&current, req.ID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "类型不存在"})
+		return
+	}
+
+	// 查找相邻类型
+	var adjacent models.ChangeType
+	var query string
+	var order string
+	if req.Direction == "up" {
+		query = "sort_order < ?"
+		order = "sort_order desc"
+	} else {
+		query = "sort_order > ?"
+		order = "sort_order asc"
+	}
+
+	if err := database.GetDB().Where(query, current.SortOrder).Order(order).First(&adjacent).Error; err != nil {
+		msg := "已到达顶部"
+		if req.Direction == "down" {
+			msg = "已到达底部"
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": msg})
+		return
+	}
+
+	// 交换 sort_order
+	tempOrder := current.SortOrder
+	database.GetDB().Model(&current).Update("sort_order", adjacent.SortOrder)
+	database.GetDB().Model(&adjacent).Update("sort_order", tempOrder)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "移动成功"})
+}

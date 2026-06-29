@@ -196,9 +196,17 @@
         <el-button type="primary" size="small" icon="el-icon-plus" @click="openTypeDialog()">新增类型</el-button>
       </div>
       <el-table :data="changeTypes" border size="small">
-        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column label="#" width="64" align="center">
+          <template slot-scope="{ $index }">
+            <div class="sort-btns">
+              <el-button size="mini" type="text" icon="el-icon-arrow-up"
+                :disabled="$index === 0" @click="moveType(changeTypes[$index], 'up')" />
+              <el-button size="mini" type="text" icon="el-icon-arrow-down"
+                :disabled="$index === changeTypes.length - 1" @click="moveType(changeTypes[$index], 'down')" />
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="类型名称" min-width="200" />
-        <el-table-column prop="sort_order" label="排序" width="100" align="center" />
         <el-table-column label="操作" width="160" align="center">
           <template slot-scope="{ row }">
             <el-button size="mini" type="text" icon="el-icon-edit" @click="openTypeDialog(row)">编辑</el-button>
@@ -213,9 +221,6 @@
       <el-form :model="typeForm" ref="typeFormRef" :rules="typeRules" label-width="80px">
         <el-form-item label="类型名称" prop="name">
           <el-input v-model="typeForm.name" placeholder="请输入类型名称" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="typeForm.sort_order" :min="0" :max="999" controls-position="right" style="width: 100%" />
         </el-form-item>
       </el-form>
       <span slot="footer">
@@ -256,7 +261,7 @@
 
 <script>
 import {
-  getChangeTypes, createChangeType, updateChangeType, deleteChangeType,
+  getChangeTypes, createChangeType, updateChangeType, deleteChangeType, reorderChangeType,
   getChangeRecordTemplates, uploadChangeRecordTemplate, deleteChangeRecordTemplate, getChangeRecordTemplateDownloadUrl, getChangeRecordTemplatePreviewUrl,
   getChangeRecords, createChangeRecord, updateChangeRecord, deleteChangeRecord, getChangeRecordPreviewUrl, getChangeRecordDownloadUrl
 } from '@/api/change_record'
@@ -292,7 +297,7 @@ export default {
       showTypeDialog: false,
       typeIsEdit: false,
       editingTypeId: null,
-      typeForm: { name: '', sort_order: 0 },
+      typeForm: { name: '' },
       typeRules: {
         name: [{ required: true, message: '请输入类型名称', trigger: 'blur' }]
       },
@@ -341,11 +346,11 @@ export default {
       if (row) {
         this.typeIsEdit = true
         this.editingTypeId = row.id
-        this.typeForm = { name: row.name, sort_order: row.sort_order }
+        this.typeForm = { name: row.name }
       } else {
         this.typeIsEdit = false
         this.editingTypeId = null
-        this.typeForm = { name: '', sort_order: 0 }
+        this.typeForm = { name: '' }
       }
       this.showTypeDialog = true
     },
@@ -377,6 +382,14 @@ export default {
         this.fetchChangeTypes()
       } catch (e) {
         if (e.message !== 'canceled') console.error(e)
+      }
+    },
+    async moveType(row, direction) {
+      try {
+        await reorderChangeType({ id: row.id, direction })
+        await this.fetchChangeTypes()
+      } catch (e) {
+        this.$message.error(e.response?.data?.message || '移动失败')
       }
     },
 
@@ -678,6 +691,11 @@ export default {
 .op-btns {
   display: flex;
   gap: 4px;
+}
+.sort-btns {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
 }
 .current-template-info {
   background: #f0f9eb;

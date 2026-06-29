@@ -103,6 +103,7 @@ func SetupRouter() *gin.Engine {
 
 			// 变更管理 - 查询（不需要双控）
 			protected.GET("/change-types", handlers.ListChangeTypes)
+			protected.POST("/change-types/reorder", handlers.ReorderChangeType)
 			protected.GET("/change-record-templates", handlers.ListChangeRecordTemplates)
 			protected.GET("/change-record-templates/current", handlers.GetCurrentChangeRecordTemplate)
 			protected.GET("/change-record-templates/:id/download", handlers.DownloadChangeRecordTemplate)
