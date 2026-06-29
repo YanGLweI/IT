@@ -26,6 +26,10 @@
             <el-option label="创建" value="创建" />
             <el-option label="更新" value="更新" />
             <el-option label="删除" value="删除" />
+            <el-option label="上传" value="上传" />
+            <el-option label="替换" value="替换" />
+            <el-option label="管理" value="管理" />
+            <el-option label="排序" value="排序" />
           </el-select>
         </el-form-item>
         <el-form-item label="资源类型">
@@ -144,7 +148,12 @@ export default {
         'sftp_server': 'SFTP服务器',
         'sftp_account': 'SFTP账号',
         'approved_software': '核准软件',
-        'asset_software': '资产软件关联'
+        'asset_software': '资产软件关联',
+        'change_record': '变更记录',
+        'change_record_template': '变更记录模板',
+        'monthly_check_history': '月度检查记录',
+        'quarterly_check_history': '季度检查记录',
+        'user_change_history': '用户变更记录'
       }
     }
   },

@@ -53,15 +53,6 @@ func InitDB() {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
 
-	// 修复已有表的字段长度
-	DB.Exec("ALTER TABLE policies MODIFY COLUMN file_type VARCHAR(255)")
-
-	// 清理软删除的区域记录（确保同名区域可重新添加）
-	DB.Unscoped().Where("deleted_at IS NOT NULL").Delete(&models.Region{})
-
-	// 清理软删除的操作系统类型记录
-	DB.Unscoped().Where("deleted_at IS NOT NULL").Delete(&models.OSType{})
-
 	// 初始化基础数据
 	SeedPermissionRules()
 

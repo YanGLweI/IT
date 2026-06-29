@@ -82,10 +82,10 @@ func ListOperationLogs(c *gin.Context) {
 		query = query.Where("username LIKE ?", "%"+username+"%")
 	}
 
-	// 操作类型筛选（前缀匹配：如"创建"匹配"创建用户权限"、"创建区域"等）
+	// 操作类型筛选（包含匹配：如"创建"匹配"创建用户权限"、"排序"匹配"调整岗位排序"等）
 	action := c.Query("action")
 	if action != "" {
-		query = query.Where("action LIKE ?", action+"%")
+		query = query.Where("action LIKE ?", "%"+action+"%")
 	}
 
 	// 资源类型筛选
