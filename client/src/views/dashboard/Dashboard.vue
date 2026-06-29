@@ -460,7 +460,7 @@ export default {
 }
 
 /* 玻璃卡片效果 */
-.dashboard >>> .el-card {
+.dashboard ::v-deep .el-card {
   background: rgba(13, 33, 55, 0.45) !important;
   border: 1px solid rgba(64, 158, 255, 0.2) !important;
   backdrop-filter: blur(20px) saturate(1.4);
@@ -468,7 +468,7 @@ export default {
   border-radius: 12px !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
-.dashboard >>> .el-card .el-card__header {
+.dashboard ::v-deep .el-card .el-card__header {
   color: rgba(255, 255, 255, 0.95);
   border-bottom: 1px solid rgba(64, 158, 255, 0.15) !important;
   font-weight: 500;
