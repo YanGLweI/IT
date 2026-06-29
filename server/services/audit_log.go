@@ -285,6 +285,11 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FileSize":    "文件大小",
 			"FileType":    "文件类型",
 		}
+	case "change_type":
+		return map[string]string{
+			"Name":      "名称",
+			"SortOrder": "排序",
+		}
 	case "change_record_template":
 		return map[string]string{
 			"Version":     "版本号",

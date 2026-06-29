@@ -214,6 +214,19 @@ func ListChangeRecords(c *gin.Context) {
 		query = query.Where("description LIKE ?", "%"+keyword+"%")
 	}
 
+	// 按变更类型筛选
+	if typeIDStr := c.Query("type_id"); typeIDStr != "" {
+		var typeIDs []uint
+		for _, idStr := range strings.Split(typeIDStr, ",") {
+			if tid, err := strconv.Atoi(strings.TrimSpace(idStr)); err == nil {
+				typeIDs = append(typeIDs, uint(tid))
+			}
+		}
+		if len(typeIDs) > 0 {
+			query = query.Where("id IN (SELECT DISTINCT change_record_id FROM change_record_change_types WHERE change_type_id IN ?)", typeIDs)
+		}
+	}
+
 	// 分页
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
@@ -227,7 +240,7 @@ func ListChangeRecords(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 
-	if err := query.Order("year DESC, month DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
+	if err := query.Preload("ChangeTypes").Order("year DESC, month DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
@@ -297,6 +310,23 @@ func CreateChangeRecord(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存记录失败"})
 		return
 	}
+
+	// 关联变更类型
+	if typeIDs := c.PostForm("type_ids"); typeIDs != "" {
+		var types []models.ChangeType
+		ids := strings.Split(typeIDs, ",")
+		for _, idStr := range ids {
+			if tid, err := strconv.Atoi(strings.TrimSpace(idStr)); err == nil {
+				types = append(types, models.ChangeType{ID: uint(tid)})
+			}
+		}
+		if len(types) > 0 {
+			database.GetDB().Model(&record).Association("ChangeTypes").Replace(types)
+		}
+	}
+
+	// 重新加载关联
+	database.GetDB().Preload("ChangeTypes").First(&record, record.ID)
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)
@@ -373,6 +403,26 @@ func UpdateChangeRecord(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})
 		return
 	}
+
+	// 更新变更类型关联
+	if typeIDs := c.PostForm("type_ids"); typeIDs != "" {
+		var types []models.ChangeType
+		ids := strings.Split(typeIDs, ",")
+		for _, idStr := range ids {
+			if tid, err := strconv.Atoi(strings.TrimSpace(idStr)); err == nil {
+				types = append(types, models.ChangeType{ID: uint(tid)})
+			}
+		}
+		if len(types) > 0 {
+			database.GetDB().Model(&record).Association("ChangeTypes").Replace(types)
+		}
+	} else {
+		// type_ids 为空字符串时清除关联
+		database.GetDB().Model(&record).Association("ChangeTypes").Clear()
+	}
+
+	// 重新加载关联
+	database.GetDB().Preload("ChangeTypes").First(&record, record.ID)
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)

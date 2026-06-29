@@ -1,6 +1,36 @@
 import request from './request'
 
 // ============================================================
+// 变更类型管理
+// ============================================================
+
+// 获取变更类型列表
+export function getChangeTypes() {
+  return request.get('/change-types')
+}
+
+// 创建变更类型
+export function createChangeType(data, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.post('/change-types', data, config)
+}
+
+// 更新变更类型
+export function updateChangeType(id, data, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/change-types/${id}`, data, config)
+}
+
+// 删除变更类型
+export function deleteChangeType(id, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.delete(`/change-types/${id}`, config)
+}
+
+// ============================================================
 // 模板管理
 // ============================================================
 

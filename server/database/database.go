@@ -47,6 +47,7 @@ func InitDB() {
 		&models.QuarterlyCheckHistory{},
 		&models.UserChangeHistory{},
 		&models.ChangeRecordTemplate{},
+		&models.ChangeType{},
 		&models.ChangeRecord{},
 	)
 	if err != nil {
@@ -55,6 +56,7 @@ func InitDB() {
 
 	// 初始化基础数据
 	SeedPermissionRules()
+	SeedChangeTypes()
 
 	fmt.Println("数据库初始化成功!")
 }

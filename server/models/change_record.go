@@ -19,6 +19,7 @@ type ChangeRecord struct {
 	FilePath    string         `gorm:"type:varchar(500);not null" json:"file_path"`
 	FileSize    int64          `gorm:"type:bigint" json:"file_size"`
 	FileType    string         `gorm:"type:varchar(255)" json:"file_type"`
+	ChangeTypes []ChangeType   `gorm:"many2many:change_record_change_types;" json:"change_types"`
 }
 
 // TableName 指定表名

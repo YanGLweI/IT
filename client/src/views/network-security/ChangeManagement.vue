@@ -1,6 +1,28 @@
 <template>
   <div class="change-management">
 
+    <!-- ==================== 区块零：变更类型管理 ==================== -->
+    <el-card style="margin-bottom: 20px">
+      <el-collapse v-model="typeCollapseActive">
+        <el-collapse-item title="变更类型管理" name="types">
+          <div style="margin-bottom: 12px">
+            <el-button type="primary" size="small" icon="el-icon-plus" @click="openTypeDialog()">新增类型</el-button>
+          </div>
+          <el-table :data="changeTypes" border size="small">
+            <el-table-column type="index" label="序号" width="60" align="center" />
+            <el-table-column prop="name" label="类型名称" min-width="200" />
+            <el-table-column prop="sort_order" label="排序" width="100" align="center" />
+            <el-table-column label="操作" width="160" align="center">
+              <template slot-scope="{ row }">
+                <el-button size="mini" type="text" icon="el-icon-edit" @click="openTypeDialog(row)">编辑</el-button>
+                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteType(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-collapse-item>
+      </el-collapse>
+    </el-card>
+
     <!-- ==================== 区块一：模板管理 ==================== -->
     <el-card style="margin-bottom: 20px">
       <div slot="header" class="page-header">
@@ -70,6 +92,9 @@
         <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleRecordFilterChange" style="width: 120px">
           <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
         </el-select>
+        <el-select v-model="filterTypeId" placeholder="全部类型" size="small" clearable @change="handleRecordFilterChange" style="width: 150px" multiple collapse-tags>
+          <el-option v-for="t in changeTypes" :key="t.id" :label="t.name" :value="t.id" />
+        </el-select>
         <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="handleRecordFilterChange" @clear="handleRecordFilterChange" style="width: 200px" />
         <el-button size="small" type="primary" icon="el-icon-search" @click="handleRecordFilterChange">搜索</el-button>
       </div>
@@ -80,6 +105,12 @@
         <el-table-column prop="year" label="年份" width="80" align="center" />
         <el-table-column prop="month" label="月份" width="80" align="center">
           <template slot-scope="{ row }">{{ row.month }}月</template>
+        </el-table-column>
+        <el-table-column label="变更类型" width="200" align="center">
+          <template slot-scope="{ row }">
+            <el-tag v-for="t in (row.change_types || [])" :key="t.id" size="mini" style="margin: 2px">{{ t.name }}</el-tag>
+            <span v-if="!row.change_types || row.change_types.length === 0">-</span>
+          </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
@@ -156,6 +187,11 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-form-item label="变更类型">
+          <el-select v-model="recordForm.typeIds" multiple collapse-tags placeholder="请选择变更类型" style="width: 100%">
+            <el-option v-for="t in changeTypes" :key="t.id" :label="t.name" :value="t.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="描述" prop="description">
           <el-input v-model="recordForm.description" type="textarea" :rows="2" placeholder="输入描述，便于后续搜索" />
         </el-form-item>
@@ -172,6 +208,22 @@
       <span slot="footer">
         <el-button @click="showRecordUpload = false">取消</el-button>
         <el-button type="primary" :loading="recordUploading" @click="submitRecordUpload">{{ recordIsEdit ? '保存' : '确定上传' }}</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- ==================== 弹窗：新增/编辑类型 ==================== -->
+    <el-dialog :title="typeIsEdit ? '编辑变更类型' : '新增变更类型'" :visible.sync="showTypeDialog" width="420px" :close-on-click-modal="false">
+      <el-form :model="typeForm" ref="typeFormRef" :rules="typeRules" label-width="80px">
+        <el-form-item label="类型名称" prop="name">
+          <el-input v-model="typeForm.name" placeholder="请输入类型名称" />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="typeForm.sort_order" :min="0" :max="999" controls-position="right" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="showTypeDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitType">确定</el-button>
       </span>
     </el-dialog>
 
@@ -207,6 +259,7 @@
 
 <script>
 import {
+  getChangeTypes, createChangeType, updateChangeType, deleteChangeType,
   getChangeRecordTemplates, uploadChangeRecordTemplate, deleteChangeRecordTemplate, getChangeRecordTemplateDownloadUrl, getChangeRecordTemplatePreviewUrl,
   getChangeRecords, createChangeRecord, updateChangeRecord, deleteChangeRecord, getChangeRecordPreviewUrl, getChangeRecordDownloadUrl
 } from '@/api/change_record'
@@ -236,6 +289,16 @@ export default {
       templatePreviewUrl: '',
       templatePreviewType: '',
       templatePreviewRow: null,
+      // 变更类型管理
+      changeTypes: [],
+      typeCollapseActive: [],
+      showTypeDialog: false,
+      typeIsEdit: false,
+      editingTypeId: null,
+      typeForm: { name: '', sort_order: 0 },
+      typeRules: {
+        name: [{ required: true, message: '请输入类型名称', trigger: 'blur' }]
+      },
       // 扫描件相关
       records: [],
       recordsLoading: false,
@@ -243,13 +306,14 @@ export default {
       recordsPageSize: 10,
       recordsTotal: 0,
       filterYear: '',
+      filterTypeId: [],
       keyword: '',
       yearOptions: Array.from({ length: 10 }, (_, i) => now.getFullYear() - i),
       showRecordUpload: false,
       recordIsEdit: false,
       editingRecordId: null,
       recordUploading: false,
-      recordForm: { year: now.getFullYear(), month: now.getMonth() + 1, description: '' },
+      recordForm: { year: now.getFullYear(), month: now.getMonth() + 1, description: '', typeIds: [] },
       recordRules: {
         year: [{ required: true, message: '请选择年份', trigger: 'change' }],
         month: [{ required: true, message: '请选择月份', trigger: 'change' }]
@@ -262,10 +326,63 @@ export default {
     }
   },
   mounted() {
+    this.fetchChangeTypes()
     this.fetchTemplates()
     this.fetchRecords()
   },
   methods: {
+    // ============ 变更类型管理 ============
+    async fetchChangeTypes() {
+      try {
+        const res = await getChangeTypes()
+        this.changeTypes = res.data || []
+      } catch (e) {
+        console.error(e)
+      }
+    },
+    openTypeDialog(row) {
+      if (row) {
+        this.typeIsEdit = true
+        this.editingTypeId = row.id
+        this.typeForm = { name: row.name, sort_order: row.sort_order }
+      } else {
+        this.typeIsEdit = false
+        this.editingTypeId = null
+        this.typeForm = { name: '', sort_order: 0 }
+      }
+      this.showTypeDialog = true
+    },
+    submitType() {
+      this.$refs.typeFormRef.validate(async valid => {
+        if (!valid) return
+        try {
+          const dualToken = await this.$refs.dualControl.open()
+          if (this.typeIsEdit) {
+            await updateChangeType(this.editingTypeId, this.typeForm, dualToken)
+            this.$message.success('更新成功')
+          } else {
+            await createChangeType(this.typeForm, dualToken)
+            this.$message.success('创建成功')
+          }
+          this.showTypeDialog = false
+          this.fetchChangeTypes()
+        } catch (e) {
+          if (e.message !== 'canceled') console.error(e)
+        }
+      })
+    },
+    async deleteType(row) {
+      try {
+        await this.$confirm(`确定要删除类型“${row.name}”吗？`, '删除确认', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deleteChangeType(row.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchChangeTypes()
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
+    },
+
     // ============ 模板管理 ============
     async fetchTemplates() {
       try {
@@ -408,6 +525,7 @@ export default {
       try {
         const params = { page: this.recordsPage, page_size: this.recordsPageSize }
         if (this.filterYear) params.year = this.filterYear
+        if (this.filterTypeId && this.filterTypeId.length > 0) params.type_id = this.filterTypeId.join(',')
         if (this.keyword) params.keyword = this.keyword
         const res = await getChangeRecords(params)
         this.records = res.data || []
@@ -430,7 +548,7 @@ export default {
       this.recordIsEdit = false
       this.editingRecordId = null
       const now = new Date()
-      this.recordForm = { year: now.getFullYear(), month: now.getMonth() + 1, description: '' }
+      this.recordForm = { year: now.getFullYear(), month: now.getMonth() + 1, description: '', typeIds: [] }
       this.recordSelectedFile = null
       this.recordFileList = []
       this.showRecordUpload = true
@@ -444,7 +562,8 @@ export default {
     editRecord(row) {
       this.recordIsEdit = true
       this.editingRecordId = row.id
-      this.recordForm = { year: row.year, month: row.month, description: row.description || '' }
+      const typeIds = (row.change_types || []).map(t => t.id)
+      this.recordForm = { year: row.year, month: row.month, description: row.description || '', typeIds }
       this.showRecordUpload = true
     },
     submitRecordUpload() {
@@ -460,6 +579,7 @@ export default {
           formData.append('year', this.recordForm.year)
           formData.append('month', this.recordForm.month)
           formData.append('description', this.recordForm.description || '')
+          formData.append('type_ids', (this.recordForm.typeIds || []).join(','))
           if (this.recordSelectedFile) formData.append('file', this.recordSelectedFile)
 
           const dualToken = await this.$refs.dualControl.open()

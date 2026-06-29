@@ -102,6 +102,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/user-change-histories/:id/preview", handlers.PreviewUserChangeHistory)
 
 			// 变更管理 - 查询（不需要双控）
+			protected.GET("/change-types", handlers.ListChangeTypes)
 			protected.GET("/change-record-templates", handlers.ListChangeRecordTemplates)
 			protected.GET("/change-record-templates/current", handlers.GetCurrentChangeRecordTemplate)
 			protected.GET("/change-record-templates/:id/download", handlers.DownloadChangeRecordTemplate)
@@ -198,6 +199,9 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/user-change-histories/:id", handlers.DeleteUserChangeHistory)
 
 				// 变更管理 - 写操作（需要双控）
+				dual.POST("/change-types", handlers.CreateChangeType)
+				dual.PUT("/change-types/:id", handlers.UpdateChangeType)
+				dual.DELETE("/change-types/:id", handlers.DeleteChangeType)
 				dual.POST("/change-record-templates", handlers.UploadChangeRecordTemplate)
 				dual.DELETE("/change-record-templates/:id", handlers.DeleteChangeRecordTemplate)
 				dual.POST("/change-records", handlers.CreateChangeRecord)

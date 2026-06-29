@@ -625,3 +625,29 @@ func SeedPermissionRules() {
 	}
 	fmt.Println("岗位权限数据初始化完成")
 }
+
+// SeedChangeTypes 初始化变更类型数据
+func SeedChangeTypes() {
+	var count int64
+	DB.Model(&models.ChangeType{}).Count(&count)
+	if count > 0 {
+		fmt.Println("变更类型数据已存在，跳过初始化")
+		return
+	}
+
+	types := []models.ChangeType{
+		{Name: "FW-IT", SortOrder: 1},
+		{Name: "FW-PD", SortOrder: 2},
+		{Name: "FW-SM", SortOrder: 3},
+		{Name: "FW-RD", SortOrder: 4},
+		{Name: "设备", SortOrder: 5},
+		{Name: "其他", SortOrder: 6},
+	}
+
+	for _, t := range types {
+		if err := DB.Create(&t).Error; err != nil {
+			log.Printf("初始化变更类型失败 [%s]: %v", t.Name, err)
+		}
+	}
+	fmt.Println("变更类型数据初始化完成")
+}
