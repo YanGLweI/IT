@@ -76,6 +76,13 @@ func DashboardSummary(c *gin.Context) {
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	db.Model(&models.OperationLog{}).Where("created_at >= ?", monthStart).Count(&monthlyOpCount)
 
+	// 未修复漏洞总数
+	var totalUnfixedVulns int64
+	db.Table("vulnerability_scans").
+		Where("status = ? AND deleted_at IS NULL", "unfixed").
+		Select("COALESCE(SUM(critical_count),0) + COALESCE(SUM(high_count),0) + COALESCE(SUM(medium_count),0)").
+		Scan(&totalUnfixedVulns)
+
 	// 区域资产统计
 	var regionStats []RegionStat
 	db.Model(&models.Asset{}).
@@ -132,6 +139,7 @@ func DashboardSummary(c *gin.Context) {
 			"total_user_permissions": totalUserPermissions,
 			"need_update_software":  needUpdateSoftware,
 			"monthly_op_count":      monthlyOpCount,
+			"total_unfixed_vulns":   totalUnfixedVulns,
 			"region_stats":          regionStats,
 			"os_stats":              osStats,
 			"status_stats":          statusStats,

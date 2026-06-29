@@ -37,10 +37,10 @@
       <el-col :span="6">
         <el-card shadow="hover">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #909399"><i class="el-icon-warning-outline"></i></div>
+            <div class="stat-icon" :style="{ background: summary.total_unfixed_vulns > 0 ? '#F56C6C' : '#67C23A' }"><i class="el-icon-warning-outline"></i></div>
             <div class="stat-info">
-              <div class="stat-value">{{ idleCount }}</div>
-              <div class="stat-label">闲置资产</div>
+              <div class="stat-value">{{ summary.total_unfixed_vulns || 0 }}</div>
+              <div class="stat-label">漏洞总数</div>
             </div>
           </div>
         </el-card>
@@ -146,6 +146,7 @@ export default {
         total_user_permissions: 0,
         need_update_software: 0,
         monthly_op_count: 0,
+        total_unfixed_vulns: 0,
         region_stats: [],
         os_stats: [],
         status_stats: [],
@@ -163,10 +164,6 @@ export default {
   computed: {
     inUseCount() {
       const item = this.summary.status_stats.find(s => s.status === '在用')
-      return item ? item.count : 0
-    },
-    idleCount() {
-      const item = this.summary.status_stats.find(s => s.status === '闲置')
       return item ? item.count : 0
     }
   },
