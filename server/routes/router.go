@@ -63,6 +63,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/permission-rules/position", handlers.GetPositionPermissions)
 			protected.POST("/permission-rules/reorder", handlers.ReorderPermissionRule)
 			protected.PUT("/permission-rules/systems/reorder", handlers.ReorderSystemInPermissions)
+			protected.GET("/permission-rules/export-change-record", handlers.ExportChangeRecord)
 
 			// 部门管理 - 查询（不需要双控）
 			protected.GET("/departments", handlers.ListDepartments)

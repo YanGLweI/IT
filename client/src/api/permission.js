@@ -52,3 +52,9 @@ export function reorderPermissionRule(data, dualToken) {
 export function reorderSystemInPermissions(data, dualToken) {
   return request.put('/permission-rules/systems/reorder', data, withDual(null, dualToken))
 }
+
+export function exportChangeRecord() {
+  return request.get('/permission-rules/export-change-record', {
+    responseType: 'blob'
+  })
+}

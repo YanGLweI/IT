@@ -4,6 +4,7 @@
       <div slot="header" class="page-header">
         <span>岗位权限设置规则</span>
         <div class="page-header-right">
+          <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExportChangeRecord">导出变更记录表</el-button>
           <el-button type="primary" size="small" icon="el-icon-setting" @click="showManagement = true">管理配置</el-button>
           <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
@@ -167,7 +168,7 @@
 </template>
 
 <script>
-import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions, renameSystemInPermissions, manageRolesInSystem, reorderPermissionRule, reorderSystemInPermissions } from '@/api/permission'
+import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions, renameSystemInPermissions, manageRolesInSystem, reorderPermissionRule, reorderSystemInPermissions, exportChangeRecord } from '@/api/permission'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -200,7 +201,9 @@ export default {
       renameTarget: null, // { type: 'position'|'system'|'role', id?, oldName?, systemName? }
       renameValue: '',
       // 表格最大高度（动态按页面剩余空间计算，使横向滚动条始终可见）
-      tableMaxHeight: null
+      tableMaxHeight: null,
+      // 导出
+      exporting: false
     }
   },
   computed: {
@@ -502,6 +505,29 @@ export default {
           this.$message.error('重命名失败')
           console.error(e)
         }
+      }
+    },
+
+    // ---- 导出变更记录表 ----
+    async handleExportChangeRecord() {
+      this.exporting = true
+      try {
+        const res = await exportChangeRecord()
+        const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = '用户变更记录表.xlsx'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+        this.$message.success('导出成功')
+      } catch (e) {
+        console.error('导出失败:', e)
+        this.$message.error('导出失败，请重试')
+      } finally {
+        this.exporting = false
       }
     }
   }
