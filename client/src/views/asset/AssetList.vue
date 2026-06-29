@@ -20,6 +20,10 @@
         </div>
       </div>
 
+      <div v-if="statusFilter" style="margin-bottom: 10px">
+        <el-tag closable @close="clearStatusFilter" type="warning">状态筛选: {{ statusFilter }}</el-tag>
+      </div>
+
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
         <el-tab-pane label="全部" name="all" />
         <el-tab-pane
@@ -104,6 +108,7 @@ export default {
       assets: [],
       regions: [],
       activeTab: 'all',
+      statusFilter: '',
       formVisible: false,
       editData: null,
       loading: false,
@@ -118,6 +123,12 @@ export default {
     }
   },
   mounted() {
+    // 如果URL带有status参数，应用状态筛选
+    const statusFilter = this.$route.query.status
+    if (statusFilter) {
+      this.activeTab = 'all'
+      this.statusFilter = statusFilter
+    }
     this.fetchData()
     this.fetchRegions()
   },
@@ -133,6 +144,9 @@ export default {
         }
         if (this.activeTab !== 'all') {
           params.region_id = this.activeTab
+        }
+        if (this.statusFilter) {
+          params.status = this.statusFilter
         }
         if (this.search) {
           params.search = this.search
@@ -213,6 +227,12 @@ export default {
     },
     handleReset() {
       this.search = ''
+      this.statusFilter = ''
+      this.currentPage = 1
+      this.fetchData()
+    },
+    clearStatusFilter() {
+      this.statusFilter = ''
       this.currentPage = 1
       this.fetchData()
     }

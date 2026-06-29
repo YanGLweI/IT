@@ -46,6 +46,12 @@ func ListAssets(c *gin.Context) {
 		query = query.Where("region_id = ?", regionID)
 	}
 
+	// 支持按状态过滤
+	status := strings.TrimSpace(c.Query("status"))
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
 	// 支持按计算机名或IP地址模糊搜索（计算机名不区分大小写）
 	search := strings.TrimSpace(c.Query("search"))
 	if search != "" {

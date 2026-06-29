@@ -2,7 +2,7 @@
   <div class="dashboard">
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="6">
-        <el-card shadow="hover">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/assets')">
           <div class="stat-card">
             <div class="stat-icon" style="background: #409EFF"><i class="el-icon-monitor"></i></div>
             <div class="stat-info">
@@ -13,7 +13,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/regions')">
           <div class="stat-card">
             <div class="stat-icon" style="background: #67C23A"><i class="el-icon-place"></i></div>
             <div class="stat-info">
@@ -24,7 +24,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/assets', { status: '在用' })">
           <div class="stat-card">
             <div class="stat-icon" style="background: #E6A23C"><i class="el-icon-check"></i></div>
             <div class="stat-info">
@@ -35,7 +35,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/vulnerability-scan')">
           <div class="stat-card">
             <div class="stat-icon" :style="{ background: summary.total_unfixed_vulns > 0 ? '#F56C6C' : '#67C23A' }"><i class="el-icon-warning-outline"></i></div>
             <div class="stat-info">
@@ -48,7 +48,7 @@
     </el-row>
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="6">
-        <el-card shadow="hover">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/sftp-accounts')">
           <div class="stat-card">
             <div class="stat-icon" style="background: #00BCD4"><i class="el-icon-connection"></i></div>
             <div class="stat-info">
@@ -59,7 +59,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/user-permissions')">
           <div class="stat-card">
             <div class="stat-icon" style="background: #9C27B0"><i class="el-icon-user"></i></div>
             <div class="stat-info">
@@ -70,7 +70,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/approved-software')">
           <div class="stat-card">
             <div class="stat-icon" :style="{ background: summary.need_update_software > 0 ? '#F56C6C' : '#67C23A' }"><i class="el-icon-refresh"></i></div>
             <div class="stat-info">
@@ -81,7 +81,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/operation-logs')">
           <div class="stat-card">
             <div class="stat-icon" style="background: #FF9800"><i class="el-icon-document"></i></div>
             <div class="stat-info">
@@ -180,6 +180,9 @@ export default {
     if (this.softwareChartInstance) this.softwareChartInstance.dispose()
   },
   methods: {
+    navigateTo(path, query) {
+      this.$router.push({ path, query })
+    },
     async fetchData() {
       try {
         const res = await getDashboardSummary()
@@ -334,6 +337,13 @@ export default {
 </script>
 
 <style scoped>
+.stat-card-clickable {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card-clickable:hover {
+  transform: translateY(-4px);
+}
 .stat-card {
   display: flex;
   align-items: center;
