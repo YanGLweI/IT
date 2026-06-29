@@ -95,6 +95,11 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/quarterly-checks/:id/download", handlers.DownloadQuarterlyCheck)
 			protected.GET("/quarterly-checks/:id/preview", handlers.PreviewQuarterlyCheck)
 
+			// 用户变更记录历史 - 查询（不需要双控）
+			protected.GET("/user-change-histories", handlers.ListUserChangeHistories)
+			protected.GET("/user-change-histories/:id/download", handlers.DownloadUserChangeHistory)
+			protected.GET("/user-change-histories/:id/preview", handlers.PreviewUserChangeHistory)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -176,6 +181,11 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/quarterly-checks", handlers.CreateQuarterlyCheck)
 				dual.PUT("/quarterly-checks/:id", handlers.UpdateQuarterlyCheck)
 				dual.DELETE("/quarterly-checks/:id", handlers.DeleteQuarterlyCheck)
+
+				// 用户变更记录历史 - 写操作（需要双控）
+				dual.POST("/user-change-histories", handlers.CreateUserChangeHistory)
+				dual.PUT("/user-change-histories/:id", handlers.UpdateUserChangeHistory)
+				dual.DELETE("/user-change-histories/:id", handlers.DeleteUserChangeHistory)
 			}
 		}
 	}

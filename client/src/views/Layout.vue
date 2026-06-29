@@ -62,6 +62,10 @@
             <i class="el-icon-document-checked"></i>
             <span>月度检查历史</span>
           </el-menu-item>
+          <el-menu-item index="/user-change-history">
+            <i class="el-icon-document-copy"></i>
+            <span>变更记录历史</span>
+          </el-menu-item>
         </el-submenu>
         <el-submenu index="third-party">
           <template slot="title">

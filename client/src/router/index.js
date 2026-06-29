@@ -30,7 +30,8 @@ const routes = [
       { path: 'login-logs', name: 'LoginLogs', component: () => import('../views/log/LoginLogList.vue'), meta: { title: '登录日志' } },
       { path: 'operation-logs', name: 'OperationLogs', component: () => import('../views/log/OperationLogList.vue'), meta: { title: '操作日志' } },
       { path: 'monthly-check-history', name: 'MonthlyCheckHistory', component: () => import('../views/permission/MonthlyCheckHistory.vue'), meta: { title: '月度检查历史' } },
-      { path: 'quarterly-check-history', name: 'QuarterlyCheckHistory', component: () => import('../views/approved-software/QuarterlyCheckHistory.vue'), meta: { title: '季度检查历史' } }
+      { path: 'quarterly-check-history', name: 'QuarterlyCheckHistory', component: () => import('../views/approved-software/QuarterlyCheckHistory.vue'), meta: { title: '季度检查历史' } },
+      { path: 'user-change-history', name: 'UserChangeHistory', component: () => import('../views/permission/UserChangeHistory.vue'), meta: { title: '变更记录历史' } }
     ]
   }
 ]
