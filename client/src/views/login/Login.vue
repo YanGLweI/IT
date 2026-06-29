@@ -452,15 +452,15 @@ export default {
 .login-btn:hover::before {
   top: -70%;
   background-image:
-    radial-gradient(circle, #1890ff 20%, transparent 20%),
-    radial-gradient(circle, transparent 20%, #00d4ff 20%, transparent 30%),
-    radial-gradient(circle, #6366f1 20%, transparent 20%),
-    radial-gradient(circle, #06b6d4 20%, transparent 20%),
-    radial-gradient(circle, transparent 10%, #3b82f6 15%, transparent 20%),
-    radial-gradient(circle, #0ea5e9 20%, transparent 20%),
-    radial-gradient(circle, #22d3ee 20%, transparent 20%),
-    radial-gradient(circle, #8b5cf6 20%, transparent 20%),
-    radial-gradient(circle, #a78bfa 20%, transparent 20%);
+    radial-gradient(circle, #a89215 20%, transparent 20%),
+    radial-gradient(circle, transparent 20%, #13a5be 20%, transparent 30%),
+    radial-gradient(circle, #a3b82d 20%, transparent 20%),
+    radial-gradient(circle, #590cbe 20%, transparent 20%),
+    radial-gradient(circle, transparent 10%, #bd1717 15%, transparent 20%),
+    radial-gradient(circle, #2a7ce8 20%, transparent 20%),
+    radial-gradient(circle, #30e82a 20%, transparent 20%),
+    radial-gradient(circle, #e92c75 20%, transparent 20%),
+    radial-gradient(circle, #914fe7 20%, transparent 20%);
   background-size: 10% 10%, 20% 20%, 15% 15%, 20% 20%, 18% 18%, 10% 10%, 15% 15%, 10% 10%, 18% 18%;
   background-position: 50% 120%;
   animation: topBubbles 0.6s ease;
@@ -482,13 +482,13 @@ export default {
 .login-btn:hover::after {
   bottom: -70%;
   background-image:
-    radial-gradient(circle, #38bdf8 20%, transparent 20%),
-    radial-gradient(circle, #22d3ee 20%, transparent 20%),
-    radial-gradient(circle, transparent 10%, #6366f1 15%, transparent 20%),
-    radial-gradient(circle, #0ea5e9 20%, transparent 20%),
-    radial-gradient(circle, #8b5cf6 20%, transparent 20%),
-    radial-gradient(circle, #67e8f9 20%, transparent 20%),
-    radial-gradient(circle, #a5b4fc 20%, transparent 20%);
+    radial-gradient(circle, #ff93db 20%, transparent 20%),
+    radial-gradient(circle, #2ae8df 20%, transparent 20%),
+    radial-gradient(circle, transparent 10%, #71ffbd 15%, transparent 20%),
+    radial-gradient(circle, #2a9ce8 20%, transparent 20%),
+    radial-gradient(circle, #7814fc 20%, transparent 20%),
+    radial-gradient(circle, #73e4f8 20%, transparent 20%),
+    radial-gradient(circle, #f8d3a9 20%, transparent 20%);
   background-size: 15% 15%, 20% 20%, 18% 18%, 20% 20%, 15% 15%, 20% 20%, 18% 18%;
   background-position: 50% 0%;
   animation: bottomBubbles 0.6s ease;
