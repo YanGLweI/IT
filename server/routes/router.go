@@ -101,6 +101,14 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/user-change-histories/:id/download", handlers.DownloadUserChangeHistory)
 			protected.GET("/user-change-histories/:id/preview", handlers.PreviewUserChangeHistory)
 
+			// 变更管理 - 查询（不需要双控）
+			protected.GET("/change-record-templates", handlers.ListChangeRecordTemplates)
+			protected.GET("/change-record-templates/current", handlers.GetCurrentChangeRecordTemplate)
+			protected.GET("/change-record-templates/:id/download", handlers.DownloadChangeRecordTemplate)
+			protected.GET("/change-records", handlers.ListChangeRecords)
+			protected.GET("/change-records/:id/preview", handlers.PreviewChangeRecord)
+			protected.GET("/change-records/:id/download", handlers.DownloadChangeRecord)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -187,6 +195,13 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/user-change-histories", handlers.CreateUserChangeHistory)
 				dual.PUT("/user-change-histories/:id", handlers.UpdateUserChangeHistory)
 				dual.DELETE("/user-change-histories/:id", handlers.DeleteUserChangeHistory)
+
+				// 变更管理 - 写操作（需要双控）
+				dual.POST("/change-record-templates", handlers.UploadChangeRecordTemplate)
+				dual.DELETE("/change-record-templates/:id", handlers.DeleteChangeRecordTemplate)
+				dual.POST("/change-records", handlers.CreateChangeRecord)
+				dual.PUT("/change-records/:id", handlers.UpdateChangeRecord)
+				dual.DELETE("/change-records/:id", handlers.DeleteChangeRecord)
 			}
 		}
 	}

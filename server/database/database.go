@@ -46,6 +46,8 @@ func InitDB() {
 		&models.MonthlyCheckHistory{},
 		&models.QuarterlyCheckHistory{},
 		&models.UserChangeHistory{},
+		&models.ChangeRecordTemplate{},
+		&models.ChangeRecord{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

@@ -48,6 +48,8 @@ type UploadConfig struct {
 	PermissionMonthlyCheckPath    string `yaml:"permission_monthly_check_path"`
 	ThirdPartyQuarterlyCheckPath  string `yaml:"third_party_quarterly_check_path"`
 	PermissionUserChangePath      string `yaml:"permission_user_change_path"`
+	ChangeRecordTemplatePath      string `yaml:"change_record_template_path"`
+	ChangeRecordPath              string `yaml:"change_record_path"`
 	MaxSize                       int64  `yaml:"max_size"`
 }
 
@@ -108,6 +110,12 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.PermissionUserChangePath == "" {
 		Cfg.Upload.PermissionUserChangePath = "./uploads/permission_user_changes"
+	}
+	if Cfg.Upload.ChangeRecordTemplatePath == "" {
+		Cfg.Upload.ChangeRecordTemplatePath = "./uploads/change_record_templates"
+	}
+	if Cfg.Upload.ChangeRecordPath == "" {
+		Cfg.Upload.ChangeRecordPath = "./uploads/change_records"
 	}
 	if Cfg.Upload.MaxSize == 0 {
 		Cfg.Upload.MaxSize = 32 << 20

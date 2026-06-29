@@ -1,19 +1,472 @@
 <template>
   <div class="change-management">
-    <el-card>
-      <div slot="header">
-        <span>变更管理</span>
+
+    <!-- ==================== 区块一：模板管理 ==================== -->
+    <el-card style="margin-bottom: 20px">
+      <div slot="header" class="page-header">
+        <span>变更记录表模板</span>
+        <div class="page-header-right">
+          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showTemplateUpload = true">上传新版本</el-button>
+        </div>
       </div>
-      <el-empty description="功能开发中..." />
+
+      <!-- 当前版本信息 -->
+      <div v-if="currentTemplate" class="current-template-info">
+        <div class="current-template-row">
+          <span class="label">当前版本：</span>
+          <el-tag type="success" size="medium">{{ currentTemplate.version }}</el-tag>
+          <span style="margin-left: 12px; color: #909399; font-size: 13px">
+            {{ currentTemplate.file_name }} · {{ formatSize(currentTemplate.file_size) }} · {{ formatDate(currentTemplate.created_at) }}
+          </span>
+          <span v-if="currentTemplate.description" style="margin-left: 12px; color: #606266; font-size: 13px">
+            （{{ currentTemplate.description }}）
+          </span>
+          <el-button type="primary" size="mini" icon="el-icon-download" style="margin-left: 16px" @click="downloadTemplate(currentTemplate)">下载当前模板</el-button>
+        </div>
+      </div>
+      <el-empty v-else description="暂无模板，请上传第一个版本" :image-size="60" style="padding: 16px 0" />
+
+      <!-- 历史版本折叠面板 -->
+      <el-collapse v-if="templateHistory.length > 0" v-model="templateCollapseActive" style="margin-top: 16px">
+        <el-collapse-item title="历史版本" name="history">
+          <el-table :data="templateHistory" border size="small">
+            <el-table-column type="index" label="序号" width="56" align="center" />
+            <el-table-column prop="version" label="版本号" width="110" align="center" />
+            <el-table-column prop="description" label="版本说明" min-width="160" show-overflow-tooltip>
+              <template slot-scope="{ row }">{{ row.description || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
+            <el-table-column label="文件大小" width="100" align="center">
+              <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
+            </el-table-column>
+            <el-table-column label="上传时间" width="160" align="center">
+              <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="150" align="center">
+              <template slot-scope="{ row }">
+                <el-button size="mini" type="text" icon="el-icon-download" @click="downloadTemplate(row)">下载</el-button>
+                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteTemplate(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-collapse-item>
+      </el-collapse>
     </el-card>
+
+    <!-- ==================== 区块二：扫描件存档 ==================== -->
+    <el-card>
+      <div slot="header" class="page-header">
+        <span>变更记录扫描件</span>
+        <div class="page-header-right">
+          <el-button type="primary" size="small" icon="el-icon-upload2" @click="openRecordUpload">上传记录</el-button>
+          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchRecords" :loading="recordsLoading">刷新</el-button>
+        </div>
+      </div>
+
+      <!-- 筛选栏 -->
+      <div class="filter-bar">
+        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="fetchRecords" style="width: 120px">
+          <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
+        </el-select>
+        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="fetchRecords" @clear="fetchRecords" style="width: 200px" />
+        <el-button size="small" type="primary" icon="el-icon-search" @click="fetchRecords">搜索</el-button>
+      </div>
+
+      <!-- 数据表格 -->
+      <el-table :data="records" border stripe v-loading="recordsLoading" style="margin-top: 12px">
+        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column prop="year" label="年份" width="80" align="center" />
+        <el-table-column prop="month" label="月份" width="80" align="center">
+          <template slot-scope="{ row }">{{ row.month }}月</template>
+        </el-table-column>
+        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
+        <el-table-column label="文件大小" width="100" align="center">
+          <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
+        </el-table-column>
+        <el-table-column label="上传时间" width="160" align="center">
+          <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="240" fixed="right">
+          <template slot-scope="{ row }">
+            <div class="op-btns">
+              <el-button size="mini" type="text" icon="el-icon-view" @click="previewRecord(row)">预览</el-button>
+              <el-button size="mini" type="text" icon="el-icon-download" @click="downloadRecord(row)">下载</el-button>
+              <el-button size="mini" type="text" icon="el-icon-edit" @click="editRecord(row)">编辑</el-button>
+              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteRecord(row)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <!-- ==================== 弹窗：上传新版本模板 ==================== -->
+    <el-dialog title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
+      <el-form :model="templateForm" ref="templateFormRef" :rules="templateRules" label-width="90px">
+        <el-form-item label="版本号" prop="version">
+          <el-input v-model="templateForm.version" placeholder="如：IT02-3.0" />
+        </el-form-item>
+        <el-form-item label="版本说明">
+          <el-input v-model="templateForm.description" type="textarea" :rows="2" placeholder="简要说明本次变更内容" />
+        </el-form-item>
+        <el-form-item label="模板文件" prop="file">
+          <el-upload ref="templateUploader" action="" :auto-upload="false" :limit="1" accept=".docx,.doc,.pdf"
+            :on-change="handleTemplateFileChange" :on-remove="handleTemplateFileRemove" :file-list="templateFileList" drag>
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">拖拽文件到此处，或<em>点击选择</em></div>
+            <div slot="tip" class="el-upload__tip">支持 DOCX、DOC、PDF 格式</div>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="showTemplateUpload = false">取消</el-button>
+        <el-button type="primary" :loading="templateUploading" @click="submitTemplateUpload">确定上传</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- ==================== 弹窗：上传/编辑扫描件 ==================== -->
+    <el-dialog :title="recordIsEdit ? '编辑变更记录' : '上传变更记录'" :visible.sync="showRecordUpload" width="520px" :close-on-click-modal="false">
+      <el-form :model="recordForm" ref="recordFormRef" :rules="recordRules" label-width="80px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="年份" prop="year">
+              <el-input-number v-model="recordForm.year" :min="2020" :max="2100" :step="1" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="月份" prop="month">
+              <el-select v-model="recordForm.month" placeholder="请选择" style="width: 100%">
+                <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="recordForm.description" type="textarea" :rows="2" placeholder="输入描述，便于后续搜索" />
+        </el-form-item>
+        <el-form-item label="文件" prop="file" v-if="!recordIsEdit">
+          <el-upload ref="recordUploader" action="" :auto-upload="false" :limit="1" accept=".pdf"
+            :on-change="handleRecordFileChange" :on-remove="handleRecordFileRemove" :file-list="recordFileList" drag>
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
+            <div slot="tip" class="el-upload__tip">仅支持 PDF 格式文件</div>
+          </el-upload>
+        </el-form-item>
+        <el-alert v-else title="编辑模式下不可修改文件" type="info" :closable="false" show-icon />
+      </el-form>
+      <span slot="footer">
+        <el-button @click="showRecordUpload = false">取消</el-button>
+        <el-button type="primary" :loading="recordUploading" @click="submitRecordUpload">{{ recordIsEdit ? '保存' : '确定上传' }}</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- ==================== 弹窗：PDF预览 ==================== -->
+    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+      <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
+    </el-dialog>
+
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </div>
 </template>
 
 <script>
+import {
+  getChangeRecordTemplates, uploadChangeRecordTemplate, deleteChangeRecordTemplate, getChangeRecordTemplateDownloadUrl,
+  getChangeRecords, createChangeRecord, updateChangeRecord, deleteChangeRecord, getChangeRecordPreviewUrl, getChangeRecordDownloadUrl
+} from '@/api/change_record'
+import DualControlDialog from '@/components/DualControlDialog.vue'
+
 export default {
-  name: 'ChangeManagement'
+  name: 'ChangeManagement',
+  components: { DualControlDialog },
+  data() {
+    const now = new Date()
+    return {
+      // 模板相关
+      currentTemplate: null,
+      templateHistory: [],
+      templateCollapseActive: [],
+      showTemplateUpload: false,
+      templateUploading: false,
+      templateForm: { version: '', description: '' },
+      templateRules: {
+        version: [{ required: true, message: '请输入版本号', trigger: 'blur' }]
+      },
+      templateSelectedFile: null,
+      templateFileList: [],
+      // 扫描件相关
+      records: [],
+      recordsLoading: false,
+      filterYear: '',
+      keyword: '',
+      yearOptions: Array.from({ length: 10 }, (_, i) => now.getFullYear() - i),
+      showRecordUpload: false,
+      recordIsEdit: false,
+      editingRecordId: null,
+      recordUploading: false,
+      recordForm: { year: now.getFullYear(), month: now.getMonth() + 1, description: '' },
+      recordRules: {
+        year: [{ required: true, message: '请选择年份', trigger: 'change' }],
+        month: [{ required: true, message: '请选择月份', trigger: 'change' }]
+      },
+      recordSelectedFile: null,
+      recordFileList: [],
+      // 预览
+      previewVisible: false,
+      previewUrl: ''
+    }
+  },
+  mounted() {
+    this.fetchTemplates()
+    this.fetchRecords()
+  },
+  methods: {
+    // ============ 模板管理 ============
+    async fetchTemplates() {
+      try {
+        const res = await getChangeRecordTemplates()
+        const list = res.data || []
+        this.currentTemplate = list.find(t => t.is_current) || null
+        this.templateHistory = list.filter(t => !t.is_current)
+      } catch (e) {
+        console.error(e)
+      }
+    },
+    handleTemplateFileChange(file) {
+      this.templateSelectedFile = file.raw
+    },
+    handleTemplateFileRemove() {
+      this.templateSelectedFile = null
+    },
+    submitTemplateUpload() {
+      this.$refs.templateFormRef.validate(async valid => {
+        if (!valid) return
+        if (!this.templateSelectedFile) {
+          this.$message.warning('请选择模板文件')
+          return
+        }
+        this.templateUploading = true
+        try {
+          const formData = new FormData()
+          formData.append('version', this.templateForm.version)
+          formData.append('description', this.templateForm.description || '')
+          formData.append('file', this.templateSelectedFile)
+          const dualToken = await this.$refs.dualControl.open()
+          await uploadChangeRecordTemplate(formData, dualToken)
+          this.$message.success('上传成功')
+          this.showTemplateUpload = false
+          this.templateForm = { version: '', description: '' }
+          this.templateSelectedFile = null
+          this.templateFileList = []
+          if (this.$refs.templateUploader) this.$refs.templateUploader.clearFiles()
+          this.fetchTemplates()
+        } catch (e) {
+          if (e.message !== 'canceled') console.error(e)
+        } finally {
+          this.templateUploading = false
+        }
+      })
+    },
+    async downloadTemplate(row) {
+      const url = getChangeRecordTemplateDownloadUrl(row.id)
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const downloadUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = row.file_name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(downloadUrl)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
+    },
+    async deleteTemplate(row) {
+      try {
+        await this.$confirm(`确定要删除版本 ${row.version} 吗？`, '删除确认', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deleteChangeRecordTemplate(row.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchTemplates()
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
+    },
+
+    // ============ 扫描件存档 ============
+    async fetchRecords() {
+      this.recordsLoading = true
+      try {
+        const params = {}
+        if (this.filterYear) params.year = this.filterYear
+        if (this.keyword) params.keyword = this.keyword
+        const res = await getChangeRecords(params)
+        this.records = res.data || []
+      } catch (e) {
+        console.error(e)
+      } finally {
+        this.recordsLoading = false
+      }
+    },
+    openRecordUpload() {
+      this.recordIsEdit = false
+      this.editingRecordId = null
+      const now = new Date()
+      this.recordForm = { year: now.getFullYear(), month: now.getMonth() + 1, description: '' }
+      this.recordSelectedFile = null
+      this.recordFileList = []
+      this.showRecordUpload = true
+    },
+    handleRecordFileChange(file) {
+      this.recordSelectedFile = file.raw
+    },
+    handleRecordFileRemove() {
+      this.recordSelectedFile = null
+    },
+    editRecord(row) {
+      this.recordIsEdit = true
+      this.editingRecordId = row.id
+      this.recordForm = { year: row.year, month: row.month, description: row.description || '' }
+      this.showRecordUpload = true
+    },
+    submitRecordUpload() {
+      this.$refs.recordFormRef.validate(async valid => {
+        if (!valid) return
+        if (!this.recordIsEdit && !this.recordSelectedFile) {
+          this.$message.warning('请选择PDF文件')
+          return
+        }
+        this.recordUploading = true
+        try {
+          const formData = new FormData()
+          formData.append('year', this.recordForm.year)
+          formData.append('month', this.recordForm.month)
+          formData.append('description', this.recordForm.description || '')
+          if (this.recordSelectedFile) formData.append('file', this.recordSelectedFile)
+
+          const dualToken = await this.$refs.dualControl.open()
+          if (this.recordIsEdit) {
+            await updateChangeRecord(this.editingRecordId, formData, dualToken)
+            this.$message.success('更新成功')
+          } else {
+            await createChangeRecord(formData, dualToken)
+            this.$message.success('上传成功')
+          }
+          this.showRecordUpload = false
+          this.fetchRecords()
+        } catch (e) {
+          if (e.message !== 'canceled') console.error(e)
+        } finally {
+          this.recordUploading = false
+        }
+      })
+    },
+    async previewRecord(row) {
+      const url = getChangeRecordPreviewUrl(row.id)
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('预览失败')
+        const blob = await response.blob()
+        this.previewUrl = URL.createObjectURL(blob)
+        this.previewVisible = true
+      } catch (e) {
+        console.error('预览失败:', e)
+        this.$message.error('预览失败')
+      }
+    },
+    async downloadRecord(row) {
+      const url = getChangeRecordDownloadUrl(row.id)
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const downloadUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = row.file_name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(downloadUrl)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
+    },
+    async deleteRecord(row) {
+      try {
+        await this.$confirm(`确定要删除 ${row.year}年${row.month}月 的变更记录吗？`, '删除确认', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deleteChangeRecord(row.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchRecords()
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
+    },
+
+    // ============ 工具函数 ============
+    formatSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B'
+      const units = ['B', 'KB', 'MB', 'GB']
+      let i = 0, size = bytes
+      while (size >= 1024 && i < units.length - 1) { size /= 1024; i++ }
+      return size.toFixed(i === 0 ? 0 : 1) + ' ' + units[i]
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '-'
+      return dateStr.replace('T', ' ').substring(0, 19)
+    }
+  }
 }
 </script>
 
 <style scoped>
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.page-header-right {
+  display: flex;
+  gap: 8px;
+}
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.op-btns {
+  display: flex;
+  gap: 4px;
+}
+.current-template-info {
+  background: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  border-radius: 4px;
+  padding: 12px 16px;
+}
+.current-template-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.current-template-row .label {
+  font-size: 14px;
+  color: #606266;
+  font-weight: bold;
+}
 </style>

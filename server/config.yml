@@ -35,6 +35,10 @@ upload:
   third_party_quarterly_check_path: "./uploads/third_party_quarterly_checks"
   # 用户权限变更文件上传路径
   permission_user_change_path: "./uploads/permission_user_changes"
+  # 变更记录表模板文件上传路径
+  change_record_template_path: "./uploads/change_record_templates"
+  # 变更记录扫描件上传路径
+  change_record_path: "./uploads/change_records"
   max_size: 33554432  # 32MB
 
 # RSA 加密配置

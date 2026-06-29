@@ -285,6 +285,26 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FileSize":    "文件大小",
 			"FileType":    "文件类型",
 		}
+	case "change_record_template":
+		return map[string]string{
+			"Version":     "版本号",
+			"Description": "版本说明",
+			"FileName":    "文件名",
+			"FilePath":    "文件路径",
+			"FileSize":    "文件大小",
+			"FileType":    "文件类型",
+			"IsCurrent":   "是否当前版本",
+		}
+	case "change_record":
+		return map[string]string{
+			"Year":        "年份",
+			"Month":       "月份",
+			"Description": "描述",
+			"FileName":    "文件名",
+			"FilePath":    "文件路径",
+			"FileSize":    "文件大小",
+			"FileType":    "文件类型",
+		}
 	default:
 		return make(map[string]string)
 	}
