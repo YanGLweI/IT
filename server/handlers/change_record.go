@@ -137,6 +137,33 @@ func DownloadChangeRecordTemplate(c *gin.Context) {
 	c.File(template.FilePath)
 }
 
+// PreviewChangeRecordTemplate 预览模板文件
+func PreviewChangeRecordTemplate(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var template models.ChangeRecordTemplate
+	if err := database.GetDB().First(&template, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "模板不存在"})
+		return
+	}
+
+	if _, err := os.Stat(template.FilePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "文件不存在"})
+		return
+	}
+
+	ext := strings.ToLower(filepath.Ext(template.FileName))
+	switch ext {
+	case ".pdf":
+		c.Header("Content-Type", "application/pdf")
+	case ".docx", ".doc":
+		c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+	default:
+		c.Header("Content-Type", "application/octet-stream")
+	}
+	c.Header("Content-Disposition", "inline; filename=\""+template.FileName+"\"")
+	c.File(template.FilePath)
+}
+
 // DeleteChangeRecordTemplate 删除历史版本模板（不可删除当前版本）
 func DeleteChangeRecordTemplate(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))

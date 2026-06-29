@@ -21,7 +21,8 @@
           <span v-if="currentTemplate.description" style="margin-left: 12px; color: #606266; font-size: 13px">
             （{{ currentTemplate.description }}）
           </span>
-          <el-button type="primary" size="mini" icon="el-icon-download" style="margin-left: 16px" @click="downloadTemplate(currentTemplate)">下载当前模板</el-button>
+          <el-button type="primary" size="mini" icon="el-icon-view" style="margin-left: 16px" @click="previewTemplate(currentTemplate)">预览</el-button>
+          <el-button type="default" size="mini" icon="el-icon-download" @click="downloadTemplate(currentTemplate)">下载当前模板</el-button>
         </div>
       </div>
       <el-empty v-else description="暂无模板，请上传第一个版本" :image-size="60" style="padding: 16px 0" />
@@ -42,8 +43,9 @@
             <el-table-column label="上传时间" width="160" align="center">
               <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="150" align="center">
+            <el-table-column label="操作" width="200" align="center">
               <template slot-scope="{ row }">
+                <el-button size="mini" type="text" icon="el-icon-view" @click="previewTemplate(row)">预览</el-button>
                 <el-button size="mini" type="text" icon="el-icon-download" @click="downloadTemplate(row)">下载</el-button>
                 <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteTemplate(row)">删除</el-button>
               </template>
@@ -173,6 +175,26 @@
       </span>
     </el-dialog>
 
+    <!-- ==================== 弹窗：模板预览（支持docx/pdf） ==================== -->
+    <el-dialog :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
+      <div class="preview-toolbar" slot="title">
+        <span>模板预览</span>
+        <div class="preview-toolbar-right">
+          <el-button type="primary" size="small" icon="el-icon-download" @click="downloadTemplate(templatePreviewRow)">下载</el-button>
+        </div>
+      </div>
+      <div v-if="templatePreviewType === 'pdf'" style="height: 70vh">
+        <iframe :src="templatePreviewUrl" style="width: 100%; height: 100%; border: none" />
+      </div>
+      <div v-else-if="templatePreviewType === 'docx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
+        <div ref="templateDocxContainer" class="docx-preview-container"></div>
+      </div>
+      <div v-else style="text-align: center; padding: 40px">
+        <p>该文件格式不支持在线预览</p>
+        <el-button type="primary" @click="downloadTemplate(templatePreviewRow)">下载文件</el-button>
+      </div>
+    </el-dialog>
+
     <!-- ==================== 弹窗：PDF预览 ==================== -->
     <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
       <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
@@ -185,9 +207,10 @@
 
 <script>
 import {
-  getChangeRecordTemplates, uploadChangeRecordTemplate, deleteChangeRecordTemplate, getChangeRecordTemplateDownloadUrl,
+  getChangeRecordTemplates, uploadChangeRecordTemplate, deleteChangeRecordTemplate, getChangeRecordTemplateDownloadUrl, getChangeRecordTemplatePreviewUrl,
   getChangeRecords, createChangeRecord, updateChangeRecord, deleteChangeRecord, getChangeRecordPreviewUrl, getChangeRecordDownloadUrl
 } from '@/api/change_record'
+import { renderAsync } from 'docx-preview'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -208,6 +231,11 @@ export default {
       },
       templateSelectedFile: null,
       templateFileList: [],
+      // 模板预览
+      templatePreviewVisible: false,
+      templatePreviewUrl: '',
+      templatePreviewType: '',
+      templatePreviewRow: null,
       // 扫描件相关
       records: [],
       recordsLoading: false,
@@ -304,6 +332,63 @@ export default {
         console.error('下载失败:', e)
         this.$message.error('下载失败')
       }
+    },
+    async previewTemplate(row) {
+      const url = getChangeRecordTemplatePreviewUrl(row.id)
+      const fileName = (row.file_name || '').toLowerCase()
+      this.templatePreviewRow = row
+      this.templatePreviewUrl = ''
+
+      if (fileName.endsWith('.pdf')) {
+        this.templatePreviewType = 'pdf'
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        this.templatePreviewType = 'docx'
+      } else {
+        this.templatePreviewType = 'other'
+      }
+
+      this.templatePreviewVisible = true
+
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('预览失败')
+        const blob = await response.blob()
+        this.templatePreviewUrl = URL.createObjectURL(blob)
+
+        if (this.templatePreviewType === 'docx') {
+          this.$nextTick(() => {
+            this.renderTemplateDocx(blob)
+          })
+        }
+      } catch (e) {
+        console.error('预览失败:', e)
+        this.$message.error('模板预览失败')
+      }
+    },
+    async renderTemplateDocx(blob) {
+      try {
+        const arrayBuffer = await blob.arrayBuffer()
+        const container = this.$refs.templateDocxContainer
+        if (container) {
+          container.innerHTML = ''
+          await renderAsync(arrayBuffer, container)
+        }
+      } catch (e) {
+        console.error('docx渲染失败:', e)
+        this.$message.error('文件预览失败，请尝试下载后查看')
+      }
+    },
+    clearTemplatePreview() {
+      if (this.$refs.templateDocxContainer) {
+        this.$refs.templateDocxContainer.innerHTML = ''
+      }
+      if (this.templatePreviewUrl) {
+        URL.revokeObjectURL(this.templatePreviewUrl)
+        this.templatePreviewUrl = ''
+      }
+      this.templatePreviewRow = null
     },
     async deleteTemplate(row) {
       try {
@@ -493,5 +578,41 @@ export default {
   font-size: 14px;
   color: #606266;
   font-weight: bold;
+}
+.preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.preview-toolbar-right {
+  display: flex;
+  align-items: center;
+  margin-right: 30px;
+}
+.docx-preview-container {
+  background: #fff;
+}
+.docx-preview-container >>> .docx-wrapper {
+  background: #fff;
+  padding: 0;
+  width: 100%;
+  min-width: 100%;
+  overflow-x: auto;
+}
+.docx-preview-container >>> .docx {
+  width: 100%;
+  overflow-x: auto;
+}
+.docx-preview-container >>> .docx table {
+  width: 100% !important;
+  table-layout: auto;
+}
+.docx-preview-container >>> .docx table td,
+.docx-preview-container >>> .docx table th {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal !important;
+  min-width: 40px;
 }
 </style>

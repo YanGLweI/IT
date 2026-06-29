@@ -105,6 +105,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/change-record-templates", handlers.ListChangeRecordTemplates)
 			protected.GET("/change-record-templates/current", handlers.GetCurrentChangeRecordTemplate)
 			protected.GET("/change-record-templates/:id/download", handlers.DownloadChangeRecordTemplate)
+			protected.GET("/change-record-templates/:id/preview", handlers.PreviewChangeRecordTemplate)
 			protected.GET("/change-records", handlers.ListChangeRecords)
 			protected.GET("/change-records/:id/preview", handlers.PreviewChangeRecord)
 			protected.GET("/change-records/:id/download", handlers.DownloadChangeRecord)

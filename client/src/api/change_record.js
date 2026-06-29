@@ -37,6 +37,11 @@ export function getChangeRecordTemplateDownloadUrl(id) {
   return `/api/change-record-templates/${id}/download`
 }
 
+// 获取模板预览URL
+export function getChangeRecordTemplatePreviewUrl(id) {
+  return `/api/change-record-templates/${id}/preview`
+}
+
 // ============================================================
 // 扫描件存档
 // ============================================================
