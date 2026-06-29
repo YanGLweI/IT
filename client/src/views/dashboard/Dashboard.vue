@@ -1,5 +1,6 @@
 <template>
   <div class="dashboard">
+    <canvas ref="bgCanvas" class="tech-bg-canvas"></canvas>
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="6">
         <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/assets')">
@@ -158,7 +159,8 @@ export default {
       osChartInstance: null,
       levelChartInstance: null,
       trendChartInstance: null,
-      softwareChartInstance: null
+      softwareChartInstance: null,
+      bgAnimationId: null
     }
   },
   computed: {
@@ -168,11 +170,13 @@ export default {
     }
   },
   mounted() {
+    this.initBgCanvas()
     this.fetchData()
     window.addEventListener('resize', this.handleResize)
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize)
+    if (this.bgAnimationId) cancelAnimationFrame(this.bgAnimationId)
     if (this.regionChartInstance) this.regionChartInstance.dispose()
     if (this.osChartInstance) this.osChartInstance.dispose()
     if (this.levelChartInstance) this.levelChartInstance.dispose()
@@ -180,6 +184,63 @@ export default {
     if (this.softwareChartInstance) this.softwareChartInstance.dispose()
   },
   methods: {
+    initBgCanvas() {
+      const canvas = this.$refs.bgCanvas
+      if (!canvas) return
+      const ctx = canvas.getContext('2d')
+      const resize = () => {
+        canvas.width = canvas.parentElement.offsetWidth
+        canvas.height = canvas.parentElement.offsetHeight
+      }
+      resize()
+      window.addEventListener('resize', resize)
+
+      // 生成粒子
+      const particles = []
+      for (let i = 0; i < 60; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 2 + 0.5,
+          dx: (Math.random() - 0.5) * 0.4,
+          dy: (Math.random() - 0.5) * 0.4,
+          opacity: Math.random() * 0.5 + 0.2
+        })
+      }
+
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        // 绘制粒子
+        particles.forEach(p => {
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(64, 158, 255, ${p.opacity})`
+          ctx.fill()
+          p.x += p.dx
+          p.y += p.dy
+          if (p.x < 0 || p.x > canvas.width) p.dx *= -1
+          if (p.y < 0 || p.y > canvas.height) p.dy *= -1
+        })
+        // 连线（距离小于120px）
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x
+            const dy = particles[i].y - particles[j].y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            if (dist < 120) {
+              ctx.beginPath()
+              ctx.moveTo(particles[i].x, particles[i].y)
+              ctx.lineTo(particles[j].x, particles[j].y)
+              ctx.strokeStyle = `rgba(64, 158, 255, ${0.15 * (1 - dist / 120)})`
+              ctx.lineWidth = 0.5
+              ctx.stroke()
+            }
+          }
+        }
+        this.bgAnimationId = requestAnimationFrame(animate)
+      }
+      animate()
+    },
     navigateTo(path, query) {
       this.$router.push({ path, query })
     },
@@ -203,19 +264,21 @@ export default {
       this.regionChartInstance = echarts.init(this.$refs.regionChart)
       const stats = this.summary.region_stats || []
       this.regionChartInstance.setOption({
-        tooltip: { trigger: 'axis' },
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis', textStyle: { color: '#fff' } },
         grid: { left: 50, right: 20, top: 30, bottom: 80 },
         xAxis: {
           type: 'category',
           data: stats.map(s => s.region_name || '未分配'),
-          axisLabel: { interval: 0, rotate: 35, fontSize: 11 }
+          axisLabel: { interval: 0, rotate: 35, fontSize: 11, color: 'rgba(255,255,255,0.7)' },
+          axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } }
         },
-        yAxis: { type: 'value', name: '资产数量' },
+        yAxis: { type: 'value', name: '资产数量', nameTextStyle: { color: 'rgba(255,255,255,0.7)' }, axisLabel: { color: 'rgba(255,255,255,0.7)' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
         series: [{
           type: 'bar',
           data: stats.map(s => s.count),
           barMaxWidth: 40,
-          itemStyle: { color: '#409EFF' }
+          itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#409EFF' }, { offset: 1, color: 'rgba(64,158,255,0.3)' }] } }
         }]
       })
     },
@@ -224,17 +287,15 @@ export default {
       this.osChartInstance = echarts.init(this.$refs.osChart)
       const stats = this.summary.os_stats || []
       this.osChartInstance.setOption({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 10, type: 'scroll', itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'item', textStyle: { color: '#fff' } },
+        legend: { bottom: 10, type: 'scroll', itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12, color: 'rgba(255,255,255,0.8)' } },
         series: [{
           type: 'pie',
           radius: ['35%', '60%'],
           center: ['50%', '45%'],
           data: stats.map(s => ({ name: s.os_type, value: s.count })),
-          label: { formatter: '{b}: {c} ({d}%)', fontSize: 11 },
-          emphasis: {
-            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
-          }
+          label: { formatter: '{b}: {c} ({d}%)', fontSize: 11, color: 'rgba(255,255,255,0.8)' }
         }]
       })
     },
@@ -251,8 +312,9 @@ export default {
       const stats = this.summary.level_stats || []
       const colorMap = { '高': '#F56C6C', '中': '#E6A23C', '低': '#67C23A', '未分级': '#909399' }
       this.levelChartInstance.setOption({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 10, textStyle: { fontSize: 12 } },
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'item', textStyle: { color: '#fff' } },
+        legend: { bottom: 10, textStyle: { fontSize: 12, color: 'rgba(255,255,255,0.8)' } },
         series: [{
           type: 'pie',
           radius: ['35%', '60%'],
@@ -262,10 +324,7 @@ export default {
             value: s.count,
             itemStyle: { color: colorMap[s.level] || '#409EFF' }
           })),
-          label: { formatter: '{b}: {c} ({d}%)', fontSize: 11 },
-          emphasis: {
-            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
-          }
+          label: { formatter: '{b}: {c} ({d}%)', fontSize: 11, color: 'rgba(255,255,255,0.8)' }
         }]
       })
     },
@@ -287,19 +346,21 @@ export default {
         counts.push(dateMap[dateStr] || 0)
       }
       this.trendChartInstance.setOption({
-        tooltip: { trigger: 'axis' },
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis', textStyle: { color: '#fff' } },
         grid: { left: 50, right: 20, top: 30, bottom: 40 },
         xAxis: {
           type: 'category',
           data: dates,
-          axisLabel: { interval: 4, fontSize: 11 }
+          axisLabel: { interval: 4, fontSize: 11, color: 'rgba(255,255,255,0.7)' },
+          axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } }
         },
-        yAxis: { type: 'value', name: '操作次数', minInterval: 1 },
+        yAxis: { type: 'value', name: '操作次数', minInterval: 1, nameTextStyle: { color: 'rgba(255,255,255,0.7)' }, axisLabel: { color: 'rgba(255,255,255,0.7)' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
         series: [{
           type: 'line',
           data: counts,
           smooth: true,
-          areaStyle: { color: 'rgba(64, 158, 255, 0.15)' },
+          areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(64, 158, 255, 0.3)' }, { offset: 1, color: 'rgba(64, 158, 255, 0.02)' }] } },
           lineStyle: { color: '#409EFF', width: 2 },
           itemStyle: { color: '#409EFF' },
           symbol: 'circle',
@@ -318,14 +379,15 @@ export default {
         { name: '需要更新', value: updateCount ? updateCount.count : 0, itemStyle: { color: '#F56C6C' } }
       ]
       this.softwareChartInstance.setOption({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 10, textStyle: { fontSize: 12 } },
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'item', textStyle: { color: '#fff' } },
+        legend: { bottom: 10, textStyle: { fontSize: 12, color: 'rgba(255,255,255,0.8)' } },
         series: [{
           type: 'pie',
           radius: ['40%', '65%'],
           center: ['50%', '45%'],
           data: data,
-          label: { formatter: '{b}: {c} ({d}%)', fontSize: 12 },
+          label: { formatter: '{b}: {c} ({d}%)', fontSize: 12, color: 'rgba(255,255,255,0.8)' },
           emphasis: {
             itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
           }
@@ -337,13 +399,53 @@ export default {
 </script>
 
 <style scoped>
+.dashboard {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a1628 0%, #0d2137 30%, #0f1b2d 60%, #131a2e 100%);
+  padding: 20px;
+  overflow: hidden;
+}
+.tech-bg-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.dashboard > .el-row {
+  position: relative;
+  z-index: 1;
+}
+
+/* 玻璃卡片效果 */
+.dashboard >>> .el-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 12px !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+.dashboard >>> .el-card .el-card__header {
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-weight: 500;
+}
+
+/* 可点击卡片 */
 .stat-card-clickable {
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 .stat-card-clickable:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 32px rgba(64, 158, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(64, 158, 255, 0.4) !important;
 }
+
 .stat-card {
   display: flex;
   align-items: center;
@@ -351,11 +453,12 @@ export default {
 .stat-icon {
   width: 60px;
   height: 60px;
-  border-radius: 8px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 .stat-icon i {
   font-size: 28px;
@@ -364,11 +467,12 @@ export default {
 .stat-value {
   font-size: 28px;
   font-weight: bold;
-  color: #333;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(64, 158, 255, 0.3);
 }
 .stat-label {
   font-size: 14px;
-  color: #999;
+  color: rgba(255, 255, 255, 0.6);
   margin-top: 5px;
 }
 </style>
