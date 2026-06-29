@@ -252,7 +252,9 @@ export default {
     async fetchData() {
       try {
         const res = await getDashboardSummary()
-        this.summary = res.data
+        if (res && res.data) {
+          Object.assign(this.summary, res.data)
+        }
         this.$nextTick(() => {
           this.renderRegionChart()
           this.renderOSChart()
@@ -261,7 +263,8 @@ export default {
           this.renderSoftwareChart()
         })
       } catch (e) {
-        console.error(e)
+        console.error('获取看板数据失败:', e)
+        this.$message.error('获取看板数据失败')
       }
     },
     renderRegionChart() {
