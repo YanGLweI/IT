@@ -25,11 +25,16 @@ database:
 # 上传配置
 upload:
   path: "./uploads"
+  # 策略文件上传路径
   policy_path: "./uploads/policies"
+  # 网络拓扑图上传路径
   topology_path: "./uploads/topologies"
-  monthly_check_path: "./uploads/monthly_checks"
-  quarterly_check_path: "./uploads/quarterly_checks"
-  user_change_path: "./uploads/user_changes"
+  # 用户权限月度检查文件上传路径
+  permission_monthly_check_path: "./uploads/permission_monthly_checks"
+  # 第三方 quarterly 检查文件上传路径
+  third_party_quarterly_check_path: "./uploads/third_party_quarterly_checks"
+  # 用户权限变更文件上传路径
+  permission_user_change_path: "./uploads/permission_user_changes"
   max_size: 33554432  # 32MB
 
 # RSA 加密配置

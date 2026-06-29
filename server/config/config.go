@@ -42,13 +42,13 @@ type DatabaseConfig struct {
 
 // UploadConfig 上传配置
 type UploadConfig struct {
-	Path              string `yaml:"path"`
-	PolicyPath        string `yaml:"policy_path"`
-	TopologyPath      string `yaml:"topology_path"`
-	MonthlyCheckPath  string `yaml:"monthly_check_path"`
-	QuarterlyCheckPath string `yaml:"quarterly_check_path"`
-	UserChangePath    string `yaml:"user_change_path"`
-	MaxSize           int64  `yaml:"max_size"`
+	Path                          string `yaml:"path"`
+	PolicyPath                    string `yaml:"policy_path"`
+	TopologyPath                  string `yaml:"topology_path"`
+	PermissionMonthlyCheckPath    string `yaml:"permission_monthly_check_path"`
+	ThirdPartyQuarterlyCheckPath  string `yaml:"third_party_quarterly_check_path"`
+	PermissionUserChangePath      string `yaml:"permission_user_change_path"`
+	MaxSize                       int64  `yaml:"max_size"`
 }
 
 // LDAPConfig LDAP配置
@@ -100,14 +100,14 @@ func LoadConfig() error {
 	if Cfg.Upload.TopologyPath == "" {
 		Cfg.Upload.TopologyPath = "./uploads/topologies"
 	}
-	if Cfg.Upload.MonthlyCheckPath == "" {
-		Cfg.Upload.MonthlyCheckPath = "./uploads/monthly_checks"
+	if Cfg.Upload.PermissionMonthlyCheckPath == "" {
+		Cfg.Upload.PermissionMonthlyCheckPath = "./uploads/permission_monthly_checks"
 	}
-	if Cfg.Upload.QuarterlyCheckPath == "" {
-		Cfg.Upload.QuarterlyCheckPath = "./uploads/quarterly_checks"
+	if Cfg.Upload.ThirdPartyQuarterlyCheckPath == "" {
+		Cfg.Upload.ThirdPartyQuarterlyCheckPath = "./uploads/third_party_quarterly_checks"
 	}
-	if Cfg.Upload.UserChangePath == "" {
-		Cfg.Upload.UserChangePath = "./uploads/user_changes"
+	if Cfg.Upload.PermissionUserChangePath == "" {
+		Cfg.Upload.PermissionUserChangePath = "./uploads/permission_user_changes"
 	}
 	if Cfg.Upload.MaxSize == 0 {
 		Cfg.Upload.MaxSize = 32 << 20

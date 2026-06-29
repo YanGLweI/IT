@@ -80,8 +80,8 @@ func CreateQuarterlyCheck(c *gin.Context) {
 		return
 	}
 
-	// 构建按年份的上传路径: quarterly_checks/{year}/
-	yearDir := filepath.Join(config.Cfg.Upload.QuarterlyCheckPath, strconv.Itoa(year))
+	// 构建按年份的上传路径: third_party_quarterly_checks/{year}/
+	yearDir := filepath.Join(config.Cfg.Upload.ThirdPartyQuarterlyCheckPath, strconv.Itoa(year))
 	os.MkdirAll(yearDir, 0755)
 
 	// 生成唯一文件名
@@ -186,8 +186,8 @@ func UpdateQuarterlyCheck(c *gin.Context) {
 
 	// 如果年份变化，需要移动文件到新目录
 	if year != oldYear {
-		oldYearDir := filepath.Join(config.Cfg.Upload.QuarterlyCheckPath, strconv.Itoa(oldYear))
-		newYearDir := filepath.Join(config.Cfg.Upload.QuarterlyCheckPath, strconv.Itoa(year))
+		oldYearDir := filepath.Join(config.Cfg.Upload.ThirdPartyQuarterlyCheckPath, strconv.Itoa(oldYear))
+		newYearDir := filepath.Join(config.Cfg.Upload.ThirdPartyQuarterlyCheckPath, strconv.Itoa(year))
 		os.MkdirAll(newYearDir, 0755)
 
 		// 移动文件
