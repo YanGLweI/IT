@@ -17,9 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// userChangeModule 模块名称，用于文件存储路径
-const userChangeModule = "user_change"
-
 // ListUserChangeHistories 获取用户变更记录历史列表
 func ListUserChangeHistories(c *gin.Context) {
 	var records []models.UserChangeHistory
@@ -83,8 +80,8 @@ func CreateUserChangeHistory(c *gin.Context) {
 		return
 	}
 
-	// 构建按年份的上传路径: check_history/permission/{year}/
-	yearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, userChangeModule, strconv.Itoa(year))
+	// 构建按年份的上传路径: user_changes/{year}/
+	yearDir := filepath.Join(config.Cfg.Upload.UserChangePath, strconv.Itoa(year))
 	os.MkdirAll(yearDir, 0755)
 
 	// 生成唯一文件名
@@ -189,8 +186,8 @@ func UpdateUserChangeHistory(c *gin.Context) {
 
 	// 如果年份变化，需要移动文件到新目录
 	if year != oldYear {
-		oldYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, userChangeModule, strconv.Itoa(oldYear))
-		newYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, userChangeModule, strconv.Itoa(year))
+		oldYearDir := filepath.Join(config.Cfg.Upload.UserChangePath, strconv.Itoa(oldYear))
+		newYearDir := filepath.Join(config.Cfg.Upload.UserChangePath, strconv.Itoa(year))
 		os.MkdirAll(newYearDir, 0755)
 
 		// 移动文件

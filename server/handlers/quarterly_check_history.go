@@ -17,9 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// quarterlyCheckModule 模块名称，用于文件存储路径
-const quarterlyCheckModule = "third_party"
-
 // ListQuarterlyChecks 获取季度检查历史列表
 func ListQuarterlyChecks(c *gin.Context) {
 	var records []models.QuarterlyCheckHistory
@@ -83,8 +80,8 @@ func CreateQuarterlyCheck(c *gin.Context) {
 		return
 	}
 
-	// 构建按年份的上传路径: check_history/third_party/{year}/
-	yearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, quarterlyCheckModule, strconv.Itoa(year))
+	// 构建按年份的上传路径: quarterly_checks/{year}/
+	yearDir := filepath.Join(config.Cfg.Upload.QuarterlyCheckPath, strconv.Itoa(year))
 	os.MkdirAll(yearDir, 0755)
 
 	// 生成唯一文件名
@@ -189,8 +186,8 @@ func UpdateQuarterlyCheck(c *gin.Context) {
 
 	// 如果年份变化，需要移动文件到新目录
 	if year != oldYear {
-		oldYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, quarterlyCheckModule, strconv.Itoa(oldYear))
-		newYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, quarterlyCheckModule, strconv.Itoa(year))
+		oldYearDir := filepath.Join(config.Cfg.Upload.QuarterlyCheckPath, strconv.Itoa(oldYear))
+		newYearDir := filepath.Join(config.Cfg.Upload.QuarterlyCheckPath, strconv.Itoa(year))
 		os.MkdirAll(newYearDir, 0755)
 
 		// 移动文件

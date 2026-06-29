@@ -17,9 +17,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// moduleName 模块名称，用于文件存储路径
-const monthlyCheckModule = "permission"
-
 // ListMonthlyChecks 获取月度检查历史列表
 func ListMonthlyChecks(c *gin.Context) {
 	var records []models.MonthlyCheckHistory
@@ -83,8 +80,8 @@ func CreateMonthlyCheck(c *gin.Context) {
 		return
 	}
 
-	// 构建按年份的上传路径: check_history/permission/{year}/
-	yearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, monthlyCheckModule, strconv.Itoa(year))
+	// 构建按年份的上传路径: monthly_checks/{year}/
+	yearDir := filepath.Join(config.Cfg.Upload.MonthlyCheckPath, strconv.Itoa(year))
 	os.MkdirAll(yearDir, 0755)
 
 	// 生成唯一文件名
@@ -189,8 +186,8 @@ func UpdateMonthlyCheck(c *gin.Context) {
 
 	// 如果年份变化，需要移动文件到新目录
 	if year != oldYear {
-		oldYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, monthlyCheckModule, strconv.Itoa(oldYear))
-		newYearDir := filepath.Join(config.Cfg.Upload.CheckHistoryPath, monthlyCheckModule, strconv.Itoa(year))
+		oldYearDir := filepath.Join(config.Cfg.Upload.MonthlyCheckPath, strconv.Itoa(oldYear))
+		newYearDir := filepath.Join(config.Cfg.Upload.MonthlyCheckPath, strconv.Itoa(year))
 		os.MkdirAll(newYearDir, 0755)
 
 		// 移动文件
