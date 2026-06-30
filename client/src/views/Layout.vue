@@ -150,8 +150,8 @@
       </el-menu>
     </el-aside>
     <el-container>
-      <el-header style="background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 20px">
-        <h3 style="margin: 0; color: #333">{{ $route.meta.title }}</h3>
+      <el-header class="app-header">
+        <h3 class="header-title">{{ $route.meta.title }}</h3>
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
@@ -238,22 +238,7 @@ export default {
 ::v-deep .sidebar-aside::-webkit-scrollbar {
   display: none; /* Chrome/Safari */
 }
-.header-right {
-  display: flex;
-  align-items: center;
-}
-.user-info {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  color: #606266;
-}
-.user-info i:first-child {
-  margin-right: 5px;
-  font-size: 16px;
-  color: #409EFF;
-}
+
 </style>
 
 <style>

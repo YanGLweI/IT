@@ -1,0 +1,179 @@
+/* ============================================
+   Global Header Theme — Light Tech Style
+   ============================================ */
+
+.app-header {
+  background: linear-gradient(135deg, #3a4a5e 0%, #304156 50%, #2d3e50 100%) !important;
+  border-bottom: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px !important;
+  position: relative;
+  overflow: hidden;
+  height: 56px;
+}
+
+/* 底部动态光效线 */
+.app-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #409EFF 20%,
+    #a855f7 50%,
+    #409EFF 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: headerLineFlow 4s linear infinite;
+}
+
+@keyframes headerLineFlow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes headerCodeScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* 代码流需要双倍宽度实现无缝循环 */
+.app-header::before {
+  width: 200%;
+}
+
+/* 背景动态代码流效果 */
+.app-header::before {
+  content: 'function deploy() { return system.init(); }  const config = { mode: "production", secure: true };  if (status === "active") { console.log("system online"); }  class Server extends Node { constructor() { super(); this.port = 8080; } }  import { Router, Controller } from "@core";  export default defineConfig({ plugins: [vue()] });  SELECT * FROM assets WHERE status = \'active\' ORDER BY created_at DESC;  app.use(cors()); app.listen(3000, () => console.log("running"));  ';
+  position: absolute;
+  inset: 0;
+  color: rgba(255, 255, 255, 0.06);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 11px;
+  line-height: 56px;
+  white-space: nowrap;
+  pointer-events: none;
+  overflow: hidden;
+  animation: headerCodeScroll 30s linear infinite;
+}
+
+/* 页面标题 */
+.app-header .header-title {
+  margin: 0;
+  color: #e8edf3;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  font-family: 'SF Mono', 'Fira Code', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* 标题前的路径符号 */
+.app-header .header-title::before {
+  content: '~/';
+  color: #409EFF;
+  font-weight: 700;
+  margin-right: 4px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  text-shadow: 0 0 8px rgba(64, 158, 255, 0.4);
+}
+
+/* 标题后的光标 */
+.app-header .header-title::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 15px;
+  background: #409EFF;
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: headerCursorBlink 1.2s step-end infinite;
+}
+
+@keyframes headerCursorBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
+/* 右侧用户区域 */
+.app-header .header-right {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.app-header .user-info {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #b8c5d6;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+  font-family: 'SF Mono', 'Fira Code', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.app-header .user-info:hover {
+  color: #ffffff;
+  border-color: rgba(64, 158, 255, 0.5);
+  background: rgba(64, 158, 255, 0.12);
+  box-shadow: 0 0 12px rgba(64, 158, 255, 0.15);
+}
+
+.app-header .user-info i:first-child {
+  margin-right: 6px;
+  font-size: 14px;
+  color: #409EFF;
+}
+
+.app-header .user-info .el-icon--right {
+  margin-left: 6px;
+  font-size: 12px;
+  color: #7c8fa6;
+  transition: color 0.2s;
+}
+
+.app-header .user-info:hover .el-icon--right {
+  color: #b8c5d6;
+}
+
+/* Header dropdown 样式 */
+.app-header .el-dropdown-menu {
+  background: #ffffff !important;
+  border: 1px solid #d0d7de !important;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.app-header .el-dropdown-menu__item {
+  color: #1f2328 !important;
+  font-size: 13px;
+  margin: 4px;
+  border-radius: 4px;
+}
+
+.app-header .el-dropdown-menu__item:hover {
+  background: #f6f8fa !important;
+  color: #0969da !important;
+}
+
+.app-header .el-dropdown-menu__item i {
+  color: #656d76;
+  margin-right: 6px;
+}
