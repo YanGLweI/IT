@@ -39,7 +39,7 @@
         </el-submenu>
         <el-submenu index="network-security">
           <template slot="title">
-            <i class="el-icon-lock"></i>
+            <i class="el-icon-connection"></i>
             <span>网络安全</span>
           </template>
           <el-menu-item index="/topology">
@@ -67,10 +67,32 @@
             <span>安全整改记录</span>
           </el-menu-item>
         </el-submenu>
+        <el-submenu index="system-security">
+          <template slot="title">
+            <i class="el-icon-setting"></i>
+            <span>系统安全</span>
+          </template>
+          <el-menu-item index="/system-hardening">
+            <i class="el-icon-s-tools"></i>
+            <span>系统加固</span>
+          </el-menu-item>
+          <el-menu-item index="/patch-update">
+            <i class="el-icon-refresh"></i>
+            <span>补丁更新</span>
+          </el-menu-item>
+          <el-menu-item index="/virus-control">
+            <i class="el-icon-warning"></i>
+            <span>病毒控制</span>
+          </el-menu-item>
+          <el-menu-item index="/backup-management">
+            <i class="el-icon-download"></i>
+            <span>备份管理</span>
+          </el-menu-item>
+        </el-submenu>
         <el-submenu index="permission">
           <template slot="title">
-            <i class="el-icon-s-check"></i>
-            <span>岗位权限</span>
+            <i class="el-icon-user"></i>
+            <span>用户管理</span>
           </template>
           <el-menu-item index="/permissions">
             <i class="el-icon-setting"></i>
