@@ -48,7 +48,8 @@ func ListUserChangeHistories(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 
-	if err := query.Order("year DESC, month DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
+	// 排序：按实施日期降序（最新的在前），无实施日期则按年月降序
+	if err := query.Order("implement_date IS NOT NULL DESC, implement_date DESC, year DESC, month DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
@@ -61,6 +62,8 @@ func CreateUserChangeHistory(c *gin.Context) {
 	yearStr := c.PostForm("year")
 	monthStr := c.PostForm("month")
 	description := c.PostForm("description")
+	applyDateStr := c.PostForm("apply_date")
+	implementDateStr := c.PostForm("implement_date")
 
 	if yearStr == "" || monthStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "年份和月份不能为空"})
@@ -77,6 +80,22 @@ func CreateUserChangeHistory(c *gin.Context) {
 	if err != nil || month < 1 || month > 12 {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "月份格式不正确，应为1-12"})
 		return
+	}
+
+	// 解析申请日期
+	var applyDate *time.Time
+	if applyDateStr != "" {
+		if t, err := time.Parse("2006-01-02", applyDateStr); err == nil {
+			applyDate = &t
+		}
+	}
+
+	// 解析实施日期
+	var implementDate *time.Time
+	if implementDateStr != "" {
+		if t, err := time.Parse("2006-01-02", implementDateStr); err == nil {
+			implementDate = &t
+		}
 	}
 
 	// 获取上传文件
@@ -108,13 +127,15 @@ func CreateUserChangeHistory(c *gin.Context) {
 	}
 
 	record := models.UserChangeHistory{
-		Year:        year,
-		Month:       month,
-		Description: description,
-		FileName:    file.Filename,
-		FilePath:    filePath,
-		FileSize:    file.Size,
-		FileType:    file.Header.Get("Content-Type"),
+		Year:          year,
+		Month:         month,
+		Description:   description,
+		ApplyDate:     applyDate,
+		ImplementDate: implementDate,
+		FileName:      file.Filename,
+		FilePath:      filePath,
+		FileSize:      file.Size,
+		FileType:      file.Header.Get("Content-Type"),
 	}
 
 	if err := database.GetDB().Create(&record).Error; err != nil {
@@ -129,9 +150,17 @@ func CreateUserChangeHistory(c *gin.Context) {
 		{FieldName: "Year", FieldLabel: "年份", NewValue: strconv.Itoa(year)},
 		{FieldName: "Month", FieldLabel: "月份", NewValue: strconv.Itoa(month)},
 		{FieldName: "Description", FieldLabel: "描述", NewValue: description},
-		{FieldName: "FileName", FieldLabel: "文件名", NewValue: record.FileName},
-		{FieldName: "FileSize", FieldLabel: "文件大小", NewValue: fmt.Sprintf("%d", record.FileSize)},
 	}
+	if applyDate != nil {
+		details = append(details, services.LogDetail{FieldName: "ApplyDate", FieldLabel: "申请日期", NewValue: applyDate.Format("2006-01-02")})
+	}
+	if implementDate != nil {
+		details = append(details, services.LogDetail{FieldName: "ImplementDate", FieldLabel: "实施日期", NewValue: implementDate.Format("2006-01-02")})
+	}
+	details = append(details,
+		services.LogDetail{FieldName: "FileName", FieldLabel: "文件名", NewValue: record.FileName},
+		services.LogDetail{FieldName: "FileSize", FieldLabel: "文件大小", NewValue: fmt.Sprintf("%d", record.FileSize)},
+	)
 	services.LogOperation(username, displayName, "上传用户变更记录", "user_change_history", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": record})
@@ -175,6 +204,8 @@ func UpdateUserChangeHistory(c *gin.Context) {
 	yearStr := c.PostForm("year")
 	monthStr := c.PostForm("month")
 	description := c.PostForm("description")
+	applyDateStr := c.PostForm("apply_date")
+	implementDateStr := c.PostForm("implement_date")
 
 	if yearStr == "" || monthStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "年份和月份不能为空"})
@@ -191,6 +222,26 @@ func UpdateUserChangeHistory(c *gin.Context) {
 	if err != nil || month < 1 || month > 12 {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "月份格式不正确，应为1-12"})
 		return
+	}
+
+	// 解析申请日期
+	var applyDate *time.Time
+	if applyDateStr != "" {
+		if t, err := time.Parse("2006-01-02", applyDateStr); err == nil {
+			applyDate = &t
+		}
+	} else {
+		applyDate = nil
+	}
+
+	// 解析实施日期
+	var implementDate *time.Time
+	if implementDateStr != "" {
+		if t, err := time.Parse("2006-01-02", implementDateStr); err == nil {
+			implementDate = &t
+		}
+	} else {
+		implementDate = nil
 	}
 
 	oldRecord := record
@@ -225,6 +276,8 @@ func UpdateUserChangeHistory(c *gin.Context) {
 	record.Year = year
 	record.Month = month
 	record.Description = description
+	record.ApplyDate = applyDate
+	record.ImplementDate = implementDate
 
 	if err := database.GetDB().Save(&record).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})

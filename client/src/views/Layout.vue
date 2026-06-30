@@ -112,7 +112,7 @@
           </el-menu-item>
           <el-menu-item index="/user-change-history">
             <i class="el-icon-document-copy"></i>
-            <span>变更记录历史</span>
+            <span>用户变更记录</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="third-party">

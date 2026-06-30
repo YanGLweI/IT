@@ -2,7 +2,7 @@
   <div class="user-change-history">
     <el-card>
       <div slot="header" class="page-header">
-        <span>变更记录历史</span>
+        <span>用户变更记录</span>
         <div class="page-header-right">
           <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUpload = true">上传记录</el-button>
           <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
@@ -26,6 +26,12 @@
           <template slot-scope="{ row }">{{ row.month }}月</template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column label="申请日期" width="120" align="center">
+          <template slot-scope="{ row }">{{ formatDate(row.apply_date) }}</template>
+        </el-table-column>
+        <el-table-column label="实施日期" width="120" align="center">
+          <template slot-scope="{ row }">{{ formatDate(row.implement_date) }}</template>
+        </el-table-column>
         <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
         <el-table-column label="文件大小" width="100" align="center">
           <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
@@ -73,6 +79,18 @@
               <el-select v-model="uploadForm.month" placeholder="请选择" style="width: 100%">
                 <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
               </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="申请日期" prop="apply_date">
+              <el-date-picker v-model="uploadForm.apply_date" type="date" value-format="yyyy-MM-dd" placeholder="选择申请日期" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="实施日期" prop="implement_date">
+              <el-date-picker v-model="uploadForm.implement_date" type="date" value-format="yyyy-MM-dd" placeholder="选择实施日期" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -140,6 +158,8 @@ export default {
       uploadForm: {
         year: now.getFullYear(),
         month: now.getMonth() + 1,
+        apply_date: '',
+        implement_date: '',
         description: ''
       },
       uploadRules: {
@@ -199,6 +219,8 @@ export default {
           formData.append('year', this.uploadForm.year)
           formData.append('month', this.uploadForm.month)
           formData.append('description', this.uploadForm.description || '')
+          if (this.uploadForm.apply_date) formData.append('apply_date', this.uploadForm.apply_date)
+          if (this.uploadForm.implement_date) formData.append('implement_date', this.uploadForm.implement_date)
           if (this.selectedFile) {
             formData.append('file', this.selectedFile)
           }
@@ -228,6 +250,8 @@ export default {
       this.uploadForm = {
         year: now.getFullYear(),
         month: now.getMonth() + 1,
+        apply_date: '',
+        implement_date: '',
         description: ''
       }
       this.selectedFile = null
@@ -242,6 +266,8 @@ export default {
       this.uploadForm = {
         year: row.year,
         month: row.month,
+        apply_date: row.apply_date ? row.apply_date.substring(0, 10) : '',
+        implement_date: row.implement_date ? row.implement_date.substring(0, 10) : '',
         description: row.description || ''
       }
       this.showUpload = true
@@ -310,7 +336,7 @@ export default {
     },
     formatDate(dateStr) {
       if (!dateStr) return '-'
-      return dateStr.replace('T', ' ').substring(0, 19)
+      return dateStr.replace('T', ' ').substring(0, 10)
     }
   }
 }
