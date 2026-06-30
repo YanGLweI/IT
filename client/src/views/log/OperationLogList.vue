@@ -155,7 +155,8 @@ export default {
         'monthly_check_history': '月度检查记录',
         'quarterly_check_history': '季度检查记录',
         'user_change_history': '用户变更记录',
-        'vulnerability_scan': '漏洞扫描'
+        'vulnerability_scan': '漏洞扫描',
+        'system_hardening_history': '系统加固记录'
       }
     }
   },

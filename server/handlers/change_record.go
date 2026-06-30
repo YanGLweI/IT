@@ -240,12 +240,24 @@ func ListChangeRecords(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 
-	if err := query.Preload("ChangeTypes").Order("year DESC, month DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
+	if err := query.Preload("ChangeTypes").Order("implement_date DESC, year DESC, month DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": records, "total": total, "page_size": pageSize})
+}
+
+// parseDateForm 解析表单中的日期字段，空字符串返回nil
+func parseDateForm(s string) (*time.Time, error) {
+	if s == "" {
+		return nil, nil
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
 
 // CreateChangeRecord 上传变更记录扫描件
@@ -268,6 +280,18 @@ func CreateChangeRecord(c *gin.Context) {
 	month, err := strconv.Atoi(monthStr)
 	if err != nil || month < 1 || month > 12 {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "月份格式不正确，应为1-12"})
+		return
+	}
+
+	applyDate, err := parseDateForm(c.PostForm("apply_date"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "申请日期格式不正确，应为YYYY-MM-DD"})
+		return
+	}
+
+	implementDate, err := parseDateForm(c.PostForm("implement_date"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "实施日期格式不正确，应为YYYY-MM-DD"})
 		return
 	}
 
@@ -296,13 +320,15 @@ func CreateChangeRecord(c *gin.Context) {
 	}
 
 	record := models.ChangeRecord{
-		Year:        year,
-		Month:       month,
-		Description: description,
-		FileName:    file.Filename,
-		FilePath:    filePath,
-		FileSize:    file.Size,
-		FileType:    file.Header.Get("Content-Type"),
+		Year:          year,
+		Month:         month,
+		Description:   description,
+		ApplyDate:     applyDate,
+		ImplementDate: implementDate,
+		FileName:      file.Filename,
+		FilePath:      filePath,
+		FileSize:      file.Size,
+		FileType:      file.Header.Get("Content-Type"),
 	}
 
 	if err := database.GetDB().Create(&record).Error; err != nil {
@@ -372,6 +398,18 @@ func UpdateChangeRecord(c *gin.Context) {
 		return
 	}
 
+	applyDate, err := parseDateForm(c.PostForm("apply_date"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "申请日期格式不正确，应为YYYY-MM-DD"})
+		return
+	}
+
+	implementDate, err := parseDateForm(c.PostForm("implement_date"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "实施日期格式不正确，应为YYYY-MM-DD"})
+		return
+	}
+
 	oldRecord := record
 	oldYear := record.Year
 	oldFilePath := record.FilePath
@@ -398,6 +436,8 @@ func UpdateChangeRecord(c *gin.Context) {
 	record.Year = year
 	record.Month = month
 	record.Description = description
+	record.ApplyDate = applyDate
+	record.ImplementDate = implementDate
 
 	if err := database.GetDB().Save(&record).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})

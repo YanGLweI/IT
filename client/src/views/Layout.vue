@@ -85,7 +85,7 @@
             <span>病毒控制</span>
           </el-menu-item>
           <el-menu-item index="/backup-management">
-            <i class="el-icon-download"></i>
+            <i class="el-icon-files"></i>
             <span>备份管理</span>
           </el-menu-item>
         </el-submenu>

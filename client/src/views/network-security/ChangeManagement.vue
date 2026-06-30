@@ -96,8 +96,11 @@
         <el-table-column label="文件大小" width="100" align="center">
           <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
         </el-table-column>
-        <el-table-column label="上传时间" width="180" align="center">
-          <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
+        <el-table-column label="申请日期" width="120" align="center">
+          <template slot-scope="{ row }">{{ formatDateOnly(row.apply_date) }}</template>
+        </el-table-column>
+        <el-table-column label="实施日期" width="120" align="center">
+          <template slot-scope="{ row }">{{ formatDateOnly(row.implement_date) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="240" fixed="right">
           <template slot-scope="{ row }">
@@ -163,6 +166,18 @@
               <el-select v-model="recordForm.month" placeholder="请选择" style="width: 100%">
                 <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
               </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="申请日期">
+              <el-date-picker v-model="recordForm.apply_date" type="date" value-format="yyyy-MM-dd" placeholder="选择申请日期" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="实施日期">
+              <el-date-picker v-model="recordForm.implement_date" type="date" value-format="yyyy-MM-dd" placeholder="选择实施日期" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -315,7 +330,7 @@ export default {
       recordIsEdit: false,
       editingRecordId: null,
       recordUploading: false,
-      recordForm: { year: now.getFullYear(), month: now.getMonth() + 1, description: '', typeIds: [] },
+      recordForm: { year: now.getFullYear(), month: now.getMonth() + 1, description: '', typeIds: [], apply_date: '', implement_date: '' },
       recordRules: {
         year: [{ required: true, message: '请选择年份', trigger: 'change' }],
         month: [{ required: true, message: '请选择月份', trigger: 'change' }]
@@ -558,7 +573,7 @@ export default {
       this.recordIsEdit = false
       this.editingRecordId = null
       const now = new Date()
-      this.recordForm = { year: now.getFullYear(), month: now.getMonth() + 1, description: '', typeIds: [] }
+      this.recordForm = { year: now.getFullYear(), month: now.getMonth() + 1, description: '', typeIds: [], apply_date: '', implement_date: '' }
       this.recordSelectedFile = null
       this.recordFileList = []
       this.showRecordUpload = true
@@ -573,7 +588,7 @@ export default {
       this.recordIsEdit = true
       this.editingRecordId = row.id
       const typeIds = (row.change_types || []).map(t => t.id)
-      this.recordForm = { year: row.year, month: row.month, description: row.description || '', typeIds }
+      this.recordForm = { year: row.year, month: row.month, description: row.description || '', typeIds, apply_date: row.apply_date ? row.apply_date.substring(0, 10) : '', implement_date: row.implement_date ? row.implement_date.substring(0, 10) : '' }
       this.showRecordUpload = true
     },
     submitRecordUpload() {
@@ -589,6 +604,8 @@ export default {
           formData.append('year', this.recordForm.year)
           formData.append('month', this.recordForm.month)
           formData.append('description', this.recordForm.description || '')
+          formData.append('apply_date', this.recordForm.apply_date || '')
+          formData.append('implement_date', this.recordForm.implement_date || '')
           formData.append('type_ids', (this.recordForm.typeIds || []).join(','))
           if (this.recordSelectedFile) formData.append('file', this.recordSelectedFile)
 
@@ -668,6 +685,10 @@ export default {
     formatDate(dateStr) {
       if (!dateStr) return '-'
       return dateStr.replace('T', ' ').substring(0, 19)
+    },
+    formatDateOnly(dateStr) {
+      if (!dateStr) return '-'
+      return dateStr.substring(0, 10)
     }
   }
 }
