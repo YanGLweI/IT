@@ -314,7 +314,7 @@ export default {
           type: 'pie',
           radius: ['35%', '60%'],
           center: ['50%', '45%'],
-          data: stats.map(s => ({ name: s.os_type, value: s.count })),
+          data: stats.map(s => ({ name: s.os_type, value: s.count })).sort((a, b) => a.value - b.value),
           label: { formatter: '{b}: {c} ({d}%)', fontSize: 11, color: 'rgba(255,255,255,0.8)' }
         }]
       })
@@ -349,7 +349,7 @@ export default {
             name: s.level,
             value: s.count,
             itemStyle: { color: colorMap[s.level] || '#409EFF' }
-          })),
+          })).sort((a, b) => a.value - b.value),
           label: { formatter: '{b}: {c} ({d}%)', fontSize: 11, color: 'rgba(255,255,255,0.8)' }
         }]
       })
@@ -409,7 +409,7 @@ export default {
       const data = [
         { name: '已是最新', value: uptodateCount ? uptodateCount.count : 0, itemStyle: { color: '#67C23A' } },
         { name: '需要更新', value: updateCount ? updateCount.count : 0, itemStyle: { color: '#F56C6C' } }
-      ]
+      ].sort((a, b) => a.value - b.value)
       this.softwareChartInstance.setOption({
         backgroundColor: 'transparent',
         tooltip: {
