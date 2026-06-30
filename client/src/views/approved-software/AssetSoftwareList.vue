@@ -3,7 +3,7 @@
     <el-card>
       <div slot="header">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
-          <span>资产对应表 — 第三方软件与资产关联</span>
+          <span>第三方软件与资产关联表</span>
           <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出补丁更新记录表</el-button>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
@@ -57,7 +57,7 @@
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template slot-scope="scope">
-            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button size="mini" @click="handleEdit(scope.row)">关联</el-button>
           </template>
         </el-table-column>
       </el-table>
