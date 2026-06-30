@@ -203,7 +203,7 @@ export default {
       }).then(blob => {
         const downloadUrl = URL.createObjectURL(blob)
         link.href = downloadUrl
-        link.download = 'IT11-1.0 系统加固检查表.xlsx'
+        link.download = '系统加固检查表.xlsx'
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)

@@ -526,7 +526,7 @@ export default {
         link.href = url
         const now = new Date()
         const yearMonth = `${now.getFullYear()}年${now.getMonth() + 1}月份`
-        link.download = `IT07-2.0 用户确认表(${yearMonth})-${dept.name}.xlsx`
+        link.download = `用户确认表(${yearMonth})-${dept.name}.xlsx`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
