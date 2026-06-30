@@ -1,0 +1,431 @@
+/* ============================================
+   Global El-Dialog Theme — Light Tech Style
+   ============================================ */
+
+/* --- Overlay --- */
+.v-modal {
+  background-color: rgba(200, 210, 225, 0.55) !important;
+  backdrop-filter: blur(6px);
+}
+
+/* --- Dialog Container --- */
+.el-dialog {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff !important;
+  border: 1px solid #d0d7de;
+  box-shadow:
+    0 1px 0 rgba(208, 215, 222, 0.8),
+    0 16px 32px rgba(27, 31, 36, 0.14),
+    0 0 0 1px rgba(27, 31, 36, 0.04);
+  position: relative;
+}
+
+/* 顶部动态光效装饰线 */
+.el-dialog::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    #0969da 0%,
+    #8250df 50%,
+    #0969da 100%
+  );
+  background-size: 200% 100%;
+  animation: dialogHeaderShimmer 3s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes dialogHeaderShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* --- Header --- */
+.el-dialog__header {
+  background: linear-gradient(135deg, #f0f4ff 0%, #f6f8fa 50%, #f5f0ff 100%) !important;
+  border-bottom: 1px solid #d0d7de !important;
+  padding: 18px 24px 18px 20px !important;
+  margin: 0 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* header 扫光动画 */
+.el-dialog__header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(9, 105, 218, 0.04) 40%,
+    rgba(130, 80, 223, 0.06) 50%,
+    rgba(9, 105, 218, 0.04) 60%,
+    transparent 100%
+  );
+  animation: dialogHeaderSweep 4s ease-in-out infinite;
+}
+
+@keyframes dialogHeaderSweep {
+  0%   { left: -60%; }
+  50%  { left: 100%; }
+  100% { left: 100%; }
+}
+
+.el-dialog__title {
+  color: #1f2328 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px;
+  font-family: 'SF Mono', 'Fira Code', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  position: relative;
+  z-index: 1;
+}
+
+/* 标题前的终端光标装饰 */
+.el-dialog__title::before {
+  content: '>';
+  display: inline-block;
+  color: #0969da;
+  font-weight: 700;
+  font-size: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.el-dialog__title::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: #0969da;
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: dialogCursorBlink 1s step-end infinite;
+}
+
+@keyframes dialogCursorBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
+.el-dialog__headerbtn {
+  top: 16px !important;
+  right: 16px !important;
+  font-size: 20px !important;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.el-dialog__headerbtn:hover {
+  background: rgba(215, 58, 73, 0.08);
+}
+
+.el-dialog__headerbtn .el-dialog__close {
+  color: #656d76 !important;
+  transition: all 0.15s ease;
+}
+
+.el-dialog__headerbtn:hover .el-dialog__close {
+  color: #cf222e !important;
+}
+
+/* --- Body --- */
+.el-dialog__body {
+  background: #ffffff !important;
+  color: #1f2328 !important;
+  padding: 24px 20px !important;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* --- Footer --- */
+.el-dialog__footer {
+  background: #f6f8fa !important;
+  border-top: 1px solid #d0d7de !important;
+  padding: 12px 20px !important;
+}
+
+/* ============================================
+   Element Form Components Inside Dialog
+   ============================================ */
+
+/* Labels */
+.el-dialog .el-form-item__label {
+  color: #656d76 !important;
+  font-size: 13px !important;
+  font-weight: 500;
+}
+
+/* Input / Textarea */
+.el-dialog .el-input__inner,
+.el-dialog .el-textarea__inner {
+  background-color: #f6f8fa !important;
+  border-color: #d0d7de !important;
+  color: #1f2328 !important;
+  border-radius: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.el-dialog .el-input__inner:focus,
+.el-dialog .el-textarea__inner:focus {
+  background-color: #ffffff !important;
+  border-color: #0969da !important;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
+}
+
+.el-dialog .el-input__inner::placeholder,
+.el-dialog .el-textarea__inner::placeholder {
+  color: #6e7781 !important;
+}
+
+/* Select dropdown */
+.el-dialog .el-select .el-input__inner {
+  background-color: #f6f8fa !important;
+  border-color: #d0d7de !important;
+  color: #1f2328 !important;
+}
+
+.el-dialog .el-select-dropdown {
+  background-color: #ffffff !important;
+  border-color: #d0d7de !important;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(27, 31, 36, 0.12);
+}
+
+.el-dialog .el-select-dropdown__item {
+  color: #1f2328 !important;
+  border-radius: 0;
+}
+
+.el-dialog .el-select-dropdown__item.hover,
+.el-dialog .el-select-dropdown__item:hover {
+  background-color: #f6f8fa !important;
+}
+
+.el-dialog .el-select-dropdown__item.selected {
+  color: #0969da !important;
+  font-weight: 600;
+}
+
+/* Date Picker */
+.el-dialog .el-date-editor .el-input__inner {
+  background-color: #f6f8fa !important;
+  border-color: #d0d7de !important;
+  color: #1f2328 !important;
+}
+
+/* Upload */
+.el-dialog .el-upload-dragger {
+  background-color: #f6f8fa !important;
+  border-color: #d0d7de !important;
+  border-radius: 6px;
+  transition: border-color 0.2s;
+}
+
+.el-dialog .el-upload-dragger:hover {
+  border-color: #0969da !important;
+}
+
+.el-dialog .el-upload-dragger .el-upload__text {
+  color: #656d76 !important;
+}
+
+.el-dialog .el-upload-dragger .el-upload__text em {
+  color: #0969da !important;
+}
+
+.el-dialog .el-upload-dragger .el-icon-upload {
+  color: #0969da !important;
+}
+
+/* Table inside dialog */
+.el-dialog .el-table {
+  background-color: #ffffff !important;
+  color: #1f2328 !important;
+  border-radius: 6px;
+  border: 1px solid #d0d7de;
+}
+
+.el-dialog .el-table th.el-table__cell {
+  background-color: #f6f8fa !important;
+  color: #656d76 !important;
+  border-color: #d0d7de !important;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.el-dialog .el-table td.el-table__cell {
+  border-color: #d0d7de !important;
+}
+
+.el-dialog .el-table tr {
+  background-color: #ffffff !important;
+}
+
+.el-dialog .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background-color: #f6f8fa !important;
+}
+
+.el-dialog .el-table__body tr:hover > td {
+  background-color: rgba(9, 105, 218, 0.04) !important;
+}
+
+.el-dialog .el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background-color: rgba(9, 105, 218, 0.06) !important;
+}
+
+.el-dialog .el-table__empty-text {
+  color: #6e7781 !important;
+}
+
+/* Pagination */
+.el-dialog .el-pagination {
+  color: #656d76 !important;
+}
+
+.el-dialog .el-pagination button:disabled {
+  background-color: #f6f8fa !important;
+  color: #afb8c1 !important;
+}
+
+.el-dialog .el-pager li {
+  background-color: transparent !important;
+  color: #656d76 !important;
+  border-radius: 6px;
+}
+
+.el-dialog .el-pager li:hover {
+  color: #0969da !important;
+}
+
+.el-dialog .el-pager li.active {
+  color: #0969da !important;
+  font-weight: 600;
+}
+
+/* Alert */
+.el-dialog .el-alert--info.is-light {
+  background-color: #ddf4ff !important;
+  border-color: #54aeff !important;
+  color: #0969da !important;
+}
+
+.el-dialog .el-alert--warning.is-light {
+  background-color: #fff8c5 !important;
+  border-color: #d4a72c !important;
+}
+
+.el-dialog .el-alert--success.is-light {
+  background-color: #dafbe1 !important;
+  border-color: #4ac26b !important;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.el-dialog .el-button--primary {
+  background: #0969da !important;
+  border-color: #0969da !important;
+  color: #ffffff !important;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.el-dialog .el-button--primary:hover {
+  background: #0860ca !important;
+  border-color: #0860ca !important;
+  box-shadow: 0 2px 8px rgba(9, 105, 218, 0.3);
+}
+
+.el-dialog .el-button--primary:active {
+  background: #0757b5 !important;
+}
+
+.el-dialog .el-button--default {
+  background: #f6f8fa !important;
+  border: 1px solid #d0d7de !important;
+  color: #1f2328 !important;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.el-dialog .el-button--default:hover {
+  background: #eaeef2 !important;
+  border-color: #afb8c1 !important;
+}
+
+.el-dialog .el-button--danger {
+  background: #cf222e !important;
+  border-color: #cf222e !important;
+  color: #ffffff !important;
+  border-radius: 6px;
+}
+
+.el-dialog .el-button--danger:hover {
+  background: #a40e26 !important;
+  border-color: #a40e26 !important;
+  box-shadow: 0 2px 8px rgba(207, 34, 46, 0.3);
+}
+
+.el-dialog .el-button--warning {
+  background: #bf8700 !important;
+  border-color: #bf8700 !important;
+  color: #ffffff !important;
+  border-radius: 6px;
+}
+
+.el-dialog .el-button--warning:hover {
+  background: #9a6700 !important;
+  border-color: #9a6700 !important;
+}
+
+/* ============================================
+   Scrollbar inside dialog
+   ============================================ */
+.el-dialog__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.el-dialog__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.el-dialog__body::-webkit-scrollbar-thumb {
+  background: #d0d7de;
+  border-radius: 3px;
+}
+
+.el-dialog__body::-webkit-scrollbar-thumb:hover {
+  background: #afb8c1;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 768px) {
+  .el-dialog {
+    width: 92% !important;
+    margin: 8vh auto !important;
+  }
+}
