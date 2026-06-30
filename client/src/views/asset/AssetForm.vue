@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="isEdit ? '编辑资产' : '新增资产'" :visible.sync="dialogVisible" width="600px" @close="handleClose">
+  <el-dialog :title="isEdit ? '编辑资产' : '新增资产'" :visible.sync="dialogVisible" width="600px" @close="handleClose" :close-on-click-modal="false">
     <DualControlDialog ref="dualControl" />
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
       <el-form-item label="计算机名" prop="computer_name">

@@ -130,6 +130,12 @@ func DiffStructs(old interface{}, new interface{}, fieldLabels map[string]string
 			continue
 		}
 
+		// 只记录有中文标签的字段，其他字段（如FilePath、FileSize、FileType等）不记录
+		label, hasLabel := fieldLabels[fieldName]
+		if !hasLabel {
+			continue
+		}
+
 		oldFieldValue := oldVal.Field(i)
 		newFieldValue := newVal.Field(i)
 
@@ -138,15 +144,16 @@ func DiffStructs(old interface{}, new interface{}, fieldLabels map[string]string
 			continue
 		}
 
+		// 跳过slice/array/map类型字段（如关联的多对多关系），这些字段需要单独处理
+		if oldFieldValue.Kind() == reflect.Slice || oldFieldValue.Kind() == reflect.Array || oldFieldValue.Kind() == reflect.Map {
+			continue
+		}
+
 		// 转换为字符串进行比较
 		oldStr := fmt.Sprintf("%v", oldFieldValue.Interface())
 		newStr := fmt.Sprintf("%v", newFieldValue.Interface())
 
 		if oldStr != newStr {
-			label := fieldName
-			if lbl, ok := fieldLabels[fieldName]; ok {
-				label = lbl
-			}
 			details = append(details, LogDetail{
 				FieldName:  fieldName,
 				FieldLabel: label,
@@ -308,27 +315,21 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"ApplyDate":     "申请日期",
 			"ImplementDate": "实施日期",
 			"FileName":      "文件名",
-			"FilePath":      "文件路径",
-			"FileSize":      "文件大小",
-			"FileType":      "文件类型",
 		}
 	case "vulnerability_scan":
 		return map[string]string{
+			"ScanType":         "扫描类型",
 			"Year":             "年份",
 			"Quarter":          "季度",
 			"ReportDate":       "报告日期",
 			"AssetCount":       "资产数量",
+			"ExternalIP":       "对外IP",
 			"CriticalCount":    "关键漏洞",
 			"HighCount":        "严重漏洞",
 			"MediumCount":      "中等漏洞",
 			"FileName":         "文件名",
-			"FilePath":         "文件路径",
-			"FileSize":         "文件大小",
-			"FileType":         "文件类型",
 			"Status":           "状态",
 			"FixFileName":      "修复报告",
-			"FixFilePath":      "修复报告路径",
-			"FixFileSize":      "修复报告大小",
 			"FixCriticalCount": "修复后关键漏洞",
 			"FixHighCount":     "修复后严重漏洞",
 			"FixMediumCount":   "修复后中等漏洞",

@@ -17,6 +17,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// equalUintSlices 比较两个uint切片是否相等
+func equalUintSlices(a, b []uint) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // ============================================================
 // 模板管理
 // ============================================================
@@ -360,9 +373,62 @@ func CreateChangeRecord(c *gin.Context) {
 		{FieldName: "Year", FieldLabel: "年份", NewValue: strconv.Itoa(year)},
 		{FieldName: "Month", FieldLabel: "月份", NewValue: strconv.Itoa(month)},
 		{FieldName: "Description", FieldLabel: "描述", NewValue: description},
-		{FieldName: "FileName", FieldLabel: "文件名", NewValue: record.FileName},
-		{FieldName: "FileSize", FieldLabel: "文件大小", NewValue: fmt.Sprintf("%d", record.FileSize)},
 	}
+	
+	// 添加申请日期
+	if applyDate != nil {
+		details = append(details, services.LogDetail{
+			FieldName:  "ApplyDate",
+			FieldLabel: "申请日期",
+			OldValue:   "-",
+			NewValue:   applyDate.Format("2006-01-02"),
+		})
+	} else {
+		details = append(details, services.LogDetail{
+			FieldName:  "ApplyDate",
+			FieldLabel: "申请日期",
+			OldValue:   "-",
+			NewValue:   "-",
+		})
+	}
+	
+	// 添加实施日期
+	if implementDate != nil {
+		details = append(details, services.LogDetail{
+			FieldName:  "ImplementDate",
+			FieldLabel: "实施日期",
+			OldValue:   "-",
+			NewValue:   implementDate.Format("2006-01-02"),
+		})
+	} else {
+		details = append(details, services.LogDetail{
+			FieldName:  "ImplementDate",
+			FieldLabel: "实施日期",
+			OldValue:   "-",
+			NewValue:   "-",
+		})
+	}
+	
+	details = append(details, services.LogDetail{
+		FieldName:  "FileName",
+		FieldLabel: "文件名",
+		NewValue:   record.FileName,
+	})
+	
+	// 添加变更类型信息
+	var typeIDs []uint
+	for _, ct := range record.ChangeTypes {
+		typeIDs = append(typeIDs, ct.ID)
+	}
+	if len(typeIDs) > 0 {
+		details = append(details, services.LogDetail{
+			FieldName:  "ChangeTypes",
+			FieldLabel: "变更类型",
+			OldValue:   "[]",
+			NewValue:   fmt.Sprintf("%v", typeIDs),
+		})
+	}
+	
 	services.LogOperation(username, displayName, "上传变更记录扫描件", "change_record", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": record})
@@ -372,7 +438,8 @@ func CreateChangeRecord(c *gin.Context) {
 func UpdateChangeRecord(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var record models.ChangeRecord
-	if err := database.GetDB().First(&record, id).Error; err != nil {
+	// 预加载 ChangeTypes 关联，用于记录旧值
+	if err := database.GetDB().Preload("ChangeTypes").First(&record, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "记录不存在"})
 		return
 	}
@@ -413,6 +480,11 @@ func UpdateChangeRecord(c *gin.Context) {
 	oldRecord := record
 	oldYear := record.Year
 	oldFilePath := record.FilePath
+	// 保存旧的变更类型ID列表，用于日志记录
+	var oldTypeIDs []uint
+	for _, ct := range record.ChangeTypes {
+		oldTypeIDs = append(oldTypeIDs, ct.ID)
+	}
 
 	// 年份变化时移动文件
 	if year != oldYear {
@@ -468,6 +540,24 @@ func UpdateChangeRecord(c *gin.Context) {
 	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("change_record")
 	details := services.DiffStructs(oldRecord, record, fieldLabels)
+	
+	// 检查变更类型是否发生变化
+	var newTypeIDs []uint
+	for _, ct := range record.ChangeTypes {
+		newTypeIDs = append(newTypeIDs, ct.ID)
+	}
+	
+	if !equalUintSlices(oldTypeIDs, newTypeIDs) {
+		oldStr := fmt.Sprintf("%v", oldTypeIDs)
+		newStr := fmt.Sprintf("%v", newTypeIDs)
+		details = append(details, services.LogDetail{
+			FieldName:  "ChangeTypes",
+			FieldLabel: "变更类型",
+			OldValue:   oldStr,
+			NewValue:   newStr,
+		})
+	}
+	
 	services.LogOperation(username, displayName, "更新变更记录扫描件", "change_record", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": record})
@@ -477,12 +567,19 @@ func UpdateChangeRecord(c *gin.Context) {
 func DeleteChangeRecord(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var record models.ChangeRecord
-	if err := database.GetDB().First(&record, id).Error; err != nil {
+	// 预加载 ChangeTypes 关联，用于记录旧值
+	if err := database.GetDB().Preload("ChangeTypes").First(&record, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "记录不存在"})
 		return
 	}
 
 	os.Remove(record.FilePath)
+
+	// 保存旧的变更类型ID列表，用于日志记录
+	var oldTypeIDs []uint
+	for _, ct := range record.ChangeTypes {
+		oldTypeIDs = append(oldTypeIDs, ct.ID)
+	}
 
 	if err := database.GetDB().Delete(&record).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
@@ -493,6 +590,17 @@ func DeleteChangeRecord(c *gin.Context) {
 	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("change_record")
 	details := services.DiffStructs(record, models.ChangeRecord{}, fieldLabels)
+	
+	// 添加变更类型信息
+	if len(oldTypeIDs) > 0 {
+		details = append(details, services.LogDetail{
+			FieldName:  "ChangeTypes",
+			FieldLabel: "变更类型",
+			OldValue:   fmt.Sprintf("%v", oldTypeIDs),
+			NewValue:   "[]",
+		})
+	}
+	
 	services.LogOperation(username, displayName, "删除变更记录扫描件", "change_record", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})

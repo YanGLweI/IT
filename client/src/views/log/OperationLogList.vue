@@ -98,10 +98,16 @@
           <el-table :data="currentDetails" border stripe size="small">
             <el-table-column prop="field_label" label="字段名" width="150" />
             <el-table-column prop="old_value" label="旧值" show-overflow-tooltip>
-              <template slot-scope="scope">{{ formatFieldValue(scope.row.field_name, scope.row.old_value) }}</template>
+              <template slot-scope="scope">
+                <pre v-if="isJson(scope.row.old_value)" class="json-display">{{ formatFieldValue(scope.row.field_name, scope.row.old_value) }}</pre>
+                <span v-else>{{ formatFieldValue(scope.row.field_name, scope.row.old_value) }}</span>
+              </template>
             </el-table-column>
             <el-table-column prop="new_value" label="新值" show-overflow-tooltip>
-              <template slot-scope="scope">{{ formatFieldValue(scope.row.field_name, scope.row.new_value) }}</template>
+              <template slot-scope="scope">
+                <pre v-if="isJson(scope.row.new_value)" class="json-display">{{ formatFieldValue(scope.row.field_name, scope.row.new_value) }}</pre>
+                <span v-else>{{ formatFieldValue(scope.row.field_name, scope.row.new_value) }}</span>
+              </template>
             </el-table-column>
           </el-table>
         </div>
@@ -112,6 +118,7 @@
 
 <script>
 import { getOperationLogs, getOperationLogDetails } from '@/api/audit_log'
+import { getRegions } from '@/api/region'
 
 export default {
   name: 'OperationLogList',
@@ -135,6 +142,8 @@ export default {
       detailDialogVisible: false,
       currentLog: null,
       currentDetails: [],
+      changeTypesMap: {}, // 变更类型ID到名称的映射
+      regionsMap: {}, // 区域ID到名称的映射
       resourceTypeLabels: {
         'asset': '资产',
         'region': '区域',
@@ -161,9 +170,36 @@ export default {
     }
   },
   mounted() {
+    this.fetchChangeTypes()
+    this.fetchRegions()
     this.fetchData()
   },
   methods: {
+    async fetchChangeTypes() {
+      try {
+        const { getChangeTypes } = await import('@/api/change_record')
+        const res = await getChangeTypes()
+        const types = res.data || []
+        this.changeTypesMap = {}
+        types.forEach(t => {
+          this.changeTypesMap[t.id] = t.name
+        })
+      } catch (e) {
+        console.error('获取变更类型失败', e)
+      }
+    },
+    async fetchRegions() {
+      try {
+        const res = await getRegions()
+        const regions = res.data || []
+        this.regionsMap = {}
+        regions.forEach(r => {
+          this.regionsMap[r.id] = r.name
+        })
+      } catch (e) {
+        console.error('获取区域列表失败', e)
+      }
+    },
     async fetchData() {
       this.loading = true
       try {
@@ -232,45 +268,77 @@ export default {
       })
     },
     formatFieldValue(fieldName, value) {
-      if (!value) return '-'
-      // 系统角色JSON解析为可读格式
-      if (fieldName === 'SystemRolesJSON') {
+      if (!value || value === '<nil>') return '-'
+      
+      // 特殊处理 ChangeTypes：将ID数组转换为名称列表
+      if (fieldName === 'ChangeTypes') {
         try {
-          const roles = JSON.parse(value)
-          if (Array.isArray(roles) && roles.length > 0) {
-            return roles.map(r => r.system + ': ' + (Array.isArray(r.roles) ? r.roles.join(', ') : r.roles)).join('; ')
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            if (parsed.length === 0) return '[]'
+            // 尝试将ID转换为名称
+            const names = parsed.map(id => this.changeTypesMap[id] || id).filter(n => n)
+            return names.join('、')
           }
-          return '-'
         } catch (e) {
-          return value
+          // 解析失败，返回原值
         }
       }
-      // 权限JSON解析为可读格式
-      if (fieldName === 'PermissionsJSON') {
+      
+      // 特殊处理 Regions：将ID数组转换为名称列表
+      if (fieldName === 'Regions') {
         try {
-          const perms = JSON.parse(value)
-          if (Array.isArray(perms) && perms.length > 0) {
-            const labels = perms.map(p => p === 'read' ? '读' : p === 'write' ? '写' : p)
-            return labels.join('、')
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            if (parsed.length === 0) return '[]'
+            // 尝试将ID转换为名称
+            const names = parsed.map(id => this.regionsMap[id] || id).filter(n => n)
+            return names.join('、')
           }
-          return '-'
         } catch (e) {
-          return value
+          // 解析失败，返回原值
         }
       }
-      // 白名单JSON解析为可读格式
-      if (fieldName === 'WhitelistJSON') {
-        try {
-          const ips = JSON.parse(value)
-          if (Array.isArray(ips) && ips.length > 0) {
-            return ips.join(', ')
+      
+      // 尝试解析JSON格式的值
+      try {
+        const parsed = JSON.parse(value)
+        // 如果是对象或数组，格式化显示
+        if (typeof parsed === 'object' && parsed !== null) {
+          // 特殊处理已知的JSON字段
+          if (fieldName === 'SystemRolesJSON') {
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed.map(r => r.system + ': ' + (Array.isArray(r.roles) ? r.roles.join(', ') : r.roles)).join('; ')
+            }
+          } else if (fieldName === 'PermissionsJSON') {
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const labels = parsed.map(p => p === 'read' ? '读' : p === 'write' ? '写' : p)
+              return labels.join('、')
+            }
+          } else if (fieldName === 'WhitelistJSON') {
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed.join(', ')
+            }
           }
-          return '-'
-        } catch (e) {
-          return value
+          
+          // 通用JSON格式化：美化显示
+          return JSON.stringify(parsed, null, 2)
         }
+        // 如果是简单类型（数字、布尔等），直接返回
+        return String(parsed)
+      } catch (e) {
+        // 不是JSON格式，直接返回原值
+        return value
       }
-      return value
+    },
+    isJson(value) {
+      if (!value || value === '<nil>') return false
+      try {
+        const parsed = JSON.parse(value)
+        return typeof parsed === 'object' && parsed !== null
+      } catch (e) {
+        return false
+      }
     }
   }
 }
@@ -279,5 +347,16 @@ export default {
 <style scoped>
 .filter-form {
   margin-bottom: 16px;
+}
+.json-display {
+  margin: 0;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-width: 400px;
+  overflow-x: auto;
 }
 </style>
