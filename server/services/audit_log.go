@@ -284,13 +284,12 @@ func GetFieldLabels(resourceType string) map[string]string {
 		}
 	case "user_change_history":
 		return map[string]string{
-			"Year":        "年份",
-			"Month":       "月份",
-			"Description": "描述",
-			"FileName":    "文件名",
-			"FilePath":    "文件路径",
-			"FileSize":    "文件大小",
-			"FileType":    "文件类型",
+			"Year":          "年份",
+			"Month":         "月份",
+			"Description":   "描述",
+			"ApplyDate":     "申请日期",
+			"ImplementDate": "实施日期",
+			"FileName":      "文件名",
 		}
 	case "change_type":
 		return map[string]string{

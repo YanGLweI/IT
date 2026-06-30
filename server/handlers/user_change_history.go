@@ -151,16 +151,46 @@ func CreateUserChangeHistory(c *gin.Context) {
 		{FieldName: "Month", FieldLabel: "月份", NewValue: strconv.Itoa(month)},
 		{FieldName: "Description", FieldLabel: "描述", NewValue: description},
 	}
+	
+	// 添加申请日期（始终显示）
 	if applyDate != nil {
-		details = append(details, services.LogDetail{FieldName: "ApplyDate", FieldLabel: "申请日期", NewValue: applyDate.Format("2006-01-02")})
+		details = append(details, services.LogDetail{
+			FieldName:  "ApplyDate",
+			FieldLabel: "申请日期",
+			OldValue:   "-",
+			NewValue:   applyDate.Format("2006-01-02"),
+		})
+	} else {
+		details = append(details, services.LogDetail{
+			FieldName:  "ApplyDate",
+			FieldLabel: "申请日期",
+			OldValue:   "-",
+			NewValue:   "-",
+		})
 	}
+	
+	// 添加实施日期（始终显示）
 	if implementDate != nil {
-		details = append(details, services.LogDetail{FieldName: "ImplementDate", FieldLabel: "实施日期", NewValue: implementDate.Format("2006-01-02")})
+		details = append(details, services.LogDetail{
+			FieldName:  "ImplementDate",
+			FieldLabel: "实施日期",
+			OldValue:   "-",
+			NewValue:   implementDate.Format("2006-01-02"),
+		})
+	} else {
+		details = append(details, services.LogDetail{
+			FieldName:  "ImplementDate",
+			FieldLabel: "实施日期",
+			OldValue:   "-",
+			NewValue:   "-",
+		})
 	}
-	details = append(details,
-		services.LogDetail{FieldName: "FileName", FieldLabel: "文件名", NewValue: record.FileName},
-		services.LogDetail{FieldName: "FileSize", FieldLabel: "文件大小", NewValue: fmt.Sprintf("%d", record.FileSize)},
-	)
+	
+	details = append(details, services.LogDetail{
+		FieldName:  "FileName",
+		FieldLabel: "文件名",
+		NewValue:   record.FileName,
+	})
 	services.LogOperation(username, displayName, "上传用户变更记录", "user_change_history", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": record})
