@@ -30,6 +30,7 @@ type DocumentConfig struct {
 type ServerConfig struct {
 	Port      string `yaml:"port"`
 	JWTSecret string `yaml:"jwt_secret"`
+	GinMode   string `yaml:"gin_mode"`
 }
 
 // DatabaseConfig 数据库配置
@@ -91,6 +92,9 @@ func LoadConfig() error {
 	// 设置默认值
 	if Cfg.Server.Port == "" {
 		Cfg.Server.Port = ":8080"
+	}
+	if Cfg.Server.GinMode == "" {
+		Cfg.Server.GinMode = "debug"
 	}
 	if Cfg.Database.DBName == "" {
 		Cfg.Database.DBName = "it_platform"

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/gin-gonic/gin"
+
 	"it-platform-server/config"
 	"it-platform-server/database"
 	"it-platform-server/handlers"
@@ -16,6 +18,10 @@ func main() {
 		log.Fatalf("加载配置失败: %v", err)
 	}
 	fmt.Println("配置文件加载成功!")
+
+	// 设置Gin模式
+	gin.SetMode(config.Cfg.Server.GinMode)
+	fmt.Printf("Gin模式: %s\n", config.Cfg.Server.GinMode)
 
 	// 初始化RSA密钥对
 	if err := handlers.InitRSAKeys(); err != nil {
