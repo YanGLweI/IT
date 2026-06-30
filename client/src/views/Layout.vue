@@ -1,8 +1,9 @@
 <template>
   <el-container style="height: 100vh">
     <el-aside width="210px" class="sidebar-aside">
-      <div style="padding: 20px; text-align: center; color: #fff; font-size: 18px; font-weight: bold">
-        IT管理平台
+      <div class="sidebar-logo">
+        <img src="/favicon.ico" alt="logo" class="sidebar-logo-icon" />
+        <span>管理平台</span>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -237,6 +238,22 @@ export default {
 }
 ::v-deep .sidebar-aside::-webkit-scrollbar {
   display: none; /* Chrome/Safari */
+}
+.sidebar-logo {
+  padding: 20px;
+  text-align: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* gap: 8px; */
+}
+.sidebar-logo-icon {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
 }
 
 </style>
