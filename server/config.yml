@@ -12,7 +12,9 @@ document:
   # 用户权限确认表/SFTP账号确认表页脚
   user_permission_document_version: "IT07-3.0"
   # 补丁更新记录表页脚
-  asset_document_version: "IT9-2.0" 
+  asset_document_version: "IT9-2.0"
+  # 系统加固检查表页脚
+  system_hardening_document_version: "IT11-1.0" 
 
 # 数据库配置
 database:
@@ -41,6 +43,8 @@ upload:
   change_record_path: "./uploads/change_records"
   # 漏洞扫描报告上传路径
   vulnerability_scan_path: "./uploads/vulnerability_scans"
+  # 系统加固检查表上传路径
+  system_hardening_check_path: "./uploads/system_hardening_checks"
   max_size: 33554432  # 32MB
 
 # RSA 加密配置

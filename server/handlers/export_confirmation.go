@@ -216,7 +216,6 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	}
 	f.SetRowHeight(sheetName, 4, 28)
 
-
 	// ---- 数据行 ----
 	rowNum := 5
 	seq := 1
@@ -275,10 +274,10 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 		} else {
 			// 有系统角色，每个系统一行，第一行显示序号/姓名/岗位
 			startRow := rowNum
-			
+
 			// 检查是否为密钥团队的密钥经理（需要合并G列）
 			isKeyManagerInKeyTeam := dept.Name == "密钥团队" && containsKeyword(user.PositionName, []string{"密钥经理", "Key Manager"})
-			
+
 			for i, vr := range validRoles {
 				if i == 0 {
 					f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), seq)
@@ -314,7 +313,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				f.MergeCell(sheetName, fmt.Sprintf("A%d", startRow), fmt.Sprintf("A%d", endRow))
 				f.MergeCell(sheetName, fmt.Sprintf("B%d", startRow), fmt.Sprintf("B%d", endRow))
 				f.MergeCell(sheetName, fmt.Sprintf("C%d", startRow), fmt.Sprintf("C%d", endRow))
-				
+
 				// 如果是密钥团队的密钥经理，合并G列并显示(CISO)，使用右对齐样式
 				if isKeyManagerInKeyTeam {
 					f.MergeCell(sheetName, fmt.Sprintf("G%d", startRow), fmt.Sprintf("G%d", endRow))
@@ -346,13 +345,13 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	f.SetRowHeight(sheetName, rowNum, 30)
 
 	// ---- 设置列宽 ----
-	f.SetColWidth(sheetName, "A", "A", 8)   // 序号
-	f.SetColWidth(sheetName, "B", "B", 14)  // 姓名
-	f.SetColWidth(sheetName, "C", "C", 20)  // 岗位
-	f.SetColWidth(sheetName, "D", "D", 22)  // 系统
-	f.SetColWidth(sheetName, "E", "E", 35)  // 角色
-	f.SetColWidth(sheetName, "F", "F", 14)  // 确认结果
-	f.SetColWidth(sheetName, "G", "G", 20)  // 特殊确认人（增加宽度，留出签字空间）
+	f.SetColWidth(sheetName, "A", "A", 8)  // 序号
+	f.SetColWidth(sheetName, "B", "B", 14) // 姓名
+	f.SetColWidth(sheetName, "C", "C", 20) // 岗位
+	f.SetColWidth(sheetName, "D", "D", 22) // 系统
+	f.SetColWidth(sheetName, "E", "E", 35) // 角色
+	f.SetColWidth(sheetName, "F", "F", 14) // 确认结果
+	f.SetColWidth(sheetName, "G", "G", 20) // 特殊确认人（增加宽度，留出签字空间）
 
 	// 设置右侧页脚：版本号 + 信息等级（淡灰色）
 	footerText = fmt.Sprintf("&R&K999999%s\n信息等级：内部公开 Info Class: Internal Disclosure", config.Cfg.Document.UserPermissionDocumentVersion)
@@ -371,8 +370,8 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 				Extension: ".png",
 				File:      logoData,
 				Format: &excelize.GraphicOptions{
-					ScaleX:       0.08,
-					ScaleY:       0.08,
+					ScaleX: 0.08,
+					ScaleY: 0.08,
 				},
 			}); err != nil {
 				fmt.Printf("插入Logo失败: %v\n", err)
@@ -381,7 +380,7 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	}
 
 	// 输出Excel文件
-	fileName := fmt.Sprintf("IT07-2.0 用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)
+	fileName := fmt.Sprintf("用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename*=UTF-8''%s", fileName))
 	c.Header("Access-Control-Expose-Headers", "Content-Disposition")
@@ -434,22 +433,22 @@ func containsSubstring(s, substr string) bool {
 // getSpecialConfirm 根据系统和角色返回特殊确认人标识
 func getSpecialConfirm(system, roles string) string {
 	// 产业部：数据库系统 + 服务用户 -> DBA
-	if containsKeyword(system, []string{"数据库", "Database", "DB"}) && 
-	   containsKeyword(roles, []string{"服务用户", "Service User"}) {
+	if containsKeyword(system, []string{"数据库", "Database", "DB"}) &&
+		containsKeyword(roles, []string{"服务用户", "Service User"}) {
 		return "(DBA)"
 	}
-	
+
 	// 产业部：数据库系统 + DBA角色 -> CISO
-	if containsKeyword(system, []string{"数据库", "Database", "DB"}) && 
-	   containsKeyword(roles, []string{"DBA", "数据库管理员"}) {
+	if containsKeyword(system, []string{"数据库", "Database", "DB"}) &&
+		containsKeyword(roles, []string{"DBA", "数据库管理员"}) {
 		return "(CISO)"
 	}
-	
+
 	// 密钥团队：任何系统 + 密钥经理角色 -> CISO
 	if containsKeyword(roles, []string{"密钥经理", "Key Manager", "密钥管理"}) {
 		return "(CISO)"
 	}
-	
+
 	// 默认返回斜杠
 	return "/"
 }

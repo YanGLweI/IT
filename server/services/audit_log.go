@@ -331,6 +331,16 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FixHighCount":     "修复后严重漏洞",
 			"FixMediumCount":   "修复后中等漏洞",
 		}
+	case "system_hardening_history":
+		return map[string]string{
+			"Year":        "年份",
+			"Quarter":     "季度",
+			"Description": "描述",
+			"FileName":    "文件名",
+			"FilePath":    "文件路径",
+			"FileSize":    "文件大小",
+			"FileType":    "文件类型",
+		}
 	default:
 		return make(map[string]string)
 	}

@@ -120,6 +120,12 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/vulnerability-scans/:id/fix-preview", handlers.PreviewFixReport)
 			protected.GET("/vulnerability-scans/:id/fix-download", handlers.DownloadFixReport)
 
+			// 系统加固 - 查询（不需要双控）
+			protected.GET("/system-hardening/export-checklist", handlers.ExportSystemHardeningChecklist)
+			protected.GET("/system-hardening", handlers.ListSystemHardeningHistories)
+			protected.GET("/system-hardening/:id/download", handlers.DownloadSystemHardeningHistory)
+			protected.GET("/system-hardening/:id/preview", handlers.PreviewSystemHardeningHistory)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -223,6 +229,11 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/vulnerability-scans/:id", handlers.DeleteVulnerabilityScan)
 				dual.PUT("/vulnerability-scans/:id/fix", handlers.FixVulnerabilityScan)
 				dual.DELETE("/vulnerability-scans/:id/fix", handlers.DeleteFixReport)
+
+				// 系统加固 - 写操作（需要双控）
+				dual.POST("/system-hardening", handlers.CreateSystemHardeningHistory)
+				dual.PUT("/system-hardening/:id", handlers.UpdateSystemHardeningHistory)
+				dual.DELETE("/system-hardening/:id", handlers.DeleteSystemHardeningHistory)
 			}
 		}
 	}

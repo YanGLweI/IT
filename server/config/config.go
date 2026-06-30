@@ -23,6 +23,7 @@ type DocumentConfig struct {
 	PermissionDocumentVersion       string `yaml:"permission_document_version"`
 	UserPermissionDocumentVersion  string `yaml:"user_permission_document_version"`
 	AssetDocumentVersion           string `yaml:"asset_document_version"`
+	SystemHardeningDocumentVersion string `yaml:"system_hardening_document_version"`
 }
 
 // ServerConfig 服务器配置
@@ -51,6 +52,7 @@ type UploadConfig struct {
 	ChangeRecordTemplatePath      string `yaml:"change_record_template_path"`
 	ChangeRecordPath              string `yaml:"change_record_path"`
 	VulnerabilityScanPath         string `yaml:"vulnerability_scan_path"`
+	SystemHardeningCheckPath     string `yaml:"system_hardening_check_path"`
 	MaxSize                       int64  `yaml:"max_size"`
 }
 
@@ -120,6 +122,9 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.VulnerabilityScanPath == "" {
 		Cfg.Upload.VulnerabilityScanPath = "./uploads/vulnerability_scans"
+	}
+	if Cfg.Upload.SystemHardeningCheckPath == "" {
+		Cfg.Upload.SystemHardeningCheckPath = "./uploads/system_hardening_checks"
 	}
 	if Cfg.Upload.MaxSize == 0 {
 		Cfg.Upload.MaxSize = 32 << 20
