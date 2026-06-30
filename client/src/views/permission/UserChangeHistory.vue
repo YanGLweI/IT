@@ -85,12 +85,12 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="申请日期" prop="apply_date">
-              <el-date-picker v-model="uploadForm.apply_date" type="date" value-format="yyyy-MM-dd" placeholder="选择申请日期" style="width: 100%" />
+              <el-date-picker v-model="uploadForm.apply_date" type="date" value-format="yyyy-MM-dd" placeholder="选择申请日期" :picker-options="applyDatePickerOptions" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="实施日期" prop="implement_date">
-              <el-date-picker v-model="uploadForm.implement_date" type="date" value-format="yyyy-MM-dd" placeholder="选择实施日期" style="width: 100%" />
+              <el-date-picker v-model="uploadForm.implement_date" type="date" value-format="yyyy-MM-dd" placeholder="选择实施日期" :picker-options="implementDatePickerOptions" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -171,6 +171,38 @@ export default {
       // 预览
       previewVisible: false,
       previewUrl: ''
+    }
+  },
+  computed: {
+    // 申请日期：只能选择当月日期
+    applyDatePickerOptions() {
+      const year = this.uploadForm.year
+      const month = this.uploadForm.month
+      return {
+        disabledDate(date) {
+          return date.getFullYear() !== year || date.getMonth() !== month - 1
+        }
+      }
+    },
+    // 实施日期：不能早于所选月份（从当月1号起可选）
+    implementDatePickerOptions() {
+      const year = this.uploadForm.year
+      const month = this.uploadForm.month
+      const minDate = new Date(year, month - 1, 1)
+      minDate.setHours(0, 0, 0, 0)
+      return {
+        disabledDate(date) {
+          return date < minDate
+        }
+      }
+    }
+  },
+  watch: {
+    'uploadForm.year'() {
+      this.clearInvalidDates()
+    },
+    'uploadForm.month'() {
+      this.clearInvalidDates()
     }
   },
   mounted() {
@@ -337,6 +369,26 @@ export default {
     formatDate(dateStr) {
       if (!dateStr) return '-'
       return dateStr.replace('T', ' ').substring(0, 10)
+    },
+    // 年月变化时清除不在范围内的日期
+    clearInvalidDates() {
+      const year = this.uploadForm.year
+      const month = this.uploadForm.month
+      // 清除不在当月的申请日期
+      if (this.uploadForm.apply_date) {
+        const d = new Date(this.uploadForm.apply_date)
+        if (d.getFullYear() !== year || d.getMonth() !== month - 1) {
+          this.uploadForm.apply_date = ''
+        }
+      }
+      // 清除早于当月的实施日期
+      if (this.uploadForm.implement_date) {
+        const d = new Date(this.uploadForm.implement_date)
+        const minDate = new Date(year, month - 1, 1)
+        if (d < minDate) {
+          this.uploadForm.implement_date = ''
+        }
+      }
     }
   }
 }
