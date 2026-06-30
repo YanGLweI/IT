@@ -1,6 +1,6 @@
 <template>
   <el-container style="height: 100vh">
-    <el-aside width="210px" style="background-color: #304156">
+    <el-aside width="210px" class="sidebar-aside">
       <div style="padding: 20px; text-align: center; color: #fff; font-size: 18px; font-weight: bold">
         IT管理平台
       </div>
@@ -145,7 +145,7 @@
           </el-dropdown>
         </div>
       </el-header>
-      <el-main style="background: #f0f2f5; padding: 20px">
+      <el-main>
         <router-view />
       </el-main>
     </el-container>
@@ -198,6 +198,24 @@ export default {
 </script>
 
 <style scoped>
+.el-main {
+  padding: 0;
+  background: transparent;
+}
+.sidebar-aside {
+  background-color: #304156;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+::v-deep .sidebar-aside .el-menu {
+  border-right: none;
+  padding: 0;
+  margin: 0;
+}
+::v-deep .sidebar-aside::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
 .header-right {
   display: flex;
   align-items: center;
@@ -213,5 +231,12 @@ export default {
   margin-right: 5px;
   font-size: 16px;
   color: #409EFF;
+}
+</style>
+
+<style>
+/* 非看板页面恢复默认内边距 */
+.el-main > *:not(.dashboard) {
+  padding: 20px;
 }
 </style>
