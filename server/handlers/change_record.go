@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -421,11 +422,13 @@ func CreateChangeRecord(c *gin.Context) {
 		typeIDs = append(typeIDs, ct.ID)
 	}
 	if len(typeIDs) > 0 {
+		// 将ID数组转换为JSON格式字符串
+		typeIDsJSON, _ := json.Marshal(typeIDs)
 		details = append(details, services.LogDetail{
 			FieldName:  "ChangeTypes",
 			FieldLabel: "变更类型",
 			OldValue:   "[]",
-			NewValue:   fmt.Sprintf("%v", typeIDs),
+			NewValue:   string(typeIDsJSON),
 		})
 	}
 	
@@ -548,8 +551,17 @@ func UpdateChangeRecord(c *gin.Context) {
 	}
 	
 	if !equalUintSlices(oldTypeIDs, newTypeIDs) {
-		oldStr := fmt.Sprintf("%v", oldTypeIDs)
-		newStr := fmt.Sprintf("%v", newTypeIDs)
+		// 将ID数组转换为JSON格式字符串
+		oldStr := "[]"
+		if len(oldTypeIDs) > 0 {
+			oldBytes, _ := json.Marshal(oldTypeIDs)
+			oldStr = string(oldBytes)
+		}
+		newStr := "[]"
+		if len(newTypeIDs) > 0 {
+			newBytes, _ := json.Marshal(newTypeIDs)
+			newStr = string(newBytes)
+		}
 		details = append(details, services.LogDetail{
 			FieldName:  "ChangeTypes",
 			FieldLabel: "变更类型",
@@ -593,10 +605,12 @@ func DeleteChangeRecord(c *gin.Context) {
 	
 	// 添加变更类型信息
 	if len(oldTypeIDs) > 0 {
+		// 将ID数组转换为JSON格式字符串
+		oldBytes, _ := json.Marshal(oldTypeIDs)
 		details = append(details, services.LogDetail{
 			FieldName:  "ChangeTypes",
 			FieldLabel: "变更类型",
-			OldValue:   fmt.Sprintf("%v", oldTypeIDs),
+			OldValue:   string(oldBytes),
 			NewValue:   "[]",
 		})
 	}
