@@ -394,23 +394,19 @@ export default {
   gap: 4px;
   justify-content: center;
 }
-/* 关联漏洞扫描报告下拉框样式 */
-/deep/ .vuln-scan-select .el-input__inner {
-  min-height: 60px;
-  height: auto;
-  padding-top: 8px;
-  padding-bottom: 8px;
+/* 漏洞扫描报告选择器 tag 样式 */
+.vuln-scan-select .el-tag {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-/deep/ .vuln-scan-select .el-select__tags {
-  position: static;
-  transform: none;
-  top: auto;
-  margin-bottom: 5px;
-}
-/deep/ .vuln-scan-select .el-select-dropdown__item {
-  white-space: normal;
-  word-break: break-all;
-  line-height: 1.5;
-  padding: 8px 20px;
+.vuln-scan-select .el-tag .el-select__tags-text {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
 }
 </style>
