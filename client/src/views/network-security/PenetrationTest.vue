@@ -96,7 +96,7 @@
         </el-form-item>
         <el-form-item label="关联漏洞扫描报告">
           <el-select v-model="uploadForm.vulnerability_scan_ids" multiple collapse-tags placeholder="选择关联的漏洞扫描报告" style="width: 100%" :popper-append-to-body="false">
-            <el-option v-for="vs in vulnScanOptions" :key="vs.id" :label="formatVulnScanLabel(vs)" :value="vs.id" />
+            <el-option v-for="vs in vulnScanOptions" :key="vs.id" :label="formatVulnScanTag(vs)" :value="vs.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="文件" v-if="!isEdit">
@@ -226,6 +226,10 @@ export default {
       } else {
         return `${base} | ${vs.external_ip || '无IP'}`
       }
+    },
+    formatVulnScanTag(vs) {
+      // 简化显示：只显示年份-季度-类型
+      return `${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
     },
     formatVulnScanTooltip(vs) {
       const lines = [
