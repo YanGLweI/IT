@@ -369,7 +369,15 @@ export default {
     // 渲染 DOCX 文件
     async renderDocx(url) {
       try {
-        const response = await fetch(url)
+        const token = localStorage.getItem('token')
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
         const blob = await response.blob()
         const arrayBuffer = await blob.arrayBuffer()
         const container = this.$refs.docxContainer
