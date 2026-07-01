@@ -119,6 +119,8 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/vulnerability-scans/:id/preview", handlers.PreviewVulnerabilityScan)
 			protected.GET("/vulnerability-scans/:id/fix-preview", handlers.PreviewFixReport)
 			protected.GET("/vulnerability-scans/:id/fix-download", handlers.DownloadFixReport)
+			protected.GET("/vulnerability-scans/:id/rect-preview", handlers.PreviewRectReport)
+			protected.GET("/vulnerability-scans/:id/rect-download", handlers.DownloadRectReport)
 
 			// 系统加固 - 查询（不需要双控）
 			protected.GET("/system-hardening/export-checklist", handlers.ExportSystemHardeningChecklist)
@@ -229,6 +231,8 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/vulnerability-scans/:id", handlers.DeleteVulnerabilityScan)
 				dual.PUT("/vulnerability-scans/:id/fix", handlers.FixVulnerabilityScan)
 				dual.DELETE("/vulnerability-scans/:id/fix", handlers.DeleteFixReport)
+				dual.PUT("/vulnerability-scans/:id/rect", handlers.UploadRectReport)
+				dual.DELETE("/vulnerability-scans/:id/rect", handlers.DeleteRectReport)
 
 				// 系统加固 - 写操作（需要双控）
 				dual.POST("/system-hardening", handlers.CreateSystemHardeningHistory)

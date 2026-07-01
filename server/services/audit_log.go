@@ -149,9 +149,27 @@ func DiffStructs(old interface{}, new interface{}, fieldLabels map[string]string
 			continue
 		}
 
-		// 转换为字符串进行比较
-		oldStr := fmt.Sprintf("%v", oldFieldValue.Interface())
-		newStr := fmt.Sprintf("%v", newFieldValue.Interface())
+		// 处理指针类型字段：解引用后比较
+		var oldStr, newStr string
+		if oldFieldValue.Kind() == reflect.Ptr {
+			if oldFieldValue.IsNil() {
+				oldStr = ""
+			} else {
+				oldStr = fmt.Sprintf("%v", oldFieldValue.Elem().Interface())
+			}
+		} else {
+			oldStr = fmt.Sprintf("%v", oldFieldValue.Interface())
+		}
+
+		if newFieldValue.Kind() == reflect.Ptr {
+			if newFieldValue.IsNil() {
+				newStr = ""
+			} else {
+				newStr = fmt.Sprintf("%v", newFieldValue.Elem().Interface())
+			}
+		} else {
+			newStr = fmt.Sprintf("%v", newFieldValue.Interface())
+		}
 
 		if oldStr != newStr {
 			details = append(details, LogDetail{
@@ -317,7 +335,6 @@ func GetFieldLabels(resourceType string) map[string]string {
 		}
 	case "vulnerability_scan":
 		return map[string]string{
-			"ScanType":         "扫描类型",
 			"Year":             "年份",
 			"Quarter":          "季度",
 			"ReportDate":       "报告日期",
@@ -332,6 +349,7 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FixCriticalCount": "修复后关键漏洞",
 			"FixHighCount":     "修复后严重漏洞",
 			"FixMediumCount":   "修复后中等漏洞",
+			"RectFileName":     "整改记录表",
 		}
 	case "system_hardening_history":
 		return map[string]string{
