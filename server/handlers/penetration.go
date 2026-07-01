@@ -53,7 +53,7 @@ func ListPenetrationTests(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 
-	if err := query.Preload("VulnerabilityScans").Order("report_date DESC, year DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
+	if err := query.Preload("VulnerabilityScans.Regions").Order("report_date DESC, year DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
