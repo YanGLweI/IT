@@ -37,7 +37,7 @@
         <el-table-column label="关联漏洞扫描报告" width="320" align="center">
           <template slot-scope="{ row }">
             <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
-              <el-tag v-for="vs in row.vulnerability_scans" :key="vs.id" size="mini" style="margin: 2px">
+              <el-tag v-for="vs in row.vulnerability_scans" :key="vs.id" size="mini" style="margin: 2px; cursor: pointer" @click="previewVulnScan(vs)">
                 {{ vs.year }}-Q{{ vs.quarter }}-{{ vs.scan_type === 'internal' ? '内部' : '外部' }}{{ vs.scan_type === 'internal' ? (vs.regions && vs.regions.length > 0 ? '(' + vs.regions.map(r => r.name).join(',') + ')' : '(无区域)') : (vs.external_ip ? '(' + vs.external_ip + ')' : '(无IP)') }}
               </el-tag>
             </template>
@@ -92,7 +92,7 @@
           <el-input v-model="uploadForm.description" type="textarea" :rows="3" placeholder="描述渗透测试结果" />
         </el-form-item>
         <el-form-item label="关联漏洞扫描报告">
-          <el-select v-model="uploadForm.vulnerability_scan_ids" multiple collapse-tags placeholder="选择关联的漏洞扫描报告" style="width: 100%">
+          <el-select v-model="uploadForm.vulnerability_scan_ids" multiple collapse-tags :collapse-tags-tooltip="true" placeholder="选择关联的漏洞扫描报告" style="width: 100%">
             <el-option v-for="vs in vulnScanOptions" :key="vs.id" :label="formatVulnScanLabel(vs)" :value="vs.id" />
           </el-select>
         </el-form-item>
@@ -143,7 +143,7 @@ import {
   getPenetrationTests, createPenetrationTest, updatePenetrationTest, deletePenetrationTest,
   getPenetrationTestPreviewUrl, getPenetrationTestDownloadUrl
 } from '@/api/penetration_test'
-import { getVulnerabilityScans } from '@/api/vulnerability_scan'
+import { getVulnerabilityScans, getVulnerabilityScanPreviewUrl } from '@/api/vulnerability_scan'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -326,6 +326,10 @@ export default {
       this.previewFileName = row.file_name
       this.isPdf = row.file_name && row.file_name.toLowerCase().endsWith('.pdf')
       this.previewVisible = true
+    },
+    previewVulnScan(vs) {
+      const url = getVulnerabilityScanPreviewUrl(vs.id)
+      window.open(url, '_blank')
     },
     handleDownloadFromPreview() {
       if (this.previewDownloadUrl) {
