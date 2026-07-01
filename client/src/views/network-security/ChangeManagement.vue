@@ -171,17 +171,17 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="申请日期">
+            <el-form-item label="申请日期" prop="apply_date">
               <el-date-picker v-model="recordForm.apply_date" type="date" value-format="yyyy-MM-dd" placeholder="选择申请日期" :picker-options="applyDatePickerOptions" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="实施日期">
+            <el-form-item label="实施日期" prop="implement_date">
               <el-date-picker v-model="recordForm.implement_date" type="date" value-format="yyyy-MM-dd" placeholder="选择实施日期" :picker-options="implementDatePickerOptions" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="变更类型">
+        <el-form-item label="变更类型" prop="typeIds">
           <el-select v-model="recordForm.typeIds" multiple collapse-tags placeholder="请选择变更类型" style="width: 100%">
             <el-option v-for="t in changeTypes" :key="t.id" :label="t.name" :value="t.id" />
           </el-select>
@@ -333,7 +333,10 @@ export default {
       recordForm: { year: now.getFullYear(), month: now.getMonth() + 1, description: '', typeIds: [], apply_date: '', implement_date: '' },
       recordRules: {
         year: [{ required: true, message: '请选择年份', trigger: 'change' }],
-        month: [{ required: true, message: '请选择月份', trigger: 'change' }]
+        month: [{ required: true, message: '请选择月份', trigger: 'change' }],
+        apply_date: [{ required: true, message: '请选择申请日期', trigger: 'change' }],
+        implement_date: [{ required: true, message: '请选择实施日期', trigger: 'change' }],
+        typeIds: [{ required: true, message: '请选择变更类型', trigger: 'change', type: 'array', min: 1 }]
       },
       recordSelectedFile: null,
       recordFileList: [],
