@@ -125,8 +125,8 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearDocxPreview">
-      <iframe v-if="previewUrl && isPdf" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
+    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
+      <iframe v-if="previewUrl && isPdf && pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
         <div ref="docxContainer" class="docx-preview-container"></div>
       </div>
@@ -189,7 +189,8 @@ export default {
       previewDownloadUrl: '',
       previewFileName: '',
       isPdf: true,
-      currentVulnScanId: null
+      currentVulnScanId: null,
+      pdfBlobUrl: ''
     }
   },
   mounted() {
@@ -339,14 +340,17 @@ export default {
       })
     },
     // 预览
-    handlePreview(row) {
+    async handlePreview(row) {
       this.previewUrl = getPenetrationTestPreviewUrl(row.id)
       this.previewDownloadUrl = getPenetrationTestDownloadUrl(row.id)
       this.previewFileName = row.file_name
       this.isPdf = row.file_name && row.file_name.toLowerCase().endsWith('.pdf')
       this.currentVulnScanId = null
+      this.pdfBlobUrl = ''
       this.previewVisible = true
-      if (!this.isPdf) {
+      if (this.isPdf) {
+        await this.fetchPdfAsBlob(this.previewUrl)
+      } else {
         this.$nextTick(() => {
           this.renderDocx(this.previewUrl)
         })
@@ -359,8 +363,11 @@ export default {
       this.previewFileName = vs.file_name || `漏洞扫描-${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
       this.isPdf = vs.file_name && vs.file_name.toLowerCase().endsWith('.pdf')
       this.currentVulnScanId = vs.id
+      this.pdfBlobUrl = ''
       this.previewVisible = true
-      if (!this.isPdf) {
+      if (this.isPdf) {
+        await this.fetchPdfAsBlob(this.previewUrl)
+      } else {
         this.$nextTick(() => {
           this.renderDocx(this.previewUrl)
         })
@@ -394,6 +401,34 @@ export default {
     clearDocxPreview() {
       if (this.$refs.docxContainer) {
         this.$refs.docxContainer.innerHTML = ''
+      }
+    },
+    // 获取 PDF 文件为 Blob URL（携带 JWT token）
+    async fetchPdfAsBlob(url) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const blob = await response.blob()
+        this.pdfBlobUrl = URL.createObjectURL(blob)
+      } catch (e) {
+        console.error('PDF加载失败:', e)
+        this.$message.error('文件预览失败，请尝试下载后查看')
+      }
+    },
+    // 清理所有预览内容
+    clearPreview() {
+      this.clearDocxPreview()
+      // 释放 PDF Blob URL
+      if (this.pdfBlobUrl) {
+        URL.revokeObjectURL(this.pdfBlobUrl)
+        this.pdfBlobUrl = ''
       }
     },
     handleDownloadFromPreview() {
