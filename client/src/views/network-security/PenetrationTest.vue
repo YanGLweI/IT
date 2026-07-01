@@ -178,7 +178,8 @@ export default {
         vulnerability_scan_ids: []
       },
       uploadRules: {
-        year: [{ required: true, message: '请选择年份', trigger: 'change' }]
+        year: [{ required: true, message: '请选择年份', trigger: 'change' }],
+        report_date: [{ required: true, message: '请选择报告日期', trigger: 'change' }]
       },
       selectedFile: null,
       fileList: [],
