@@ -34,11 +34,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="description" label="结果描述" min-width="200" show-overflow-tooltip />
-        <el-table-column label="关联漏洞扫描报告" width="200" align="center">
+        <el-table-column label="关联漏洞扫描报告" width="260" align="center">
           <template slot-scope="{ row }">
             <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
               <el-tag v-for="vs in row.vulnerability_scans" :key="vs.id" size="mini" style="margin: 2px">
-                {{ vs.year }}-Q{{ vs.quarter }}-{{ vs.scan_type === 'internal' ? '内部' : '外部' }}
+                {{ vs.year }}-Q{{ vs.quarter }}-{{ vs.scan_type === 'internal' ? '内部' : '外部' }}{{ vs.scan_type === 'internal' ? (vs.regions && vs.regions.length > 0 ? '(' + vs.regions.map(r => r.name).join(',') + ')' : '') : (vs.external_ip ? '(' + vs.external_ip + ')' : '') }}
               </el-tag>
             </template>
             <span v-else>-</span>
@@ -93,7 +93,7 @@
         </el-form-item>
         <el-form-item label="关联漏洞扫描报告">
           <el-select v-model="uploadForm.vulnerability_scan_ids" multiple collapse-tags placeholder="选择关联的漏洞扫描报告" style="width: 100%">
-            <el-option v-for="vs in vulnScanOptions" :key="vs.id" :label="`${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'} (${vs.report_date || '无日期'})`" :value="vs.id" />
+            <el-option v-for="vs in vulnScanOptions" :key="vs.id" :label="formatVulnScanLabel(vs)" :value="vs.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="文件" v-if="!isEdit">
@@ -213,6 +213,15 @@ export default {
         this.vulnScanOptions = res.data || []
       } catch (e) {
         console.error(e)
+      }
+    },
+    formatVulnScanLabel(vs) {
+      const base = `${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'} (${vs.report_date || '无日期'})`
+      if (vs.scan_type === 'internal') {
+        const regions = (vs.regions || []).map(r => r.name).join(', ')
+        return regions ? `${base} | 区域: ${regions}` : `${base} | 区域: -`
+      } else {
+        return `${base} | 对外IP: ${vs.external_ip || '-'}`
       }
     },
     handleSizeChange() {
