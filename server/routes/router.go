@@ -128,6 +128,11 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/system-hardening/:id/download", handlers.DownloadSystemHardeningHistory)
 			protected.GET("/system-hardening/:id/preview", handlers.PreviewSystemHardeningHistory)
 
+			// 渗透测试 - 查询（不需要双控）
+			protected.GET("/penetration-tests", handlers.ListPenetrationTests)
+			protected.GET("/penetration-tests/:id/preview", handlers.PreviewPenetrationTest)
+			protected.GET("/penetration-tests/:id/download", handlers.DownloadPenetrationTest)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -238,6 +243,11 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/system-hardening", handlers.CreateSystemHardeningHistory)
 				dual.PUT("/system-hardening/:id", handlers.UpdateSystemHardeningHistory)
 				dual.DELETE("/system-hardening/:id", handlers.DeleteSystemHardeningHistory)
+
+				// 渗透测试 - 写操作（需要双控）
+				dual.POST("/penetration-tests", handlers.CreatePenetrationTest)
+				dual.PUT("/penetration-tests/:id", handlers.UpdatePenetrationTest)
+				dual.DELETE("/penetration-tests/:id", handlers.DeletePenetrationTest)
 			}
 		}
 	}

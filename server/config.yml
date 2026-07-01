@@ -46,6 +46,8 @@ upload:
   vulnerability_scan_path: "./uploads/vulnerability_scans"
   # 系统加固检查表上传路径
   system_hardening_check_path: "./uploads/system_hardening_checks"
+  # 渗透测试报告上传路径
+  penetration_test_path: "./uploads/penetration_tests"
 
 # RSA 加密配置
 rsa:

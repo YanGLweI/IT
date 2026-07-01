@@ -361,6 +361,15 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FileSize":    "文件大小",
 			"FileType":    "文件类型",
 		}
+	case "penetration_test":
+		return map[string]string{
+			"TestType":    "测试类型",
+			"Year":        "年份",
+			"ReportDate":  "报告日期",
+			"VulnCount":   "可渗透漏洞数",
+			"Description": "结果描述",
+			"FileName":    "文件名",
+		}
 	default:
 		return make(map[string]string)
 	}
