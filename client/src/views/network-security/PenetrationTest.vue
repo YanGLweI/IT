@@ -37,7 +37,7 @@
         <el-table-column label="关联漏洞扫描报告" width="320" align="center">
           <template slot-scope="{ row }">
             <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
-              <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark">
+              <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark" :enterable="false">
                 <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
                 <el-tag size="mini" style="margin: 2px; cursor: pointer;" @click.native="handlePreviewVulnScan(vs)">
                   {{ formatVulnScanLabel(vs) }}
