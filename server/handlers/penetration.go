@@ -273,7 +273,7 @@ func UpdatePenetrationTest(c *gin.Context) {
 	for _, vs := range record.VulnerabilityScans {
 		newVulnScanIDs = append(newVulnScanIDs, vs.ID)
 	}
-	if !equalUintSlices(oldVulnScanIDs, newVulnScanIDs) {
+	if !equalUintSets(oldVulnScanIDs, newVulnScanIDs) {
 		// 将ID数组转换为JSON格式字符串
 		oldStr := "[]"
 		if len(oldVulnScanIDs) > 0 {

@@ -18,13 +18,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// equalUintSlices 比较两个uint切片是否相等
+// equalUintSlices 比较两个uint切片是否相等（顺序敏感）
 func equalUintSlices(a, b []uint) bool {
 	if len(a) != len(b) {
 		return false
 	}
 	for i := range a {
 		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// equalUintSets 比较两个uint集合是否相等（忽略顺序）
+func equalUintSets(a, b []uint) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	set := make(map[uint]struct{}, len(a))
+	for _, v := range a {
+		set[v] = struct{}{}
+	}
+	for _, v := range b {
+		if _, ok := set[v]; !ok {
 			return false
 		}
 	}

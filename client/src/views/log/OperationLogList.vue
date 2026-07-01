@@ -206,13 +206,24 @@ export default {
     },
     async fetchVulnerabilityScans() {
       try {
-        const res = await getVulnerabilityScans({ page_size: 1000 })
-        // API返回格式: {code: 200, data: [...], total: N, page_size: N}
-        const scans = Array.isArray(res.data) ? res.data : []
         this.vulnScanMap = {}
-        scans.forEach(s => {
-          this.vulnScanMap[s.id] = s.file_name
-        })
+        let page = 1
+        const pageSize = 100 // 后端允许的最大值
+        let hasMore = true
+        
+        while (hasMore) {
+          const res = await getVulnerabilityScans({ page, page_size: pageSize })
+          const scans = Array.isArray(res.data) ? res.data : []
+          scans.forEach(s => {
+            this.vulnScanMap[s.id] = s.file_name
+          })
+          
+          // 检查是否还有更多数据
+          const total = res.total || 0
+          hasMore = scans.length === pageSize && (page * pageSize) < total
+          page++
+        }
+        
         console.log('Loaded vuln scan map:', Object.keys(this.vulnScanMap).length, 'items')
       } catch (e) {
         console.error('获取漏洞扫描报告列表失败', e)
