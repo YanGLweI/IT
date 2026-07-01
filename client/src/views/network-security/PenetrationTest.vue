@@ -396,8 +396,18 @@ export default {
 }
 /* 关联漏洞扫描报告下拉框样式 */
 /deep/ .el-select__tags {
-  max-height: 120px;
-  overflow-y: auto;
+  position: relative;
+  top: auto;
+  transform: none;
+}
+/deep/ .el-select__input {
+  min-height: 60px;
+}
+/deep/ .el-input__inner {
+  min-height: 80px;
+  height: auto;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 /deep/ .el-select-dropdown__item {
   white-space: normal;
