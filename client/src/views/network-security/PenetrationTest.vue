@@ -347,7 +347,10 @@ export default {
       this.previewFileName = row.file_name
       this.isPdf = row.file_name && row.file_name.toLowerCase().endsWith('.pdf')
       this.currentVulnScanId = null
-      this.pdfBlobUrl = ''
+      if (this.pdfBlobUrl) {
+        URL.revokeObjectURL(this.pdfBlobUrl)
+        this.pdfBlobUrl = ''
+      }
       this.previewVisible = true
       if (this.isPdf) {
         await this.fetchPdfAsBlob(this.previewUrl)
@@ -364,7 +367,10 @@ export default {
       this.previewFileName = vs.file_name || `漏洞扫描-${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
       this.isPdf = vs.file_name && vs.file_name.toLowerCase().endsWith('.pdf')
       this.currentVulnScanId = vs.id
-      this.pdfBlobUrl = ''
+      if (this.pdfBlobUrl) {
+        URL.revokeObjectURL(this.pdfBlobUrl)
+        this.pdfBlobUrl = ''
+      }
       this.previewVisible = true
       if (this.isPdf) {
         await this.fetchPdfAsBlob(this.previewUrl)
