@@ -395,13 +395,13 @@ export default {
   justify-content: center;
 }
 /* 漏洞扫描报告选择器 tag 样式 */
-.vuln-scan-select .el-tag {
+.vuln-scan-select ::v-deep .el-tag {
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.vuln-scan-select .el-tag .el-select__tags-text {
+.vuln-scan-select ::v-deep .el-tag .el-select__tags-text {
   max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
