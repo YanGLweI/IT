@@ -119,6 +119,7 @@
 <script>
 import { getOperationLogs, getOperationLogDetails } from '@/api/audit_log'
 import { getRegions } from '@/api/region'
+import { getVulnerabilityScans } from '@/api/vulnerability_scan'
 
 export default {
   name: 'OperationLogList',
@@ -144,6 +145,7 @@ export default {
       currentDetails: [],
       changeTypesMap: {}, // 变更类型ID到名称的映射
       regionsMap: {}, // 区域ID到名称的映射
+      vulnScanMap: {}, // 漏洞扫描报告ID到文件名的映射
       resourceTypeLabels: {
         'asset': '资产',
         'region': '区域',
@@ -165,13 +167,15 @@ export default {
         'quarterly_check_history': '季度检查记录',
         'user_change_history': '用户变更记录',
         'vulnerability_scan': '漏洞扫描',
-        'system_hardening_history': '系统加固记录'
+        'system_hardening_history': '系统加固记录',
+        'penetration_test': '渗透测试'
       }
     }
   },
   mounted() {
     this.fetchChangeTypes()
     this.fetchRegions()
+    this.fetchVulnerabilityScans()
     this.fetchData()
   },
   methods: {
@@ -198,6 +202,20 @@ export default {
         })
       } catch (e) {
         console.error('获取区域列表失败', e)
+      }
+    },
+    async fetchVulnerabilityScans() {
+      try {
+        const res = await getVulnerabilityScans({ page_size: 1000 })
+        // API返回格式: {code: 200, data: [...], total: N, page_size: N}
+        const scans = Array.isArray(res.data) ? res.data : []
+        this.vulnScanMap = {}
+        scans.forEach(s => {
+          this.vulnScanMap[s.id] = s.file_name
+        })
+        console.log('Loaded vuln scan map:', Object.keys(this.vulnScanMap).length, 'items')
+      } catch (e) {
+        console.error('获取漏洞扫描报告列表失败', e)
       }
     },
     async fetchData() {
@@ -293,6 +311,25 @@ export default {
             if (parsed.length === 0) return '[]'
             // 尝试将ID转换为名称
             const names = parsed.map(id => this.regionsMap[id] || id).filter(n => n)
+            return names.join('、')
+          }
+        } catch (e) {
+          // 解析失败，返回原值
+        }
+      }
+      
+      // 特殊处理 VulnerabilityScans：将ID数组转换为文件名列表
+      if (fieldName === 'VulnerabilityScans') {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            if (parsed.length === 0) return '[]'
+            // 尝试将ID转换为文件名
+            const names = parsed.map(id => {
+              // 确保ID是数字类型进行匹配
+              const numId = typeof id === 'string' ? parseInt(id, 10) : id
+              return this.vulnScanMap[numId] || this.vulnScanMap[id] || id
+            }).filter(n => n)
             return names.join('、')
           }
         } catch (e) {

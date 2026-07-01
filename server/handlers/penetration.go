@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -157,6 +158,22 @@ func CreatePenetrationTest(c *gin.Context) {
 		{FieldName: "Description", FieldLabel: "结果描述", NewValue: description},
 		{FieldName: "FileName", FieldLabel: "文件名", NewValue: record.FileName},
 	}
+	
+	// 添加关联漏洞扫描报告信息
+	var vulnScanIDs []uint
+	for _, vs := range record.VulnerabilityScans {
+		vulnScanIDs = append(vulnScanIDs, vs.ID)
+	}
+	if len(vulnScanIDs) > 0 {
+		vulnBytes, _ := json.Marshal(vulnScanIDs)
+		details = append(details, services.LogDetail{
+			FieldName:  "VulnerabilityScans",
+			FieldLabel: "关联漏洞扫描",
+			OldValue:   "[]",
+			NewValue:   string(vulnBytes),
+		})
+	}
+	
 	services.LogOperation(username, displayName, "创建渗透测试报告", "penetration_test", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": record})
@@ -201,6 +218,11 @@ func UpdatePenetrationTest(c *gin.Context) {
 	oldReportDate := record.ReportDate
 	oldVulnCount := record.VulnCount
 	oldDescription := record.Description
+	// 保存旧的关联漏洞扫描报告ID列表
+	var oldVulnScanIDs []uint
+	for _, vs := range record.VulnerabilityScans {
+		oldVulnScanIDs = append(oldVulnScanIDs, vs.ID)
+	}
 
 	// 更新字段
 	record.TestType = testType
@@ -245,6 +267,32 @@ func UpdatePenetrationTest(c *gin.Context) {
 	if oldDescription != record.Description {
 		details = append(details, services.LogDetail{FieldName: "Description", FieldLabel: "结果描述", OldValue: oldDescription, NewValue: record.Description})
 	}
+	
+	// 检查关联漏洞扫描报告是否发生变化
+	var newVulnScanIDs []uint
+	for _, vs := range record.VulnerabilityScans {
+		newVulnScanIDs = append(newVulnScanIDs, vs.ID)
+	}
+	if !equalUintSlices(oldVulnScanIDs, newVulnScanIDs) {
+		// 将ID数组转换为JSON格式字符串
+		oldStr := "[]"
+		if len(oldVulnScanIDs) > 0 {
+			oldBytes, _ := json.Marshal(oldVulnScanIDs)
+			oldStr = string(oldBytes)
+		}
+		newStr := "[]"
+		if len(newVulnScanIDs) > 0 {
+			newBytes, _ := json.Marshal(newVulnScanIDs)
+			newStr = string(newBytes)
+		}
+		details = append(details, services.LogDetail{
+			FieldName:  "VulnerabilityScans",
+			FieldLabel: "关联漏洞扫描",
+			OldValue:   oldStr,
+			NewValue:   newStr,
+		})
+	}
+	
 	services.LogOperation(username, displayName, "更新渗透测试报告", "penetration_test", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": record})
@@ -254,9 +302,16 @@ func UpdatePenetrationTest(c *gin.Context) {
 func DeletePenetrationTest(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var record models.PenetrationTest
-	if err := database.GetDB().First(&record, id).Error; err != nil {
+	// 预加载 VulnerabilityScans 关联，用于记录旧值
+	if err := database.GetDB().Preload("VulnerabilityScans").First(&record, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "记录不存在"})
 		return
+	}
+
+	// 保存旧的关联漏洞扫描报告ID列表
+	var oldVulnScanIDs []uint
+	for _, vs := range record.VulnerabilityScans {
+		oldVulnScanIDs = append(oldVulnScanIDs, vs.ID)
 	}
 
 	// 清除多对多关联
@@ -278,6 +333,18 @@ func DeletePenetrationTest(c *gin.Context) {
 	details := []services.LogDetail{
 		{FieldName: "FileName", FieldLabel: "文件名", OldValue: record.FileName, NewValue: ""},
 	}
+	
+	// 添加关联漏洞扫描报告信息
+	if len(oldVulnScanIDs) > 0 {
+		oldBytes, _ := json.Marshal(oldVulnScanIDs)
+		details = append(details, services.LogDetail{
+			FieldName:  "VulnerabilityScans",
+			FieldLabel: "关联漏洞扫描",
+			OldValue:   string(oldBytes),
+			NewValue:   "[]",
+		})
+	}
+	
 	services.LogOperation(username, displayName, "删除渗透测试报告", "penetration_test", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
