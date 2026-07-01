@@ -37,9 +37,12 @@
         <el-table-column label="关联漏洞扫描报告" width="320" align="center">
           <template slot-scope="{ row }">
             <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
-              <el-tag v-for="vs in row.vulnerability_scans" :key="vs.id" size="mini" style="margin: 2px">
-                {{ vs.year }}-Q{{ vs.quarter }}-{{ vs.scan_type === 'internal' ? '内部' : '外部' }}{{ vs.scan_type === 'internal' ? (vs.regions && vs.regions.length > 0 ? '(' + vs.regions.map(r => r.name).join(',') + ')' : '(无区域)') : (vs.external_ip ? '(' + vs.external_ip + ')' : '(无IP)') }}
-              </el-tag>
+              <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark">
+                <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
+                <el-tag size="mini" style="margin: 2px">
+                  {{ vs.year }}-Q{{ vs.quarter }}-{{ vs.scan_type === 'internal' ? '内部' : '外部' }}
+                </el-tag>
+              </el-tooltip>
             </template>
             <span v-else>-</span>
           </template>
@@ -223,6 +226,21 @@ export default {
       } else {
         return `${base} | ${vs.external_ip || '无IP'}`
       }
+    },
+    formatVulnScanTooltip(vs) {
+      const lines = [
+        `年份: ${vs.year}`,
+        `季度: Q${vs.quarter}`,
+        `类型: ${vs.scan_type === 'internal' ? '内部' : '外部'}`,
+        `报告日期: ${vs.report_date || '无'}`
+      ]
+      if (vs.scan_type === 'internal') {
+        const regions = (vs.regions || []).map(r => r.name).join(', ')
+        lines.push(`扫描区域: ${regions || '无'}`)
+      } else {
+        lines.push(`对外IP: ${vs.external_ip || '无'}`)
+      }
+      return lines.join('\n')
     },
     handleSizeChange() {
       this.page = 1
