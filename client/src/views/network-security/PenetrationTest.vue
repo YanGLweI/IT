@@ -39,7 +39,7 @@
             <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
               <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark">
                 <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
-                <el-tag size="mini" style="margin: 2px">
+                <el-tag size="mini" style="margin: 2px; cursor: pointer;" @click.native="handlePreviewVulnScan(vs)">
                   {{ formatVulnScanLabel(vs) }}
                 </el-tag>
               </el-tooltip>
@@ -125,11 +125,10 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearDocxPreview">
       <iframe v-if="previewUrl && isPdf" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
-      <div v-else-if="!isPdf" style="text-align: center; padding: 40px;">
-        <i class="el-icon-document" style="font-size: 64px; color: #409EFF;"></i>
-        <p style="margin-top: 16px; font-size: 16px;">DOCX 文件无法直接预览，请下载后查看</p>
+      <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
+        <div ref="docxContainer" class="docx-preview-container"></div>
       </div>
       <span slot="footer">
         <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
@@ -146,8 +145,9 @@ import {
   getPenetrationTests, createPenetrationTest, updatePenetrationTest, deletePenetrationTest,
   getPenetrationTestPreviewUrl, getPenetrationTestDownloadUrl
 } from '@/api/penetration_test'
-import { getVulnerabilityScans } from '@/api/vulnerability_scan'
+import { getVulnerabilityScans, getVulnerabilityScanPreviewUrl, getVulnerabilityScanDownloadUrl } from '@/api/vulnerability_scan'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import { renderAsync } from 'docx-preview'
 
 export default {
   name: 'PenetrationTest',
@@ -188,7 +188,8 @@ export default {
       previewUrl: '',
       previewDownloadUrl: '',
       previewFileName: '',
-      isPdf: true
+      isPdf: true,
+      currentVulnScanId: null
     }
   },
   mounted() {
@@ -343,7 +344,49 @@ export default {
       this.previewDownloadUrl = getPenetrationTestDownloadUrl(row.id)
       this.previewFileName = row.file_name
       this.isPdf = row.file_name && row.file_name.toLowerCase().endsWith('.pdf')
+      this.currentVulnScanId = null
       this.previewVisible = true
+      if (!this.isPdf) {
+        this.$nextTick(() => {
+          this.renderDocx(this.previewUrl)
+        })
+      }
+    },
+    // 预览漏洞扫描报告
+    async handlePreviewVulnScan(vs) {
+      this.previewUrl = getVulnerabilityScanPreviewUrl(vs.id)
+      this.previewDownloadUrl = getVulnerabilityScanDownloadUrl(vs.id)
+      this.previewFileName = vs.file_name || `漏洞扫描-${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
+      this.isPdf = vs.file_name && vs.file_name.toLowerCase().endsWith('.pdf')
+      this.currentVulnScanId = vs.id
+      this.previewVisible = true
+      if (!this.isPdf) {
+        this.$nextTick(() => {
+          this.renderDocx(this.previewUrl)
+        })
+      }
+    },
+    // 渲染 DOCX 文件
+    async renderDocx(url) {
+      try {
+        const response = await fetch(url)
+        const blob = await response.blob()
+        const arrayBuffer = await blob.arrayBuffer()
+        const container = this.$refs.docxContainer
+        if (container) {
+          container.innerHTML = ''
+          await renderAsync(arrayBuffer, container)
+        }
+      } catch (e) {
+        console.error('docx渲染失败:', e)
+        this.$message.error('文件预览失败，请尝试下载后查看')
+      }
+    },
+    // 清理 DOCX 预览
+    clearDocxPreview() {
+      if (this.$refs.docxContainer) {
+        this.$refs.docxContainer.innerHTML = ''
+      }
     },
     handleDownloadFromPreview() {
       if (this.previewDownloadUrl) {
@@ -412,5 +455,18 @@ export default {
   max-width: 280px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+}
+/* DOCX 预览容器样式 */
+.docx-preview-container >>> .docx-wrapper {
+  background: #fff;
+}
+.docx-preview-container >>> .docx table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.docx-preview-container >>> .docx table td,
+.docx-preview-container >>> .docx table th {
+  border: 1px solid #ddd;
+  padding: 8px;
 }
 </style>
