@@ -95,7 +95,7 @@
           <el-input v-model="uploadForm.description" type="textarea" :rows="3" placeholder="描述渗透测试结果" />
         </el-form-item>
         <el-form-item label="关联漏洞扫描报告">
-          <el-select v-model="uploadForm.vulnerability_scan_ids" multiple collapse-tags placeholder="选择关联的漏洞扫描报告" style="width: 100%" :popper-append-to-body="false">
+          <el-select v-model="uploadForm.vulnerability_scan_ids" multiple collapse-tags placeholder="选择关联的漏洞扫描报告" style="width: 100%" :popper-append-to-body="false" class="vuln-scan-select">
             <el-option v-for="vs in vulnScanOptions" :key="vs.id" :label="formatVulnScanLabel(vs)" :value="vs.id" />
           </el-select>
         </el-form-item>
@@ -395,21 +395,19 @@ export default {
   justify-content: center;
 }
 /* 关联漏洞扫描报告下拉框样式 */
-/deep/ .el-select__tags {
-  position: relative;
-  top: auto;
-  transform: none;
-}
-/deep/ .el-select__input {
+/deep/ .vuln-scan-select .el-input__inner {
   min-height: 60px;
-}
-/deep/ .el-input__inner {
-  min-height: 80px;
   height: auto;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
-/deep/ .el-select-dropdown__item {
+/deep/ .vuln-scan-select .el-select__tags {
+  position: static;
+  transform: none;
+  top: auto;
+  margin-bottom: 5px;
+}
+/deep/ .vuln-scan-select .el-select-dropdown__item {
   white-space: normal;
   word-break: break-all;
   line-height: 1.5;
