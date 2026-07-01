@@ -40,7 +40,7 @@
               <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark">
                 <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
                 <el-tag size="mini" style="margin: 2px">
-                  {{ vs.year }}-Q{{ vs.quarter }}-{{ vs.scan_type === 'internal' ? '内部' : '外部' }}
+                  {{ formatVulnScanLabel(vs) }}
                 </el-tag>
               </el-tooltip>
             </template>
