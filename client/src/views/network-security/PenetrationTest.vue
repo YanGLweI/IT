@@ -102,7 +102,7 @@
               </el-option>
             </template>
             <template #tag="{ item }">
-              <el-tag size="small" closable @close="$emit('removeTag', item.value)">
+              <el-tag size="small" closable @close="handleRemoveTag(item.value)">
                 {{ getVulnScanById(item.value) ? `${getVulnScanById(item.value).year}-Q${getVulnScanById(item.value).quarter}-${getVulnScanById(item.value).scan_type === 'internal' ? '内部' : '外部'}` : '' }}
               </el-tag>
             </template>
@@ -249,6 +249,12 @@ export default {
     },
     getVulnScanById(id) {
       return this.vulnScanOptions.find(vs => vs.id === id)
+    },
+    handleRemoveTag(id) {
+      const index = this.uploadForm.vulnerability_scan_ids.indexOf(id)
+      if (index > -1) {
+        this.uploadForm.vulnerability_scan_ids.splice(index, 1)
+      }
     },
     formatVulnScanTooltip(vs) {
       const lines = [
