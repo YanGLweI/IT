@@ -96,16 +96,7 @@
         </el-form-item>
         <el-form-item label="关联漏洞扫描报告">
           <el-select v-model="uploadForm.vulnerability_scan_ids" multiple collapse-tags placeholder="选择关联的漏洞扫描报告" style="width: 100%" :popper-append-to-body="false">
-            <template #default>
-              <el-option v-for="vs in vulnScanOptions" :key="vs.id" :label="formatVulnScanLabel(vs)" :value="vs.id">
-                <span>{{ formatVulnScanOptionLabel(vs) }}</span>
-              </el-option>
-            </template>
-            <template #tag="{ item }">
-              <el-tag size="small" closable @close="handleRemoveTag(item.value)">
-                {{ getVulnScanById(item.value) ? `${getVulnScanById(item.value).year}-Q${getVulnScanById(item.value).quarter}-${getVulnScanById(item.value).scan_type === 'internal' ? '内部' : '外部'}` : '' }}
-              </el-tag>
-            </template>
+            <el-option v-for="vs in vulnScanOptions" :key="vs.id" :label="formatVulnScanLabel(vs)" :value="vs.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="文件" v-if="!isEdit">
@@ -234,26 +225,6 @@ export default {
         return regions ? `${base} | ${regions}` : `${base} | 无区域`
       } else {
         return `${base} | ${vs.external_ip || '无IP'}`
-      }
-    },
-    formatVulnScanOptionLabel(vs) {
-      // 下拉选项显示：年份-Q季度-类型 (报告日期) | 区域/IP
-      const base = `${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
-      const dateInfo = vs.report_date ? ` (${vs.report_date})` : ''
-      if (vs.scan_type === 'internal') {
-        const regions = (vs.regions || []).map(r => r.name).join(', ')
-        return `${base}${dateInfo} | ${regions || '无区域'}`
-      } else {
-        return `${base}${dateInfo} | ${vs.external_ip || '无IP'}`
-      }
-    },
-    getVulnScanById(id) {
-      return this.vulnScanOptions.find(vs => vs.id === id)
-    },
-    handleRemoveTag(id) {
-      const index = this.uploadForm.vulnerability_scan_ids.indexOf(id)
-      if (index > -1) {
-        this.uploadForm.vulnerability_scan_ids.splice(index, 1)
       }
     },
     formatVulnScanTooltip(vs) {
@@ -422,5 +393,16 @@ export default {
   display: flex;
   gap: 4px;
   justify-content: center;
+}
+/* 关联漏洞扫描报告下拉框样式 */
+/deep/ .el-select__tags {
+  max-height: 120px;
+  overflow-y: auto;
+}
+/deep/ .el-select-dropdown__item {
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.5;
+  padding: 8px 20px;
 }
 </style>
