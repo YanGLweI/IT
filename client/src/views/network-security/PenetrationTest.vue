@@ -396,17 +396,21 @@ export default {
 }
 /* 漏洞扫描报告选择器 tag 样式 */
 .vuln-scan-select ::v-deep .el-tag {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 200px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 .vuln-scan-select ::v-deep .el-tag .el-select__tags-text {
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: inline-block;
+  max-width: 160px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: inline-block !important;
   vertical-align: middle;
+}
+/* 表格中关联漏洞扫描报告的 tag 样式 */
+.el-table .el-tag {
+  max-width: 280px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 </style>
