@@ -465,6 +465,7 @@ export default {
 
 <style scoped>
 .penetration-test {
+  margin: 20px;
   padding: 0;
 }
 .page-header {
