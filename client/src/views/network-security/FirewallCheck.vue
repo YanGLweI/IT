@@ -45,6 +45,12 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="file_name" label="检查报告" min-width="180" show-overflow-tooltip>
+          <template slot-scope="{ row }">
+            <span v-if="row.file_name">{{ row.file_name }}</span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="整改报告" width="180" align="center">
           <template slot-scope="{ row }">
             <template v-if="row.check_result === 'non_compliant'">
@@ -448,11 +454,30 @@ export default {
         this.pdfBlobUrl = ''
       }
     },
-    handleDownload(row) {
-      window.open(getFirewallCheckDownloadUrl(row.id), '_blank')
+    async handleDownload(row) {
+      await this.downloadWithAuth(getFirewallCheckDownloadUrl(row.id), row.file_name)
     },
-    handleDownloadFromPreview() {
-      if (this.previewDownloadUrl) window.open(this.previewDownloadUrl, '_blank')
+    async handleDownloadFromPreview() {
+      await this.downloadWithAuth(this.previewDownloadUrl, this.previewFileName)
+    },
+    // 通用下载方法（携带JWT token）
+    async downloadWithAuth(url, fileName) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        const blob = await response.blob()
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = fileName || '下载文件'
+        link.click()
+        URL.revokeObjectURL(link.href)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('文件下载失败')
+      }
     },
     // 整改报告上传
     openRectUpload(row) {
@@ -559,8 +584,8 @@ export default {
         this.rectPdfBlobUrl = ''
       }
     },
-    handleDownloadRect() {
-      if (this.rectDownloadUrl) window.open(this.rectDownloadUrl, '_blank')
+    async handleDownloadRect() {
+      await this.downloadWithAuth(this.rectDownloadUrl, this.rectFileName)
     }
   }
 }
