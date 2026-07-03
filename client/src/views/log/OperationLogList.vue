@@ -168,7 +168,8 @@ export default {
         'user_change_history': '用户变更记录',
         'vulnerability_scan': '漏洞扫描',
         'system_hardening_history': '系统加固记录',
-        'penetration_test': '渗透测试'
+        'penetration_test': '渗透测试',
+        'firewall_check': '防火墙检查'
       }
     }
   },

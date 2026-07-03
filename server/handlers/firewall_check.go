@@ -126,7 +126,10 @@ func CreateFirewallCheck(c *gin.Context) {
 
 	// 构建按年份的上传路径
 	yearDir := filepath.Join(config.Cfg.Upload.FirewallCheckPath, strconv.Itoa(year))
-	os.MkdirAll(yearDir, 0755)
+	if err := os.MkdirAll(yearDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "目录创建失败"})
+		return
+	}
 
 	// 生成唯一文件名
 	filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strings.TrimSuffix(filepath.Base(file.Filename), ext), ext)
@@ -195,10 +198,42 @@ func UpdateFirewallCheck(c *gin.Context) {
 	oldReportDate := record.ReportDate
 	oldAssetID := record.AssetID
 	oldCheckResult := record.CheckResult
+	oldFilePath := record.FilePath
+	oldRectFilePath := record.RectFilePath
 
 	// 更新字段
 	if yearStr != "" {
-		if y, err := strconv.Atoi(yearStr); err == nil && y >= 2000 && y <= 2100 {
+		if y, err := strconv.Atoi(yearStr); err == nil && y >= 2000 && y <= 2100 && y != record.Year {
+			// 迁移检查报告文件
+			if record.FilePath != "" {
+				newYearDir := filepath.Join(config.Cfg.Upload.FirewallCheckPath, strconv.Itoa(y))
+				if err := os.MkdirAll(newYearDir, 0755); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "目录创建失败"})
+					return
+				}
+				fileName := filepath.Base(record.FilePath)
+				newFilePath := filepath.Join(newYearDir, fileName)
+				if err := os.Rename(record.FilePath, newFilePath); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "检查报告文件迁移失败"})
+					return
+				}
+				record.FilePath = newFilePath
+			}
+			// 迁移整改报告文件
+			if record.RectFilePath != "" {
+				newRectDir := filepath.Join(config.Cfg.Upload.FirewallCheckPath, strconv.Itoa(y), "rect")
+				if err := os.MkdirAll(newRectDir, 0755); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "目录创建失败"})
+					return
+				}
+				rectFileName := filepath.Base(record.RectFilePath)
+				newRectPath := filepath.Join(newRectDir, rectFileName)
+				if err := os.Rename(record.RectFilePath, newRectPath); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "整改报告文件迁移失败"})
+					return
+				}
+				record.RectFilePath = newRectPath
+			}
 			record.Year = y
 		}
 	}
@@ -244,10 +279,20 @@ func UpdateFirewallCheck(c *gin.Context) {
 		details = append(details, services.LogDetail{FieldName: "ReportDate", FieldLabel: "报告日期", OldValue: oldReportDate, NewValue: record.ReportDate})
 	}
 	if oldAssetID != record.AssetID {
-		details = append(details, services.LogDetail{FieldName: "AssetID", FieldLabel: "防火墙", OldValue: strconv.Itoa(int(oldAssetID)), NewValue: strconv.Itoa(int(record.AssetID))})
+		var oldAsset models.Asset
+		database.GetDB().First(&oldAsset, oldAssetID)
+		details = append(details, services.LogDetail{FieldName: "AssetID", FieldLabel: "防火墙", OldValue: oldAsset.ComputerName, NewValue: record.Asset.ComputerName})
 	}
 	if oldCheckResult != record.CheckResult {
 		details = append(details, services.LogDetail{FieldName: "CheckResult", FieldLabel: "检查结果", OldValue: oldCheckResult, NewValue: record.CheckResult})
+	}
+
+	// 如果年份变更导致文件路径变化，记录文件路径变更
+	if oldFilePath != record.FilePath {
+		details = append(details, services.LogDetail{FieldName: "FilePath", FieldLabel: "检查报告路径", OldValue: filepath.Base(oldFilePath), NewValue: filepath.Base(record.FilePath)})
+	}
+	if oldRectFilePath != record.RectFilePath && record.RectFilePath != "" {
+		details = append(details, services.LogDetail{FieldName: "RectFilePath", FieldLabel: "整改报告路径", OldValue: filepath.Base(oldRectFilePath), NewValue: filepath.Base(record.RectFilePath)})
 	}
 
 	services.LogOperation(username, displayName, "更新防火墙检查记录", "firewall_check", record.ID, "", approver, c.ClientIP(), details)
@@ -317,7 +362,10 @@ func UploadFirewallRectReport(c *gin.Context) {
 
 	// 构建上传路径
 	yearDir := filepath.Join(config.Cfg.Upload.FirewallCheckPath, strconv.Itoa(record.Year), "rect")
-	os.MkdirAll(yearDir, 0755)
+	if err := os.MkdirAll(yearDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "目录创建失败"})
+		return
+	}
 
 	// 生成唯一文件名
 	filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strings.TrimSuffix(filepath.Base(file.Filename), ext), ext)

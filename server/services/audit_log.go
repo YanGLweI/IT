@@ -370,6 +370,16 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"Description": "结果描述",
 			"FileName":    "文件名",
 		}
+	case "firewall_check":
+		return map[string]string{
+			"Year":         "年份",
+			"Quarter":      "季度",
+			"ReportDate":   "报告日期",
+			"AssetID":      "防火墙",
+			"CheckResult":  "检查结果",
+			"FileName":     "检查报告",
+			"RectFileName": "整改报告",
+		}
 	default:
 		return make(map[string]string)
 	}

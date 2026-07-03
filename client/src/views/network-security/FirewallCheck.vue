@@ -63,7 +63,7 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template slot-scope="{ row }">
             <div class="op-btns">
               <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
@@ -360,7 +360,13 @@ export default {
         try {
           const dualToken = await this.$refs.dualControl.open()
           if (this.isEdit) {
-            await updateFirewallCheck(this.editingId, this.form, dualToken)
+            const formData = new FormData()
+            formData.append('year', this.form.year)
+            formData.append('quarter', this.form.quarter)
+            formData.append('report_date', this.form.report_date || '')
+            formData.append('asset_id', this.form.asset_id)
+            formData.append('check_result', this.form.check_result)
+            await updateFirewallCheck(this.editingId, formData, dualToken)
             this.$message.success('更新成功')
           } else {
             const formData = new FormData()
@@ -403,6 +409,7 @@ export default {
     },
     // 检查报告预览
     async handlePreview(row) {
+      this.clearPreview()
       this.previewUrl = getFirewallCheckPreviewUrl(row.id)
       this.previewDownloadUrl = getFirewallCheckDownloadUrl(row.id)
       this.previewFileName = row.file_name
@@ -533,6 +540,7 @@ export default {
     },
     // 预览整改报告
     async handlePreviewRect(row) {
+      this.clearRectPreview()
       this.rectPreviewUrl = getFirewallRectPreviewUrl(row.id)
       this.rectDownloadUrl = getFirewallRectDownloadUrl(row.id)
       this.rectFileName = row.rect_file_name
