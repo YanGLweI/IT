@@ -8,6 +8,12 @@
       <el-table :data="list" border stripe v-loading="loading">
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="name" label="软件名称" min-width="150" show-overflow-tooltip />
+        <el-table-column label="厂商官网" min-width="180" show-overflow-tooltip>
+          <template slot-scope="{ row }">
+            <a v-if="row.vendor_website" :href="row.vendor_website" target="_blank" class="link">{{ row.vendor_website }}</a>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="version" label="软件版本" width="150" show-overflow-tooltip />
         <el-table-column prop="latest_version" label="最新版本" width="150" show-overflow-tooltip />
         <el-table-column label="是否更新" width="90" align="center">
