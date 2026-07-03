@@ -181,7 +181,8 @@ func CreateFirewallCheck(c *gin.Context) {
 func UpdateFirewallCheck(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var record models.FirewallCheck
-	if err := database.GetDB().Preload("Asset").First(&record, id).Error; err != nil {
+	// 初始加载不Preload Asset，避免GORM Save时根据旧的Asset关联对象覆盖外键
+	if err := database.GetDB().First(&record, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "记录不存在"})
 		return
 	}
@@ -253,6 +254,7 @@ func UpdateFirewallCheck(c *gin.Context) {
 				return
 			}
 			record.AssetID = uint(aid)
+			record.Asset = models.Asset{} // 清除旧的关联对象，防止GORM Save时覆盖外键
 		}
 	}
 	if checkResult != "" {
@@ -304,7 +306,7 @@ func UpdateFirewallCheck(c *gin.Context) {
 func DeleteFirewallCheck(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var record models.FirewallCheck
-	if err := database.GetDB().First(&record, id).Error; err != nil {
+	if err := database.GetDB().Preload("Asset").First(&record, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "记录不存在"})
 		return
 	}
@@ -328,6 +330,9 @@ func DeleteFirewallCheck(c *gin.Context) {
 	details := []services.LogDetail{
 		{FieldName: "Year", FieldLabel: "年份", OldValue: strconv.Itoa(record.Year), NewValue: ""},
 		{FieldName: "Quarter", FieldLabel: "季度", OldValue: fmt.Sprintf("Q%d", record.Quarter), NewValue: ""},
+		{FieldName: "ReportDate", FieldLabel: "报告日期", OldValue: record.ReportDate, NewValue: ""},
+		{FieldName: "AssetID", FieldLabel: "防火墙", OldValue: record.Asset.ComputerName, NewValue: ""},
+		{FieldName: "CheckResult", FieldLabel: "检查结果", OldValue: record.CheckResult, NewValue: ""},
 		{FieldName: "FileName", FieldLabel: "检查报告", OldValue: record.FileName, NewValue: ""},
 		{FieldName: "RectFileName", FieldLabel: "整改报告", OldValue: record.RectFileName, NewValue: ""},
 	}
