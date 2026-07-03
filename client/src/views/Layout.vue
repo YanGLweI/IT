@@ -152,7 +152,10 @@
     </el-aside>
     <el-container>
       <el-header class="app-header">
-        <h3 class="header-title">{{ $route.meta.title }}</h3>
+        <div class="header-title-wrap">
+          <h3 class="header-title">{{ $route.meta.title }}</h3>
+          <p ref="subtitleText" :key="$route.path" class="header-subtitle">{{ $route.meta.enTitle }}</p>
+        </div>
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
@@ -177,17 +180,40 @@
 
 <script>
 import { logout } from '@/api/audit_log'
+import { animate, scrambleText } from 'animejs'
 
 export default {
   name: 'Layout',
   data() {
     return {
-      displayName: localStorage.getItem('display_name') || '用户'
+      displayName: localStorage.getItem('display_name') || '用户',
+      subtitleAnimation: null
     }
   },
   computed: {
     activeMenu() {
       return this.$route.path
+    },
+    currentEnTitle() {
+      return this.$route.meta.enTitle || ''
+    }
+  },
+  watch: {
+    '$route.path'() {
+      // key 改变会导致元素重建，等待下一个 tick 后再启动动画
+      this.$nextTick(() => {
+        this.startSubtitleAnimation()
+      })
+    }
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.startSubtitleAnimation()
+    })
+  },
+  beforeDestroy() {
+    if (this.subtitleAnimation) {
+      this.subtitleAnimation.pause()
     }
   },
   methods: {
@@ -215,6 +241,21 @@ export default {
           }
         }).catch(() => {})
       }
+    },
+    startSubtitleAnimation() {
+      const el = this.$refs.subtitleText
+      if (!el) return
+      // 停止之前的动画
+      if (this.subtitleAnimation) {
+        this.subtitleAnimation.pause()
+        this.subtitleAnimation = null
+      }
+      // 启动循环 scramble 动画
+      this.subtitleAnimation = animate(el, {
+        innerHTML: scrambleText(),
+        loop: true,
+        loopDelay: 2000
+      })
     }
   }
 }

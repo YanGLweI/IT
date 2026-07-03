@@ -107,6 +107,28 @@
   50%      { opacity: 0; }
 }
 
+/* 标题容器 */
+.app-header .header-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+}
+
+/* 英文副标题 */
+.app-header .header-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(184, 197, 214, 0.7);
+  letter-spacing: 1px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-weight: 400;
+  line-height: 1.2;
+  margin-top: 2px;
+  min-height: 14px;
+}
+
 /* 右侧用户区域 */
 .app-header .header-right {
   display: flex;
