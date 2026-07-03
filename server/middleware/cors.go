@@ -8,7 +8,7 @@ import (
 // Cors 跨域中间件
 func Cors() gin.HandlerFunc {
 	return cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, // 允许所有来源（开发环境）
+		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:8081", "http://10.60.254.127:8080", "http://localhost", "http://it.com", "http://10.60.254.124"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},

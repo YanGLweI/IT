@@ -25,6 +25,7 @@ func SetupRouter() *gin.Engine {
 		{
 			public.POST("/login", handlers.Login)
 			public.GET("/public-key", handlers.GetPublicKey)
+			public.POST("/refresh-token", handlers.RefreshToken)
 		}
 
 		// 受保护接口（需要JWT认证）

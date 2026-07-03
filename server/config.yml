@@ -3,6 +3,8 @@ server:
   port: ":8080"
   jwt_secret: "it-platform-secret-key-2024"
   gin_mode: "debug"  # debug | release | test
+  access_token_expiry: 120    # accessToken有效期（分钟）
+  refresh_token_expiry: 7     # refreshToken有效期（天）
 
 # 文档版本号（用于导出文件页脚显示）
 document:

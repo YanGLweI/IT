@@ -159,6 +159,9 @@ func Logout(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.Request.UserAgent()
 
+	// 清除 refreshToken Cookie
+	ClearRefreshTokenCookie(c)
+
 	usernameStr, _ := username.(string)
 	displayNameStr, _ := displayName.(string)
 

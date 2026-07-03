@@ -28,9 +28,11 @@ type DocumentConfig struct {
 
 // ServerConfig 服务器配置
 type ServerConfig struct {
-	Port      string `yaml:"port"`
-	JWTSecret string `yaml:"jwt_secret"`
-	GinMode   string `yaml:"gin_mode"`
+	Port               string `yaml:"port"`
+	JWTSecret          string `yaml:"jwt_secret"`
+	GinMode            string `yaml:"gin_mode"`
+	AccessTokenExpiry  int    `yaml:"access_token_expiry"`  // 分钟，默认120
+	RefreshTokenExpiry int    `yaml:"refresh_token_expiry"` // 天，默认7
 }
 
 // DatabaseConfig 数据库配置
@@ -97,6 +99,12 @@ func LoadConfig() error {
 	}
 	if Cfg.Server.GinMode == "" {
 		Cfg.Server.GinMode = "debug"
+	}
+	if Cfg.Server.AccessTokenExpiry == 0 {
+		Cfg.Server.AccessTokenExpiry = 120
+	}
+	if Cfg.Server.RefreshTokenExpiry == 0 {
+		Cfg.Server.RefreshTokenExpiry = 7
 	}
 	if Cfg.Database.DBName == "" {
 		Cfg.Database.DBName = "it_platform"

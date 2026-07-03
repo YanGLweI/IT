@@ -55,23 +55,31 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 生成 JWT Token
-	token, err := generateJWT(req.Username, displayName)
+	// 生成双 Token
+	accessToken, err := generateAccessToken(req.Username, displayName)
 	if err != nil {
-		// 记录登录失败日志
 		services.LogLogin(req.Username, displayName, "login_failure", c.ClientIP(), c.Request.UserAgent(), "生成令牌失败")
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成令牌失败"})
 		return
 	}
+	refreshToken, err := generateRefreshToken(req.Username, displayName)
+	if err != nil {
+		services.LogLogin(req.Username, displayName, "login_failure", c.ClientIP(), c.Request.UserAgent(), "生成刷新令牌失败")
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成刷新令牌失败"})
+		return
+	}
+
+	// 设置 refreshToken 到 HttpOnly Cookie
+	setRefreshTokenCookie(c, refreshToken)
 
 	// 记录登录成功日志
 	services.LogLogin(req.Username, displayName, "login_success", c.ClientIP(), c.Request.UserAgent(), "登录成功")
 
 	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
+		"code":    200,
 		"message": "登录成功",
 		"data": gin.H{
-			"token":        token,
+			"token":        accessToken,
 			"username":     req.Username,
 			"display_name": displayName,
 		},
@@ -194,20 +202,112 @@ func getTLSConfig(cfg *config.LDAPConfig) *tls.Config {
 	return tlsConfig
 }
 
-// generateJWT 生成 JWT Token
-func generateJWT(username, displayName string) (string, error) {
+// getJWTSecret 获取 JWT 密钥
+func getJWTSecret() string {
 	secret := config.Cfg.Server.JWTSecret
 	if secret == "" {
 		secret = "default-secret-key"
 	}
+	return secret
+}
+
+// generateAccessToken 生成访问 Token（短期）
+func generateAccessToken(username, displayName string) (string, error) {
+	secret := getJWTSecret()
+	expiry := config.Cfg.Server.AccessTokenExpiry
 
 	claims := jwt.MapClaims{
+		"type":         "access",
 		"username":     username,
 		"display_name": displayName,
-		"exp":          time.Now().Add(24 * time.Hour).Unix(),
+		"exp":          time.Now().Add(time.Duration(expiry) * time.Minute).Unix(),
 		"iat":          time.Now().Unix(),
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
+}
+
+// generateRefreshToken 生成刷新 Token（长期）
+func generateRefreshToken(username, displayName string) (string, error) {
+	secret := getJWTSecret()
+	expiry := config.Cfg.Server.RefreshTokenExpiry
+
+	claims := jwt.MapClaims{
+		"type":         "refresh",
+		"username":     username,
+		"display_name": displayName,
+		"exp":          time.Now().Add(time.Duration(expiry) * 24 * time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+// setRefreshTokenCookie 设置 refreshToken 到 HttpOnly Cookie
+func setRefreshTokenCookie(c *gin.Context, refreshToken string) {
+	expiry := config.Cfg.Server.RefreshTokenExpiry
+	c.SetCookie("refresh_token", refreshToken, expiry*86400, "/api", "", false, true)
+}
+
+// ClearRefreshTokenCookie 清除 refreshToken Cookie（导出供其他包使用）
+func ClearRefreshTokenCookie(c *gin.Context) {
+	c.SetCookie("refresh_token", "", -1, "/api", "", false, true)
+}
+
+// RefreshToken 刷新 accessToken
+func RefreshToken(c *gin.Context) {
+	// 从 Cookie 中获取 refreshToken
+	refreshTokenStr, err := c.Cookie("refresh_token")
+	if err != nil || refreshTokenStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未找到刷新令牌"})
+		return
+	}
+
+	secret := getJWTSecret()
+
+	// 解析 refreshToken
+	token, err := jwt.Parse(refreshTokenStr, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(secret), nil
+	})
+
+	if err != nil || !token.Valid {
+		ClearRefreshTokenCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "刷新令牌无效或已过期"})
+		return
+	}
+
+	// 校验 Token 类型必须为 refresh
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		ClearRefreshTokenCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "刷新令牌类型无效"})
+		return
+	}
+	tokenType, _ := claims["type"].(string)
+	if tokenType != "refresh" {
+		ClearRefreshTokenCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "刷新令牌类型无效"})
+		return
+	}
+
+	username, _ := claims["username"].(string)
+	displayName, _ := claims["display_name"].(string)
+
+	// 签发新的 accessToken
+	newAccessToken, err := generateAccessToken(username, displayName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成令牌失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "刷新成功",
+		"data": gin.H{
+			"token": newAccessToken,
+		},
+	})
 }
