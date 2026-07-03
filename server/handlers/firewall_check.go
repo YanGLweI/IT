@@ -295,7 +295,7 @@ func UpdateFirewallCheck(c *gin.Context) {
 		details = append(details, services.LogDetail{FieldName: "RectFilePath", FieldLabel: "整改报告路径", OldValue: filepath.Base(oldRectFilePath), NewValue: filepath.Base(record.RectFilePath)})
 	}
 
-	services.LogOperation(username, displayName, "更新防火墙检查记录", "firewall_check", record.ID, "", approver, c.ClientIP(), details)
+	services.LogOperation(username, displayName, "更新防火墙检查记录", "firewall_check", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": record})
 }
@@ -332,7 +332,7 @@ func DeleteFirewallCheck(c *gin.Context) {
 		{FieldName: "RectFileName", FieldLabel: "整改报告", OldValue: record.RectFileName, NewValue: ""},
 	}
 
-	services.LogOperation(username, displayName, "删除防火墙检查记录", "firewall_check", record.ID, "", approver, c.ClientIP(), details)
+	services.LogOperation(username, displayName, "删除防火墙检查记录", "firewall_check", record.ID, record.FileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
@@ -494,7 +494,7 @@ func DeleteFirewallRectReport(c *gin.Context) {
 		{FieldName: "RectFileName", FieldLabel: "整改报告", OldValue: oldFileName, NewValue: ""},
 	}
 
-	services.LogOperation(username, displayName, "删除防火墙整改报告", "firewall_check", record.ID, "", approver, c.ClientIP(), details)
+	services.LogOperation(username, displayName, "删除防火墙整改报告", "firewall_check", record.ID, oldFileName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
