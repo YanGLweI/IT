@@ -61,3 +61,13 @@ export function getFirewallRectPreviewUrl(id) {
 export function getFirewallRectDownloadUrl(id) {
   return `/api/firewall-checks/${id}/rect-download`
 }
+
+// 获取检查报告预览URL
+export function getFirewallCheckPreviewUrl(id) {
+  return `/api/firewall-checks/${id}/preview`
+}
+
+// 获取检查报告下载URL
+export function getFirewallCheckDownloadUrl(id) {
+  return `/api/firewall-checks/${id}/download`
+}

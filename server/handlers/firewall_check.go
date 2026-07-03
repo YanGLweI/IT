@@ -110,15 +110,48 @@ func CreateFirewallCheck(c *gin.Context) {
 		return
 	}
 
+	// 获取上传文件
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请上传检查报告文件"})
+		return
+	}
+
+	// 检查文件类型
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if ext != ".pdf" && ext != ".docx" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "仅支持 PDF 或 DOCX 格式文件"})
+		return
+	}
+
+	// 构建按年份的上传路径
+	yearDir := filepath.Join(config.Cfg.Upload.FirewallCheckPath, strconv.Itoa(year))
+	os.MkdirAll(yearDir, 0755)
+
+	// 生成唯一文件名
+	filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strings.TrimSuffix(filepath.Base(file.Filename), ext), ext)
+	filePath := filepath.Join(yearDir, filename)
+
+	// 保存文件
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件保存失败"})
+		return
+	}
+
 	record := models.FirewallCheck{
 		Year:        year,
 		Quarter:     quarter,
 		ReportDate:  reportDate,
 		AssetID:     uint(assetID),
 		CheckResult: checkResult,
+		FileName:    file.Filename,
+		FilePath:    filePath,
+		FileSize:    file.Size,
+		FileType:    file.Header.Get("Content-Type"),
 	}
 
 	if err := database.GetDB().Create(&record).Error; err != nil {
+		os.Remove(filePath)
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存记录失败"})
 		return
 	}
@@ -133,9 +166,10 @@ func CreateFirewallCheck(c *gin.Context) {
 		{FieldName: "ReportDate", FieldLabel: "报告日期", NewValue: reportDate},
 		{FieldName: "AssetID", FieldLabel: "防火墙", NewValue: asset.ComputerName},
 		{FieldName: "CheckResult", FieldLabel: "检查结果", NewValue: checkResult},
+		{FieldName: "FileName", FieldLabel: "检查报告", NewValue: file.Filename},
 	}
 
-	services.LogOperation(username, displayName, "创建防火墙检查记录", "firewall_check", record.ID, "", approver, c.ClientIP(), details)
+	services.LogOperation(username, displayName, "创建防火墙检查记录", "firewall_check", record.ID, file.Filename, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": record})
 }
@@ -230,7 +264,10 @@ func DeleteFirewallCheck(c *gin.Context) {
 		return
 	}
 
-	// 删除整改报告文件
+	// 删除检查报告和整改报告文件
+	if record.FilePath != "" {
+		os.Remove(record.FilePath)
+	}
 	if record.RectFilePath != "" {
 		os.Remove(record.RectFilePath)
 	}
@@ -246,6 +283,8 @@ func DeleteFirewallCheck(c *gin.Context) {
 	details := []services.LogDetail{
 		{FieldName: "Year", FieldLabel: "年份", OldValue: strconv.Itoa(record.Year), NewValue: ""},
 		{FieldName: "Quarter", FieldLabel: "季度", OldValue: fmt.Sprintf("Q%d", record.Quarter), NewValue: ""},
+		{FieldName: "FileName", FieldLabel: "检查报告", OldValue: record.FileName, NewValue: ""},
+		{FieldName: "RectFileName", FieldLabel: "整改报告", OldValue: record.RectFileName, NewValue: ""},
 	}
 
 	services.LogOperation(username, displayName, "删除防火墙检查记录", "firewall_check", record.ID, "", approver, c.ClientIP(), details)
@@ -410,4 +449,57 @@ func DeleteFirewallRectReport(c *gin.Context) {
 	services.LogOperation(username, displayName, "删除防火墙整改报告", "firewall_check", record.ID, "", approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
+}
+
+// PreviewFirewallCheckReport 预览防火墙检查报告
+func PreviewFirewallCheckReport(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var record models.FirewallCheck
+	if err := database.GetDB().First(&record, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "记录不存在"})
+		return
+	}
+
+	if record.FilePath == "" {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "检查报告不存在"})
+		return
+	}
+
+	if _, err := os.Stat(record.FilePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "文件不存在"})
+		return
+	}
+
+	ext := strings.ToLower(filepath.Ext(record.FilePath))
+	if ext == ".pdf" {
+		c.Header("Content-Type", "application/pdf")
+		c.Header("Content-Disposition", "inline; filename=\""+record.FileName+"\"")
+	} else {
+		c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+		c.Header("Content-Disposition", "inline; filename=\""+record.FileName+"\"")
+	}
+	c.File(record.FilePath)
+}
+
+// DownloadFirewallCheckReport 下载防火墙检查报告
+func DownloadFirewallCheckReport(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var record models.FirewallCheck
+	if err := database.GetDB().First(&record, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "记录不存在"})
+		return
+	}
+
+	if record.FilePath == "" {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "检查报告不存在"})
+		return
+	}
+
+	if _, err := os.Stat(record.FilePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "文件不存在"})
+		return
+	}
+
+	c.Header("Content-Disposition", "attachment; filename=\""+record.FileName+"\"")
+	c.File(record.FilePath)
 }

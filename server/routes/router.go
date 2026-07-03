@@ -135,6 +135,8 @@ func SetupRouter() *gin.Engine {
 
 			// 防火墙检查 - 查询（不需要双控）
 			protected.GET("/firewall-checks", handlers.ListFirewallChecks)
+			protected.GET("/firewall-checks/:id/preview", handlers.PreviewFirewallCheckReport)
+			protected.GET("/firewall-checks/:id/download", handlers.DownloadFirewallCheckReport)
 			protected.GET("/firewall-checks/:id/rect-preview", handlers.PreviewFirewallRectReport)
 			protected.GET("/firewall-checks/:id/rect-download", handlers.DownloadFirewallRectReport)
 

@@ -25,6 +25,12 @@ type FirewallCheck struct {
 	// 检查结果
 	CheckResult string `gorm:"type:varchar(20);default:'compliant'" json:"check_result"` // compliant / non_compliant
 
+	// 检查报告文件
+	FileName string `gorm:"type:varchar(300)" json:"file_name"`
+	FilePath string `gorm:"type:varchar(500)" json:"file_path"`
+	FileSize int64  `gorm:"type:bigint" json:"file_size"`
+	FileType string `gorm:"type:varchar(255)" json:"file_type"`
+
 	// 整改报告文件（不合规时上传）
 	RectFileName string `gorm:"type:varchar(300)" json:"rect_file_name"`
 	RectFilePath string `gorm:"type:varchar(500)" json:"rect_file_path"`

@@ -57,9 +57,11 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template slot-scope="{ row }">
             <div class="op-btns">
+              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
+              <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
               <el-button size="mini" type="text" icon="el-icon-edit" @click="openEdit(row)">编辑</el-button>
               <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
             </div>
@@ -112,10 +114,28 @@
             <el-radio label="non_compliant">不合规</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="检查报告" v-if="!isEdit">
+          <el-upload
+            ref="uploader"
+            action=""
+            :auto-upload="false"
+            :limit="1"
+            accept=".pdf,.docx"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            :file-list="fileList"
+            drag
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
+            <div slot="tip" class="el-upload__tip">支持 PDF / DOCX 格式文件</div>
+          </el-upload>
+        </el-form-item>
+        <el-alert v-else title="编辑模式下不可更换文件" type="info" :closable="false" show-icon />
       </el-form>
       <span slot="footer">
         <el-button @click="showForm = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存' : '确定' }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存' : '确定上传' }}</el-button>
       </span>
     </el-dialog>
 
@@ -142,6 +162,17 @@
       </span>
     </el-dialog>
 
+    <!-- 检查报告预览弹窗 -->
+    <el-dialog title="检查报告预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
+      <iframe v-if="previewUrl && isPdf && pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
+      <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
+        <div ref="docxContainer" class="docx-preview-container"></div>
+      </div>
+      <span slot="footer">
+        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 整改报告预览弹窗 -->
     <el-dialog title="整改报告预览" :visible.sync="rectPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearRectPreview">
       <iframe v-if="rectPreviewUrl && rectIsPdf && rectPdfBlobUrl" :src="rectPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
@@ -162,9 +193,11 @@
 import {
   getFirewallChecks, createFirewallCheck, updateFirewallCheck, deleteFirewallCheck,
   uploadFirewallRectReport, deleteFirewallRectReport,
+  getFirewallCheckPreviewUrl, getFirewallCheckDownloadUrl,
   getFirewallRectPreviewUrl, getFirewallRectDownloadUrl
 } from '@/api/firewall_check'
 import { getAssets } from '@/api/asset'
+import { getRegions } from '@/api/region'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import { renderAsync } from 'docx-preview'
 
@@ -202,12 +235,21 @@ export default {
         asset_id: [{ required: true, message: '请选择防火墙', trigger: 'change' }]
       },
       assetOptions: [],
+      selectedFile: null,
+      fileList: [],
       // 整改报告上传
       showRectUpload: false,
       rectRowId: null,
       rectUploading: false,
       rectSelectedFile: null,
       rectFileList: [],
+      // 检查报告预览
+      previewVisible: false,
+      previewUrl: '',
+      previewDownloadUrl: '',
+      previewFileName: '',
+      isPdf: true,
+      pdfBlobUrl: '',
       // 整改报告预览
       rectPreviewVisible: false,
       rectPreviewUrl: '',
@@ -239,7 +281,15 @@ export default {
     },
     async fetchAssets() {
       try {
-        const res = await getAssets({ page: 1, page_size: 500 })
+        // 先获取"网络设备清单"区域ID
+        const regionsRes = await getRegions()
+        const networkRegion = (regionsRes.data || []).find(r => r.name === '网络设备清单')
+        if (!networkRegion) {
+          this.$message.warning('未找到"网络设备清单"区域，请先创建区域')
+          return
+        }
+        // 只获取该区域下的资产
+        const res = await getAssets({ page: 1, page_size: 500, region_id: networkRegion.id })
         this.assetOptions = res.data || []
       } catch (e) {
         console.error(e)
@@ -277,6 +327,8 @@ export default {
       const now = new Date()
       this.isEdit = false
       this.editingId = null
+      this.selectedFile = null
+      this.fileList = []
       this.form = {
         year: now.getFullYear(),
         quarter: Math.ceil((now.getMonth() + 1) / 3),
@@ -285,9 +337,19 @@ export default {
         check_result: 'compliant'
       }
     },
+    handleFileChange(file) {
+      this.selectedFile = file.raw
+    },
+    handleFileRemove() {
+      this.selectedFile = null
+    },
     async handleSubmit() {
       this.$refs.formRef.validate(async valid => {
         if (!valid) return
+        if (!this.isEdit && !this.selectedFile) {
+          this.$message.warning('请选择检查报告文件')
+          return
+        }
         this.submitting = true
         try {
           const dualToken = await this.$refs.dualControl.open()
@@ -295,7 +357,14 @@ export default {
             await updateFirewallCheck(this.editingId, this.form, dualToken)
             this.$message.success('更新成功')
           } else {
-            await createFirewallCheck(this.form, dualToken)
+            const formData = new FormData()
+            formData.append('year', this.form.year)
+            formData.append('quarter', this.form.quarter)
+            formData.append('report_date', this.form.report_date || '')
+            formData.append('asset_id', this.form.asset_id)
+            formData.append('check_result', this.form.check_result)
+            formData.append('file', this.selectedFile)
+            await createFirewallCheck(formData, dualToken)
             this.$message.success('创建成功')
           }
           this.showForm = false
@@ -325,6 +394,65 @@ export default {
       } catch (e) {
         if (e.message !== 'canceled') console.error(e)
       }
+    },
+    // 检查报告预览
+    async handlePreview(row) {
+      this.previewUrl = getFirewallCheckPreviewUrl(row.id)
+      this.previewDownloadUrl = getFirewallCheckDownloadUrl(row.id)
+      this.previewFileName = row.file_name
+      this.isPdf = row.file_name && row.file_name.toLowerCase().endsWith('.pdf')
+      if (this.pdfBlobUrl) {
+        URL.revokeObjectURL(this.pdfBlobUrl)
+        this.pdfBlobUrl = ''
+      }
+      this.previewVisible = true
+      if (this.isPdf) {
+        await this.fetchPdfAsBlob(this.previewUrl)
+      } else {
+        this.$nextTick(() => { this.renderDocx(this.previewUrl) })
+      }
+    },
+    async fetchPdfAsBlob(url) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        const blob = await response.blob()
+        this.pdfBlobUrl = URL.createObjectURL(blob)
+      } catch (e) {
+        console.error('PDF加载失败:', e)
+        this.$message.error('文件预览失败，请尝试下载后查看')
+      }
+    },
+    async renderDocx(url) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        const blob = await response.blob()
+        const arrayBuffer = await blob.arrayBuffer()
+        const container = this.$refs.docxContainer
+        if (container) {
+          container.innerHTML = ''
+          await renderAsync(arrayBuffer, container)
+        }
+      } catch (e) {
+        console.error('docx渲染失败:', e)
+        this.$message.error('文件预览失败，请尝试下载后查看')
+      }
+    },
+    clearPreview() {
+      if (this.$refs.docxContainer) this.$refs.docxContainer.innerHTML = ''
+      if (this.pdfBlobUrl) {
+        URL.revokeObjectURL(this.pdfBlobUrl)
+        this.pdfBlobUrl = ''
+      }
+    },
+    handleDownload(row) {
+      window.open(getFirewallCheckDownloadUrl(row.id), '_blank')
+    },
+    handleDownloadFromPreview() {
+      if (this.previewDownloadUrl) window.open(this.previewDownloadUrl, '_blank')
     },
     // 整改报告上传
     openRectUpload(row) {
@@ -392,17 +520,13 @@ export default {
       if (this.rectIsPdf) {
         await this.fetchRectPdfAsBlob(this.rectPreviewUrl)
       } else {
-        this.$nextTick(() => {
-          this.renderRectDocx(this.rectPreviewUrl)
-        })
+        this.$nextTick(() => { this.renderRectDocx(this.rectPreviewUrl) })
       }
     },
     async fetchRectPdfAsBlob(url) {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
         const blob = await response.blob()
         this.rectPdfBlobUrl = URL.createObjectURL(blob)
@@ -414,9 +538,7 @@ export default {
     async renderRectDocx(url) {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
         const blob = await response.blob()
         const arrayBuffer = await blob.arrayBuffer()
@@ -431,18 +553,14 @@ export default {
       }
     },
     clearRectPreview() {
-      if (this.$refs.rectDocxContainer) {
-        this.$refs.rectDocxContainer.innerHTML = ''
-      }
+      if (this.$refs.rectDocxContainer) this.$refs.rectDocxContainer.innerHTML = ''
       if (this.rectPdfBlobUrl) {
         URL.revokeObjectURL(this.rectPdfBlobUrl)
         this.rectPdfBlobUrl = ''
       }
     },
     handleDownloadRect() {
-      if (this.rectDownloadUrl) {
-        window.open(this.rectDownloadUrl, '_blank')
-      }
+      if (this.rectDownloadUrl) window.open(this.rectDownloadUrl, '_blank')
     }
   }
 }
