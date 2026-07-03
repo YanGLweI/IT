@@ -52,6 +52,7 @@ func InitDB() {
 		&models.VulnerabilityScan{},
 		&models.SystemHardeningHistory{},
 		&models.PenetrationTest{},
+		&models.FirewallCheck{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

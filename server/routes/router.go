@@ -133,6 +133,11 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/penetration-tests/:id/preview", handlers.PreviewPenetrationTest)
 			protected.GET("/penetration-tests/:id/download", handlers.DownloadPenetrationTest)
 
+			// 防火墙检查 - 查询（不需要双控）
+			protected.GET("/firewall-checks", handlers.ListFirewallChecks)
+			protected.GET("/firewall-checks/:id/rect-preview", handlers.PreviewFirewallRectReport)
+			protected.GET("/firewall-checks/:id/rect-download", handlers.DownloadFirewallRectReport)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -248,6 +253,13 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/penetration-tests", handlers.CreatePenetrationTest)
 				dual.PUT("/penetration-tests/:id", handlers.UpdatePenetrationTest)
 				dual.DELETE("/penetration-tests/:id", handlers.DeletePenetrationTest)
+
+				// 防火墙检查 - 写操作（需要双控）
+				dual.POST("/firewall-checks", handlers.CreateFirewallCheck)
+				dual.PUT("/firewall-checks/:id", handlers.UpdateFirewallCheck)
+				dual.DELETE("/firewall-checks/:id", handlers.DeleteFirewallCheck)
+				dual.PUT("/firewall-checks/:id/rect", handlers.UploadFirewallRectReport)
+				dual.DELETE("/firewall-checks/:id/rect", handlers.DeleteFirewallRectReport)
 			}
 		}
 	}

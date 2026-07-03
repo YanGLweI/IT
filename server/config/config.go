@@ -55,6 +55,7 @@ type UploadConfig struct {
 	VulnerabilityScanPath        string `yaml:"vulnerability_scan_path"`
 	SystemHardeningCheckPath     string `yaml:"system_hardening_check_path"`
 	PenetrationTestPath          string `yaml:"penetration_test_path"`
+	FirewallCheckPath            string `yaml:"firewall_check_path"`
 }
 
 // LDAPConfig LDAP配置
@@ -132,6 +133,9 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.PenetrationTestPath == "" {
 		Cfg.Upload.PenetrationTestPath = "./uploads/penetration_tests"
+	}
+	if Cfg.Upload.FirewallCheckPath == "" {
+		Cfg.Upload.FirewallCheckPath = "./uploads/firewall_checks"
 	}
 	if Cfg.RSA.PrivateKeyPath == "" {
 		Cfg.RSA.PrivateKeyPath = "./certificate/rsa_private.pem"

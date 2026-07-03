@@ -48,6 +48,8 @@ upload:
   system_hardening_check_path: "./uploads/system_hardening_checks"
   # 渗透测试报告上传路径
   penetration_test_path: "./uploads/penetration_tests"
+  # 防火墙检查报告上传路径
+  firewall_check_path: "./uploads/firewall_checks"
 
 # RSA 加密配置
 rsa:
