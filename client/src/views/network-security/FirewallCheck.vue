@@ -51,14 +51,16 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="整改报告" width="180" align="center">
+        <el-table-column label="整改报告" width="140" align="center">
           <template slot-scope="{ row }">
             <template v-if="row.check_result === 'non_compliant'">
               <template v-if="row.rect_file_name">
-                <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRect(row)">预览</el-button>
-                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDeleteRect(row)">删除</el-button>
+                <div class="op-btns" style="justify-content: center">
+                  <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRect(row)">预览</el-button>
+                  <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDeleteRect(row)">删除</el-button>
+                </div>
               </template>
-              <el-button v-else size="mini" type="primary" icon="el-icon-upload2" @click="openRectUpload(row)">整改</el-button>
+              <el-button v-else size="mini" type="text" icon="el-icon-document-checked" style="color: #E6A23C" @click="openRectUpload(row)">整改</el-button>
             </template>
             <span v-else>-</span>
           </template>
