@@ -19,9 +19,27 @@ type QuarterlyCheckHistory struct {
 	FilePath    string         `gorm:"type:varchar(500);not null" json:"file_path"`
 	FileSize    int64          `gorm:"type:bigint" json:"file_size"`
 	FileType    string         `gorm:"type:varchar(255)" json:"file_type"`
+
+	SoftwareList []ApprovedSoftware `gorm:"-" json:"software_list,omitempty"`
 }
 
 // TableName 指定表名
 func (QuarterlyCheckHistory) TableName() string {
 	return "quarterly_check_histories"
+}
+
+// QuarterlyCheckSoftware 季度检查与核准软件关联
+type QuarterlyCheckSoftware struct {
+	ID                      uint                  `gorm:"primaryKey" json:"id"`
+	CreatedAt               time.Time             `json:"created_at"`
+	QuarterlyCheckHistoryID uint                  `gorm:"not null;index" json:"quarterly_check_history_id"`
+	ApprovedSoftwareID      uint                  `gorm:"not null" json:"approved_software_id"`
+	OriginalVersion         string                `gorm:"type:varchar(100)" json:"original_version"`
+	QuarterlyCheckHistory   QuarterlyCheckHistory `gorm:"foreignKey:QuarterlyCheckHistoryID" json:"-"`
+	ApprovedSoftware        ApprovedSoftware      `gorm:"foreignKey:ApprovedSoftwareID" json:"approved_software,omitempty"`
+}
+
+// TableName 指定表名
+func (QuarterlyCheckSoftware) TableName() string {
+	return "quarterly_check_software"
 }

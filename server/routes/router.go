@@ -81,6 +81,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/sftp-accounts/export-confirmation", handlers.ExportSftpConfirmation)
 
 			// 第三方应用管理 - 查询（不需要双控）
+			protected.GET("/approved-software/need-update", handlers.ListApprovedSoftwareNeedUpdate)
 			protected.GET("/approved-software", handlers.ListApprovedSoftware)
 			protected.GET("/asset-software", handlers.ListAssetSoftware)
 			protected.GET("/asset-software/export-patch-update", handlers.ExportPatchUpdateRecord)

@@ -120,6 +120,7 @@
 import { getOperationLogs, getOperationLogDetails } from '@/api/audit_log'
 import { getRegions } from '@/api/region'
 import { getVulnerabilityScans } from '@/api/vulnerability_scan'
+import { getApprovedSoftware } from '@/api/approved_software'
 
 export default {
   name: 'OperationLogList',
@@ -146,6 +147,7 @@ export default {
       changeTypesMap: {}, // 变更类型ID到名称的映射
       regionsMap: {}, // 区域ID到名称的映射
       vulnScanMap: {}, // 漏洞扫描报告ID到文件名的映射
+      softwareMap: {}, // 核准软件ID到名称的映射
       resourceTypeLabels: {
         'asset': '资产',
         'region': '区域',
@@ -177,6 +179,7 @@ export default {
     this.fetchChangeTypes()
     this.fetchRegions()
     this.fetchVulnerabilityScans()
+    this.fetchApprovedSoftware()
     this.fetchData()
   },
   methods: {
@@ -228,6 +231,18 @@ export default {
         console.log('Loaded vuln scan map:', Object.keys(this.vulnScanMap).length, 'items')
       } catch (e) {
         console.error('获取漏洞扫描报告列表失败', e)
+      }
+    },
+    async fetchApprovedSoftware() {
+      try {
+        this.softwareMap = {}
+        const res = await getApprovedSoftware()
+        const softwareList = Array.isArray(res.data) ? res.data : []
+        softwareList.forEach(s => {
+          this.softwareMap[s.id] = s.name
+        })
+      } catch (e) {
+        console.error('获取核准软件列表失败', e)
       }
     },
     async fetchData() {
@@ -341,6 +356,24 @@ export default {
               // 确保ID是数字类型进行匹配
               const numId = typeof id === 'string' ? parseInt(id, 10) : id
               return this.vulnScanMap[numId] || this.vulnScanMap[id] || id
+            }).filter(n => n)
+            return names.join('、')
+          }
+        } catch (e) {
+          // 解析失败，返回原值
+        }
+      }
+      
+      // 特殊处理 SoftwareIDs / SoftwareAdded / SoftwareRemoved：将ID数组转换为软件名称列表
+      if (fieldName === 'SoftwareIDs' || fieldName === 'SoftwareAdded' || fieldName === 'SoftwareRemoved') {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            if (parsed.length === 0) return '[]'
+            // 尝试将ID转换为软件名称
+            const names = parsed.map(id => {
+              const numId = typeof id === 'string' ? parseInt(id, 10) : id
+              return this.softwareMap[numId] || this.softwareMap[id] || id
             }).filter(n => n)
             return names.join('、')
           }

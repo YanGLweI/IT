@@ -4,7 +4,7 @@
       <div slot="header" class="page-header">
         <span>季度检查历史</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUpload = true">上传记录</el-button>
+          <el-button type="primary" size="small" icon="el-icon-upload2" @click="handleOpenUpload">上传记录</el-button>
           <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
@@ -26,6 +26,19 @@
           <template slot-scope="{ row }">Q{{ row.quarter }}</template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column label="关联软件" min-width="200">
+          <template slot-scope="{ row }">
+            <template v-if="row.software_list && row.software_list.length > 0">
+              <el-tag
+                v-for="sw in row.software_list"
+                :key="sw.id"
+                size="mini"
+                style="margin: 2px 4px 2px 0"
+              >{{ sw.name }}</el-tag>
+            </template>
+            <span v-else style="color: #909399">-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
         <el-table-column label="文件大小" width="100" align="center">
           <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
@@ -60,7 +73,7 @@
     </el-card>
 
     <!-- 上传弹窗 -->
-    <el-dialog :title="isEdit ? '编辑季度检查记录' : '上传季度检查记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog :title="isEdit ? '编辑季度检查记录' : '上传季度检查记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false" @close="resetUploadForm">
       <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -78,6 +91,26 @@
         </el-row>
         <el-form-item label="描述" prop="description">
           <el-input v-model="uploadForm.description" type="textarea" :rows="2" placeholder="输入描述，便于后续搜索" />
+        </el-form-item>
+        <el-form-item label="软件">
+          <el-select
+            v-model="uploadForm.software_ids"
+            multiple
+            filterable
+            :placeholder="isEdit ? '选择关联的软件（可多选）' : '选择需更新的软件（可多选）'"
+            :loading="softwareLoading"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="sw in (isEdit ? allSoftware : needUpdateSoftware)"
+              :key="sw.id"
+              :label="sw.name + (sw.version ? ' (' + sw.version + (sw.latest_version && sw.version !== sw.latest_version ? ' → ' + sw.latest_version : '') + ')' : '')"
+              :value="sw.id"
+            />
+          </el-select>
+          <div style="color: #909399; font-size: 12px; margin-top: 4px">
+            {{ isEdit ? '修改关联后，取消关联的软件将自动恢复' : '提交后所选软件的版本将自动更新为最新版本' }}
+          </div>
         </el-form-item>
         <el-form-item label="文件" prop="file" v-if="!isEdit">
           <el-upload
@@ -116,6 +149,7 @@
 
 <script>
 import { getQuarterlyChecks, createQuarterlyCheck, updateQuarterlyCheck, deleteQuarterlyCheck, getQuarterlyCheckPreviewUrl, getQuarterlyCheckDownloadUrl } from '@/api/quarterly_check'
+import { getApprovedSoftwareNeedUpdate, getApprovedSoftware } from '@/api/approved_software'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -137,10 +171,14 @@ export default {
       isEdit: false,
       editingId: null,
       uploading: false,
+      needUpdateSoftware: [],
+      allSoftware: [],
+      softwareLoading: false,
       uploadForm: {
         year: now.getFullYear(),
         quarter: Math.ceil((now.getMonth() + 1) / 3),
-        description: ''
+        description: '',
+        software_ids: []
       },
       uploadRules: {
         year: [{ required: true, message: '请选择年份', trigger: 'change' }],
@@ -186,6 +224,34 @@ export default {
     handleFileRemove() {
       this.selectedFile = null
     },
+    handleOpenUpload() {
+      this.resetUploadForm()
+      this.isEdit = false
+      this.showUpload = true
+      this.loadNeedUpdateSoftware()
+    },
+    async loadNeedUpdateSoftware() {
+      this.softwareLoading = true
+      try {
+        const res = await getApprovedSoftwareNeedUpdate()
+        this.needUpdateSoftware = res.data || []
+      } catch (e) {
+        console.error('加载软件列表失败:', e)
+      } finally {
+        this.softwareLoading = false
+      }
+    },
+    async loadAllSoftware() {
+      this.softwareLoading = true
+      try {
+        const res = await getApprovedSoftware()
+        this.allSoftware = res.data || []
+      } catch (e) {
+        console.error('加载软件列表失败:', e)
+      } finally {
+        this.softwareLoading = false
+      }
+    },
     handleUpload() {
       this.$refs.uploadFormRef.validate(async valid => {
         if (!valid) return
@@ -200,6 +266,9 @@ export default {
           formData.append('year', this.uploadForm.year)
           formData.append('quarter', this.uploadForm.quarter)
           formData.append('description', this.uploadForm.description || '')
+          if (this.uploadForm.software_ids && this.uploadForm.software_ids.length > 0) {
+            formData.append('software_ids', this.uploadForm.software_ids.join(','))
+          }
           if (this.selectedFile) {
             formData.append('file', this.selectedFile)
           }
@@ -229,8 +298,10 @@ export default {
       this.uploadForm = {
         year: now.getFullYear(),
         quarter: Math.ceil((now.getMonth() + 1) / 3),
-        description: ''
+        description: '',
+        software_ids: []
       }
+      this.needUpdateSoftware = []
       this.selectedFile = null
       this.fileList = []
       if (this.$refs.uploader) {
@@ -238,14 +309,17 @@ export default {
       }
     },
     handleEdit(row) {
+      this.resetUploadForm()
       this.isEdit = true
       this.editingId = row.id
       this.uploadForm = {
         year: row.year,
         quarter: row.quarter,
-        description: row.description || ''
+        description: row.description || '',
+        software_ids: (row.software_list || []).map(sw => sw.id)
       }
       this.showUpload = true
+      this.loadAllSoftware()
     },
     async handlePreview(row) {
       const url = getQuarterlyCheckPreviewUrl(row.id)

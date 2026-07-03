@@ -45,6 +45,7 @@ func InitDB() {
 		&models.OperationLogDetail{},
 		&models.MonthlyCheckHistory{},
 		&models.QuarterlyCheckHistory{},
+		&models.QuarterlyCheckSoftware{},
 		&models.UserChangeHistory{},
 		&models.ChangeRecordTemplate{},
 		&models.ChangeType{},

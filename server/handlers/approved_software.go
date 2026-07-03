@@ -30,6 +30,16 @@ func ListApprovedSoftware(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": list})
 }
 
+// ListApprovedSoftwareNeedUpdate 获取需要更新的核准软件
+func ListApprovedSoftwareNeedUpdate(c *gin.Context) {
+	var list []models.ApprovedSoftware
+	if err := database.GetDB().Where("need_update = ?", true).Order("id desc").Find(&list).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": list})
+}
+
 // CreateApprovedSoftware 创建核准软件
 func CreateApprovedSoftware(c *gin.Context) {
 	var sw models.ApprovedSoftware

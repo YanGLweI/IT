@@ -5,6 +5,11 @@ export function getApprovedSoftware() {
   return request.get('/approved-software')
 }
 
+// 获取需要更新的核准软件
+export function getApprovedSoftwareNeedUpdate() {
+  return request.get('/approved-software/need-update')
+}
+
 export function createApprovedSoftware(data, dualToken) {
   const config = {}
   if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
