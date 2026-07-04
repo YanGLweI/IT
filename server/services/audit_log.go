@@ -380,6 +380,16 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FileName":     "检查报告",
 			"RectFileName": "整改报告",
 		}
+	case "patch_update":
+		return map[string]string{
+			"Year":               "年份",
+			"Month":              "月份",
+			"TotalAssets":        "资产总数",
+			"Compliance":         "合规性",
+			"NonCompliantAssets": "不合规资产数",
+			"FileName":           "合规性报表",
+			"FixFileName":        "修复报表",
+		}
 	default:
 		return make(map[string]string)
 	}

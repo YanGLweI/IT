@@ -142,6 +142,13 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/firewall-checks/:id/rect-preview", handlers.PreviewFirewallRectReport)
 			protected.GET("/firewall-checks/:id/rect-download", handlers.DownloadFirewallRectReport)
 
+			// 补丁更新 - 查询（不需要双控）
+			protected.GET("/patch-updates", handlers.ListPatchUpdates)
+			protected.GET("/patch-updates/:id/preview", handlers.PreviewPatchUpdate)
+			protected.GET("/patch-updates/:id/download", handlers.DownloadPatchUpdate)
+			protected.GET("/patch-updates/:id/fix-preview", handlers.PreviewPatchFixReport)
+			protected.GET("/patch-updates/:id/fix-download", handlers.DownloadPatchFixReport)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -264,6 +271,13 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/firewall-checks/:id", handlers.DeleteFirewallCheck)
 				dual.PUT("/firewall-checks/:id/rect", handlers.UploadFirewallRectReport)
 				dual.DELETE("/firewall-checks/:id/rect", handlers.DeleteFirewallRectReport)
+
+				// 补丁更新 - 写操作（需要双控）
+				dual.POST("/patch-updates", handlers.CreatePatchUpdate)
+				dual.PUT("/patch-updates/:id", handlers.UpdatePatchUpdate)
+				dual.DELETE("/patch-updates/:id", handlers.DeletePatchUpdate)
+				dual.PUT("/patch-updates/:id/fix", handlers.UploadPatchFixReport)
+				dual.DELETE("/patch-updates/:id/fix", handlers.DeletePatchFixReport)
 			}
 		}
 	}

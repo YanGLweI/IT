@@ -171,7 +171,8 @@ export default {
         'vulnerability_scan': '漏洞扫描',
         'system_hardening_history': '系统加固记录',
         'penetration_test': '渗透测试',
-        'firewall_check': '防火墙检查'
+        'firewall_check': '防火墙检查',
+        'patch_update': '补丁更新'
       }
     }
   },
@@ -314,6 +315,13 @@ export default {
     },
     formatFieldValue(fieldName, value) {
       if (!value || value === '<nil>') return '-'
+
+      // 特殊处理 Compliance：合规性中文翻译
+      if (fieldName === 'Compliance') {
+        if (value === 'compliant') return '合规'
+        if (value === 'non_compliant') return '不合规'
+        return value
+      }
       
       // 特殊处理 ChangeTypes：将ID数组转换为名称列表
       if (fieldName === 'ChangeTypes') {

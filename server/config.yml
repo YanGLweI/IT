@@ -52,6 +52,8 @@ upload:
   penetration_test_path: "./uploads/penetration_tests"
   # 防火墙检查报告上传路径
   firewall_check_path: "./uploads/firewall_checks"
+  # 补丁更新合规性报表上传路径
+  patch_update_path: "./uploads/patch_updates"
 
 # RSA 加密配置
 rsa:
