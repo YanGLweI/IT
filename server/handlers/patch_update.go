@@ -115,6 +115,12 @@ func CreatePatchUpdate(c *gin.Context) {
 		}
 	}
 
+	// 不合规时必须填写不合规资产数
+	if compliance == "non_compliant" && nonCompliantAssets <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不合规时必须填写不合规资产数"})
+		return
+	}
+
 	// 获取上传文件
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -280,6 +286,12 @@ func UpdatePatchUpdate(c *gin.Context) {
 		if nca, err := strconv.Atoi(nonCompliantAssetsStr); err == nil {
 			record.NonCompliantAssets = nca
 		}
+	}
+
+	// 不合规时必须填写不合规资产数
+	if record.Compliance == "non_compliant" && record.NonCompliantAssets <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不合规时必须填写不合规资产数"})
+		return
 	}
 
 	if err := database.GetDB().Save(&record).Error; err != nil {

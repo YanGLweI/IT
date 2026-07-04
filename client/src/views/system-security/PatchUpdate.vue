@@ -102,7 +102,7 @@
           <el-input-number v-model="form.total_assets" :min="0" :step="1" controls-position="right" style="width: 100%" />
         </el-form-item>
         <el-form-item label="合规性" prop="compliance">
-          <el-radio-group v-model="form.compliance">
+          <el-radio-group v-model="form.compliance" @change="onComplianceChange">
             <el-radio label="compliant">合规</el-radio>
             <el-radio label="non_compliant">不合规</el-radio>
           </el-radio-group>
@@ -212,7 +212,17 @@ export default {
       formRules: {
         year: [{ required: true, message: '请选择年份', trigger: 'change' }],
         month: [{ required: true, message: '请选择月份', trigger: 'change' }],
-        total_assets: [{ required: true, message: '请输入资产总数', trigger: 'blur' }]
+        total_assets: [{ required: true, message: '请输入资产总数', trigger: 'blur' }],
+        non_compliant_assets: [{
+          validator: (rule, value, callback) => {
+            if (this.form.compliance === 'non_compliant' && (!value || value <= 0)) {
+              callback(new Error('不合规时必须填写不合规资产数'))
+            } else {
+              callback()
+            }
+          },
+          trigger: 'change'
+        }]
       },
       selectedFile: null,
       fileList: [],
@@ -234,6 +244,16 @@ export default {
     this.fetchData()
   },
   methods: {
+    onComplianceChange() {
+      // 切换到合规时清空不合规资产数
+      if (this.form.compliance === 'compliant') {
+        this.form.non_compliant_assets = 0
+      }
+      // 触发不合规资产数字段重新验证
+      this.$nextTick(() => {
+        this.$refs.form && this.$refs.form.validateField('non_compliant_assets')
+      })
+    },
     async fetchData() {
       this.loading = true
       try {
