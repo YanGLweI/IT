@@ -16,7 +16,7 @@ const routes = [
     component: Layout,
     redirect: '/dashboard',
     children: [
-      { path: 'dashboard', name: 'Dashboard', component: () => import('../views/dashboard/Dashboard.vue'), meta: { title: '数据看板', enTitle: 'Dashboard' } },
+      { path: 'dashboard', name: 'Dashboard', component: () => import('../views/dashboard/Dashboard.vue'), meta: { title: '数据看板', enTitle: 'Data Dashboard' } },
       { path: 'regions', name: 'Regions', component: () => import('../views/region/RegionList.vue'), meta: { title: '区域管理', enTitle: 'Region Management' } },
       { path: 'os-types', name: 'OSTypes', component: () => import('../views/ostype/OSTypeList.vue'), meta: { title: '操作系统管理', enTitle: 'OS Type Management' } },
       { path: 'assets', name: 'Assets', component: () => import('../views/asset/AssetList.vue'), meta: { title: '资产管理', enTitle: 'Asset Management' } },
