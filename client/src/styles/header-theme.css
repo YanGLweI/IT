@@ -76,12 +76,10 @@
   align-items: center;
   position: relative;
   z-index: 1;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
-/* 标题前的路径符号 */
-.app-header .header-title::before {
-  content: '~/';
+/* 路径符号 */
+.app-header .header-prefix {
   color: #409EFF;
   font-weight: 700;
   margin-right: 4px;
@@ -90,14 +88,21 @@
   text-shadow: 0 0 8px rgba(64, 158, 255, 0.4);
 }
 
-/* 标题后的光标 */
-.app-header .header-title::after {
-  content: '';
+/* 打字文字 */
+.app-header .header-title-text {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  display: inline-block;
+  height: 20px;
+  line-height: 20px;
+}
+
+/* 闪烁光标 */
+.app-header .header-cursor {
   display: inline-block;
   width: 2px;
   height: 15px;
   background: #409EFF;
-  margin-left: 6px;
+  margin-left: 4px;
   vertical-align: middle;
   animation: headerCursorBlink 1.2s step-end infinite;
 }

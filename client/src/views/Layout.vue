@@ -153,7 +153,11 @@
     <el-container>
       <el-header class="app-header">
         <div class="header-title-wrap">
-          <h3 class="header-title">{{ $route.meta.title }}</h3>
+          <div class="header-title">
+            <span class="header-prefix">~/</span>
+            <span ref="titleTyping" class="header-title-text"></span>
+            <span ref="titleCursor" class="header-cursor"></span>
+          </div>
           <p ref="subtitleText" :key="$route.path" class="header-subtitle">{{ $route.meta.enTitle }}</p>
         </div>
         <div class="header-right">
@@ -187,33 +191,35 @@ export default {
   data() {
     return {
       displayName: localStorage.getItem('display_name') || '用户',
-      subtitleAnimation: null
+      subtitleAnimation: null,
+      titleTypingTimer: null
     }
   },
   computed: {
     activeMenu() {
       return this.$route.path
-    },
-    currentEnTitle() {
-      return this.$route.meta.enTitle || ''
     }
   },
   watch: {
     '$route.path'() {
-      // key 改变会导致元素重建，等待下一个 tick 后再启动动画
       this.$nextTick(() => {
         this.startSubtitleAnimation()
+        this.startTitleTypingAnimation()
       })
     }
   },
   mounted() {
     this.$nextTick(() => {
       this.startSubtitleAnimation()
+      this.startTitleTypingAnimation()
     })
   },
   beforeDestroy() {
     if (this.subtitleAnimation) {
       this.subtitleAnimation.pause()
+    }
+    if (this.titleTypingTimer) {
+      clearTimeout(this.titleTypingTimer)
     }
   },
   methods: {
@@ -256,6 +262,46 @@ export default {
         loop: true,
         loopDelay: 2000
       })
+    },
+    startTitleTypingAnimation() {
+      const el = this.$refs.titleTyping
+      if (!el) return
+      // 清除之前的定时器
+      if (this.titleTypingTimer) {
+        clearTimeout(this.titleTypingTimer)
+        this.titleTypingTimer = null
+      }
+      const title = this.$route.meta.title || ''
+      el.textContent = ''
+      this._typeTitle(el, title, 0)
+    },
+    _typeTitle(el, title, index) {
+      // 逐字输入阶段
+      if (index <= title.length) {
+        el.textContent = title.substring(0, index)
+        this.titleTypingTimer = setTimeout(() => {
+          this._typeTitle(el, title, index + 1)
+        }, 100)
+        return
+      }
+      // 输入完成，停留 2.5 秒后开始删除
+      this.titleTypingTimer = setTimeout(() => {
+        this._deleteTitle(el, title, title.length)
+      }, 2500)
+    },
+    _deleteTitle(el, title, index) {
+      // 逐字删除阶段
+      if (index > 0) {
+        el.textContent = title.substring(0, index - 1)
+        this.titleTypingTimer = setTimeout(() => {
+          this._deleteTitle(el, title, index - 1)
+        }, 60)
+        return
+      }
+      // 删除完成，停留 500ms 后重新开始
+      this.titleTypingTimer = setTimeout(() => {
+        this._typeTitle(el, title, 0)
+      }, 500)
     }
   }
 }
