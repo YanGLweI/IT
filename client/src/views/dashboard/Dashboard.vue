@@ -110,8 +110,8 @@
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="12">
         <el-card shadow="hover">
-          <div slot="header">资产等级分布</div>
-          <div ref="levelChart" style="height: 420px"></div>
+          <div slot="header">漏洞趋势</div>
+          <div ref="vulnTrendChart" style="height: 420px"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
@@ -151,13 +151,13 @@ export default {
         region_stats: [],
         os_stats: [],
         status_stats: [],
-        level_stats: [],
+        vuln_trend: [],
         trend_stats: [],
         software_update_stats: []
       },
       regionChartInstance: null,
       osChartInstance: null,
-      levelChartInstance: null,
+      vulnTrendChartInstance: null,
       trendChartInstance: null,
       softwareChartInstance: null,
       bgAnimationId: null
@@ -179,7 +179,7 @@ export default {
     if (this.bgAnimationId) cancelAnimationFrame(this.bgAnimationId)
     if (this.regionChartInstance) this.regionChartInstance.dispose()
     if (this.osChartInstance) this.osChartInstance.dispose()
-    if (this.levelChartInstance) this.levelChartInstance.dispose()
+    if (this.vulnTrendChartInstance) this.vulnTrendChartInstance.dispose()
     if (this.trendChartInstance) this.trendChartInstance.dispose()
     if (this.softwareChartInstance) this.softwareChartInstance.dispose()
   },
@@ -258,7 +258,7 @@ export default {
         this.$nextTick(() => {
           this.renderRegionChart()
           this.renderOSChart()
-          this.renderLevelChart()
+          this.renderVulnTrendChart()
           this.renderTrendChart()
           this.renderSoftwareChart()
         })
@@ -322,36 +322,111 @@ export default {
     handleResize() {
       if (this.regionChartInstance) this.regionChartInstance.resize()
       if (this.osChartInstance) this.osChartInstance.resize()
-      if (this.levelChartInstance) this.levelChartInstance.resize()
+      if (this.vulnTrendChartInstance) this.vulnTrendChartInstance.resize()
       if (this.trendChartInstance) this.trendChartInstance.resize()
       if (this.softwareChartInstance) this.softwareChartInstance.resize()
     },
-    renderLevelChart() {
-      if (!this.$refs.levelChart) return
-      this.levelChartInstance = echarts.init(this.$refs.levelChart)
-      const stats = this.summary.level_stats || []
-      const colorMap = { '高': '#F56C6C', '中': '#E6A23C', '低': '#67C23A', '未分级': '#909399' }
-      this.levelChartInstance.setOption({
+    renderVulnTrendChart() {
+      if (!this.$refs.vulnTrendChart) return
+      this.vulnTrendChartInstance = echarts.init(this.$refs.vulnTrendChart)
+      const data = this.summary.vuln_trend || []
+      const quarters = data.map(d => d.year + ' Q' + d.quarter)
+      const critical = data.map(d => d.critical_count)
+      const high = data.map(d => d.high_count)
+      const medium = data.map(d => d.medium_count)
+
+      this.vulnTrendChartInstance.setOption({
         backgroundColor: 'transparent',
         tooltip: {
-          trigger: 'item',
+          trigger: 'axis',
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
           borderColor: 'rgba(64, 158, 255, 0.3)',
           textStyle: { color: '#fff', fontSize: 12 },
           padding: [8, 12]
         },
-        legend: { bottom: 10, textStyle: { fontSize: 12, color: 'rgba(255,255,255,0.8)' } },
-        series: [{
-          type: 'pie',
-          radius: ['35%', '60%'],
-          center: ['50%', '45%'],
-          data: stats.map(s => ({
-            name: s.level,
-            value: s.count,
-            itemStyle: { color: colorMap[s.level] || '#409EFF' }
-          })).sort((a, b) => a.value - b.value),
-          label: { formatter: '{b}: {c} ({d}%)', fontSize: 11, color: 'rgba(255,255,255,0.8)' }
-        }]
+        legend: {
+          data: ['严重', '高危', '中危'],
+          bottom: 10,
+          textStyle: { fontSize: 12, color: 'rgba(255,255,255,0.8)' }
+        },
+        grid: { left: 50, right: 20, top: 30, bottom: 50 },
+        xAxis: {
+          type: 'category',
+          data: quarters,
+          boundaryGap: false,
+          axisLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)' },
+          axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } }
+        },
+        yAxis: {
+          type: 'value',
+          name: '漏洞数量',
+          minInterval: 1,
+          nameTextStyle: { color: 'rgba(255,255,255,0.7)' },
+          axisLabel: { color: 'rgba(255,255,255,0.7)' },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+        },
+        series: [
+          {
+            name: '严重',
+            type: 'line',
+            stack: 'vuln',
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 4,
+            data: critical,
+            lineStyle: { color: '#F56C6C', width: 2 },
+            itemStyle: { color: '#F56C6C' },
+            areaStyle: {
+              color: {
+                type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: 'rgba(245, 108, 108, 0.45)' },
+                  { offset: 1, color: 'rgba(245, 108, 108, 0.05)' }
+                ]
+              }
+            }
+          },
+          {
+            name: '高危',
+            type: 'line',
+            stack: 'vuln',
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 4,
+            data: high,
+            lineStyle: { color: '#E6A23C', width: 2 },
+            itemStyle: { color: '#E6A23C' },
+            areaStyle: {
+              color: {
+                type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: 'rgba(230, 162, 60, 0.40)' },
+                  { offset: 1, color: 'rgba(230, 162, 60, 0.05)' }
+                ]
+              }
+            }
+          },
+          {
+            name: '中危',
+            type: 'line',
+            stack: 'vuln',
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 4,
+            data: medium,
+            lineStyle: { color: '#C6B75E', width: 2 },
+            itemStyle: { color: '#C6B75E' },
+            areaStyle: {
+              color: {
+                type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: 'rgba(198, 183, 94, 0.35)' },
+                  { offset: 1, color: 'rgba(198, 183, 94, 0.05)' }
+                ]
+              }
+            }
+          }
+        ]
       })
     },
     renderTrendChart() {

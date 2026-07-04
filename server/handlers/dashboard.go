@@ -28,10 +28,13 @@ type StatusStat struct {
 	Count  int64  `json:"count"`
 }
 
-// LevelStat 资产等级统计
-type LevelStat struct {
-	Level string `json:"level"`
-	Count int64  `json:"count"`
+// VulnTrendItem 漏洞趋势数据点（按季度）
+type VulnTrendItem struct {
+	Year          int `json:"year"`
+	Quarter       int `json:"quarter"`
+	CriticalCount int `json:"critical_count"`
+	HighCount     int `json:"high_count"`
+	MediumCount   int `json:"medium_count"`
 }
 
 // TrendStat 操作日志趋势
@@ -106,12 +109,15 @@ func DashboardSummary(c *gin.Context) {
 		Group("status").
 		Scan(&statusStats)
 
-	// 资产等级统计
-	var levelStats []LevelStat
-	db.Model(&models.Asset{}).
-		Select("COALESCE(asset_level, '未分级') as level, count(*) as count").
-		Group("asset_level").
-		Scan(&levelStats)
+	// 漏洞趋势（按季度聚合，最近8个季度）
+	var vulnTrend []VulnTrendItem
+	cutoffQ := now.Year()*4 + int(now.Month()-1)/3 - 7 // 最近8个季度的起始季度编号
+	db.Model(&models.VulnerabilityScan{}).
+		Select("year, quarter, SUM(critical_count) as critical_count, SUM(high_count) as high_count, SUM(medium_count) as medium_count").
+		Where("deleted_at IS NULL AND (year * 4 + quarter) >= ?", cutoffQ).
+		Group("year, quarter").
+		Order("year ASC, quarter ASC").
+		Scan(&vulnTrend)
 
 	// 近30天操作日志趋势
 	var trendStats []TrendStat
@@ -143,7 +149,7 @@ func DashboardSummary(c *gin.Context) {
 			"region_stats":          regionStats,
 			"os_stats":              osStats,
 			"status_stats":          statusStats,
-			"level_stats":           levelStats,
+			"vuln_trend":            vulnTrend,
 			"trend_stats":           trendStats,
 			"software_update_stats": softwareUpdateStats,
 		},
