@@ -14,7 +14,7 @@
       >
         <el-menu-item index="/dashboard">
           <i class="el-icon-data-board"></i>
-          <span slot="title">看板</span>
+          <span slot="title">数据看板</span>
         </el-menu-item>
         <el-menu-item index="/policies">
           <i class="el-icon-document"></i>
