@@ -36,13 +36,37 @@ func ListSftpAccounts(c *gin.Context) {
 		return
 	}
 
+	// 分页参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	query := database.GetDB().Where("server_id = ?", serverID)
+
+	// 支持按账号名模糊搜索
+	search := strings.TrimSpace(c.Query("search"))
+	if search != "" {
+		query = query.Where("account_name LIKE ?", "%"+search+"%")
+	}
+
+	// 查询总数
+	var total int64
+	query.Model(&models.SftpAccount{}).Count(&total)
+
+	// 分页查询，按创建时间倒序
 	var accounts []models.SftpAccount
-	if err := database.GetDB().Where("server_id = ?", serverID).Order("created_at ASC").Find(&accounts).Error; err != nil {
+	offset := (page - 1) * pageSize
+	if err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&accounts).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 200, "data": accounts})
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": accounts, "total": total})
 }
 
 // normalizeDate 解析多种日期格式，统一返回 yyyy-MM-dd 格式

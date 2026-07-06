@@ -29,19 +29,23 @@
           clearable
           size="small"
           style="width: 240px"
-        />
+          @clear="handleSearch"
+          @keyup.enter.native="handleSearch"
+        >
+          <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
+        </el-input>
         <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出月度确认表</el-button>
       </div>
 
       <!-- 账号表格 -->
       <el-table
-        :data="filteredAccounts"
+        :data="accounts"
         border
         stripe
         style="width: 100%"
         v-loading="loading"
       >
-        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
         <el-table-column prop="account_name" label="账号名" width="150" />
         <el-table-column prop="created_time" label="创建时间" width="120" />
         <el-table-column prop="validity" label="有效期" width="120" />
@@ -86,6 +90,18 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <el-pagination
+        style="margin-top: 15px; text-align: right"
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+        :page-size.sync="pageSize"
+        :current-page.sync="currentPage"
+        :page-sizes="[10, 20, 50, 100]"
+        @size-change="handleSizeChange"
+        @current-change="handlePageChange"
+      />
     </el-card>
 
     <!-- 服务器配置管理弹窗 -->
@@ -212,7 +228,10 @@ export default {
       },
       // 导出
       exporting: false,
-      searchKeyword: ''
+      searchKeyword: '',
+      total: 0,
+      pageSize: 10,
+      currentPage: 1
     }
   },
   mounted() {
@@ -242,15 +261,25 @@ export default {
 
     async fetchAccounts() {
       if (!this.activeServerId) return
+      this.loading = true
       try {
-        const res = await getSftpAccounts({ server_id: this.activeServerId })
+        const res = await getSftpAccounts({
+          server_id: this.activeServerId,
+          page: this.currentPage,
+          page_size: this.pageSize,
+          search: this.searchKeyword || undefined
+        })
         this.accounts = res.data || []
+        this.total = res.total || 0
       } catch (e) {
         console.error('获取账号列表失败:', e)
+      } finally {
+        this.loading = false
       }
     },
 
     handleTabClick() {
+      this.currentPage = 1
       this.fetchAccounts()
     },
 
@@ -548,13 +577,26 @@ export default {
       } finally {
         this.exporting = false
       }
-    }
-  },
-  computed: {
-    filteredAccounts() {
-      if (!this.searchKeyword) return this.accounts
-      const keyword = this.searchKeyword.toLowerCase()
-      return this.accounts.filter(account => account.account_name.toLowerCase().includes(keyword))
+    },
+
+    indexMethod(index) {
+      return (this.currentPage - 1) * this.pageSize + index + 1
+    },
+
+    handleSizeChange(newSize) {
+      this.pageSize = newSize
+      this.currentPage = 1
+      this.fetchAccounts()
+    },
+
+    handlePageChange(newPage) {
+      this.currentPage = newPage
+      this.fetchAccounts()
+    },
+
+    handleSearch() {
+      this.currentPage = 1
+      this.fetchAccounts()
     }
   }
 }
