@@ -9,7 +9,7 @@
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="name" label="区域名称" />
         <el-table-column prop="description" label="描述" />
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="200" align="center">
           <template slot-scope="scope">
             <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>

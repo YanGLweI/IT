@@ -55,7 +55,7 @@
             <span v-else style="color: #999">未关联</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column label="操作" width="100" fixed="right" align="center">
           <template slot-scope="scope">
             <el-button size="mini" @click="handleEdit(scope.row)">关联</el-button>
           </template>

@@ -33,7 +33,7 @@
         <el-table-column label="上传时间" width="180" align="center">
           <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right" align="center">
           <template slot-scope="{ row }">
             <div class="op-btns">
               <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>

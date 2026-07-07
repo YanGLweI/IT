@@ -336,6 +336,7 @@ export default {
 }
 .topo-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 5px;
 }
 .preview-toolbar {

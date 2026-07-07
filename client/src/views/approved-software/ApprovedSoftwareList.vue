@@ -23,7 +23,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right" align="center">
           <template slot-scope="scope">
             <div class="op-btns">
               <el-button size="mini" type="info" @click="handleDetail(scope.row)">详情</el-button>

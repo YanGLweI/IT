@@ -83,7 +83,7 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="150" fixed="right" align="center">
           <template slot-scope="{ row }">
             <el-button size="mini" type="text" @click="openAccountForm(row)">编辑</el-button>
             <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDelete(row)">删除</el-button>

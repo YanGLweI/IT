@@ -102,7 +102,7 @@
         <el-table-column label="实施日期" width="120" align="center">
           <template slot-scope="{ row }">{{ formatDateOnly(row.implement_date) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right" align="center">
           <template slot-scope="{ row }">
             <div class="op-btns">
               <el-button size="mini" type="text" icon="el-icon-view" @click="previewRecord(row)">预览</el-button>
