@@ -282,7 +282,15 @@ export default {
         const rule = this.rules.find(r => r.id === this.editingRuleId)
         if (!rule) return
 
-        // 修改本地数据
+        // 先进行双控验证
+        const dualToken = await this.$refs.dualControl.open()
+
+        // 保存到后端
+        await updatePermissionRule(rule.id, {
+          rules_json: JSON.stringify(rule._rules)
+        }, dualToken)
+
+        // 双控验证通过且后端保存成功后，再修改本地数据
         const sysRule = rule._rules.find(sr => sr.system === this.editingSystem)
         if (sysRule) {
           const targetRole = sysRule.roles.find(r => r.name === this.editingRoleName)
@@ -290,14 +298,6 @@ export default {
             targetRole.enabled = this.editingNewStatus
           }
         }
-
-        // 双控验证
-        const dualToken = await this.$refs.dualControl.open()
-
-        // 保存到后端
-        await updatePermissionRule(rule.id, {
-          rules_json: JSON.stringify(rule._rules)
-        }, dualToken)
 
         this.$message.success('保存成功')
         this.dialogVisible = false
