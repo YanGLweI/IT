@@ -570,7 +570,7 @@ func CreateBackupRecovery(c *gin.Context) {
 		{FieldName: "RecoveryType", FieldLabel: "恢复类型", NewValue: recoveryType},
 		{FieldName: "RecoveryResult", FieldLabel: "恢复结果", NewValue: recoveryResult},
 		{FieldName: "RecoveryDate", FieldLabel: "恢复日期", NewValue: recoveryDate},
-		{FieldName: "FileName", FieldLabel: "上传记录", NewValue: file.Filename},
+		{FieldName: "FileName", FieldLabel: "恢复与还原记录表", NewValue: file.Filename},
 	}
 
 	services.LogOperation(username, displayName, "创建恢复还原记录", "backup_recovery", recovery.ID, file.Filename, approver, c.ClientIP(), details)
@@ -677,7 +677,7 @@ func DeleteBackupRecovery(c *gin.Context) {
 		{FieldName: "RecoveryType", FieldLabel: "恢复类型", OldValue: recovery.RecoveryType, NewValue: ""},
 		{FieldName: "RecoveryResult", FieldLabel: "恢复结果", OldValue: recovery.RecoveryResult, NewValue: ""},
 		{FieldName: "RecoveryDate", FieldLabel: "恢复日期", OldValue: recovery.RecoveryDate, NewValue: ""},
-		{FieldName: "FileName", FieldLabel: "上传记录", OldValue: recovery.FileName, NewValue: ""},
+		{FieldName: "FileName", FieldLabel: "恢复与还原记录表", OldValue: recovery.FileName, NewValue: ""},
 	}
 
 	services.LogOperation(username, displayName, "删除恢复还原记录", "backup_recovery", recovery.ID, recovery.FileName, approver, c.ClientIP(), details)
