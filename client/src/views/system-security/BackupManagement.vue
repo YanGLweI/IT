@@ -61,7 +61,6 @@
         <el-table-column label="备份源" width="150" show-overflow-tooltip>
           <template slot-scope="{ row }">{{ row.backup_source_asset ? row.backup_source_asset.computer_name : '-' }}</template>
         </el-table-column>
-        <el-table-column prop="backup_target_type" label="备份对象类型" width="100" align="center" />
         <el-table-column prop="backup_target" label="备份对象" width="150" show-overflow-tooltip />
         <el-table-column prop="backup_tool" label="备份工具" width="120" align="center" />
         <el-table-column label="备份介质" width="150" show-overflow-tooltip>
@@ -102,7 +101,7 @@
     </el-card>
 
     <!-- 新增/编辑备份记录弹窗 -->
-    <el-dialog :title="isEdit ? '编辑备份记录' : '新增备份记录'" :visible.sync="showForm" width="650px" :close-on-click-modal="false">
+    <el-dialog :title="isEdit ? '编辑备份记录' : '新增备份记录'" :visible.sync="showForm" width="650px" :close-on-click-modal="false" @close="handleFormClose">
       <el-form :model="form" ref="formRef" :rules="formRules" label-width="110px">
         <el-form-item label="申请日期" prop="application_date">
           <el-date-picker v-model="form.application_date" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" style="width: 100%" />
@@ -127,7 +126,7 @@
           <el-col :span="12">
             <el-form-item label="备份对象" prop="backup_target">
               <el-input v-if="form.backup_target_type === '系统' || form.backup_target_type === '配置文件'" :value="form.backup_target_type" disabled />
-              <el-input v-else v-model="form.backup_target" placeholder="请输入备份对象名称" />
+              <el-input v-else v-model="form.backup_target" :placeholder="backupTargetPlaceholder" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -188,7 +187,7 @@
     </el-dialog>
 
     <!-- 恢复记录弹窗 -->
-    <el-dialog :title="isRecoveryEdit ? '编辑恢复记录' : '新增恢复记录'" :visible.sync="showRecoveryForm" width="500px" :close-on-click-modal="false">
+    <el-dialog :title="isRecoveryEdit ? '编辑恢复记录' : '新增恢复记录'" :visible.sync="showRecoveryForm" width="500px" :close-on-click-modal="false" @close="handleRecoveryFormClose">
       <el-form :model="recoveryForm" ref="recoveryFormRef" :rules="recoveryFormRules" label-width="90px">
         <el-form-item label="恢复类型" prop="recovery_type">
           <el-radio-group v-model="recoveryForm.recovery_type">
@@ -338,6 +337,16 @@ export default {
       recoveryPdfBlobUrl: ''
     }
   },
+  computed: {
+    backupTargetPlaceholder() {
+      const map = {
+        '磁盘分区': '请输入磁盘分区',
+        '目录': '请输入目录路径',
+        '其他': '请输入备份对象'
+      }
+      return map[this.form.backup_target_type] || '请输入备份对象'
+    }
+  },
   mounted() {
     this.fetchData()
     this.fetchDepartments()
@@ -402,6 +411,16 @@ export default {
       } else {
         this.form.backup_target = ''
       }
+    },
+    handleFormClose() {
+      this.$nextTick(() => {
+        if (this.$refs.formRef) this.$refs.formRef.clearValidate()
+      })
+    },
+    handleRecoveryFormClose() {
+      this.$nextTick(() => {
+        if (this.$refs.recoveryFormRef) this.$refs.recoveryFormRef.clearValidate()
+      })
     },
     handleRetentionChange(val) {
       if (val !== '其它') {
