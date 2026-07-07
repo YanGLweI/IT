@@ -54,6 +54,10 @@ upload:
   firewall_check_path: "./uploads/firewall_checks"
   # 补丁更新合规性报表上传路径
   patch_update_path: "./uploads/patch_updates"
+  # 备份申请表上传路径
+  backup_path: "./uploads/backups"
+  # 恢复还原记录上传路径
+  backup_recovery_path: "./uploads/backup_recoveries"
 
 # RSA 加密配置
 rsa:

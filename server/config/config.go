@@ -59,6 +59,8 @@ type UploadConfig struct {
 	PenetrationTestPath          string `yaml:"penetration_test_path"`
 	FirewallCheckPath            string `yaml:"firewall_check_path"`
 	PatchUpdatePath              string `yaml:"patch_update_path"`
+	BackupPath                   string `yaml:"backup_path"`
+	BackupRecoveryPath           string `yaml:"backup_recovery_path"`
 }
 
 // LDAPConfig LDAP配置
@@ -148,6 +150,12 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.PatchUpdatePath == "" {
 		Cfg.Upload.PatchUpdatePath = "./uploads/patch_updates"
+	}
+	if Cfg.Upload.BackupPath == "" {
+		Cfg.Upload.BackupPath = "./uploads/backups"
+	}
+	if Cfg.Upload.BackupRecoveryPath == "" {
+		Cfg.Upload.BackupRecoveryPath = "./uploads/backup_recoveries"
 	}
 	if Cfg.RSA.PrivateKeyPath == "" {
 		Cfg.RSA.PrivateKeyPath = "./certificate/rsa_private.pem"

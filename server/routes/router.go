@@ -149,6 +149,13 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/patch-updates/:id/fix-preview", handlers.PreviewPatchFixReport)
 			protected.GET("/patch-updates/:id/fix-download", handlers.DownloadPatchFixReport)
 
+			// 备份管理 - 查询（不需要双控）
+			protected.GET("/backups", handlers.ListBackups)
+			protected.GET("/backups/:id/preview", handlers.PreviewBackup)
+			protected.GET("/backups/:id/download", handlers.DownloadBackup)
+			protected.GET("/backup-recoveries/:id/preview", handlers.PreviewBackupRecovery)
+			protected.GET("/backup-recoveries/:id/download", handlers.DownloadBackupRecovery)
+
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
 			protected.GET("/operation-logs", handlers.ListOperationLogs)
@@ -278,6 +285,14 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/patch-updates/:id", handlers.DeletePatchUpdate)
 				dual.PUT("/patch-updates/:id/fix", handlers.UploadPatchFixReport)
 				dual.DELETE("/patch-updates/:id/fix", handlers.DeletePatchFixReport)
+
+				// 备份管理 - 写操作（需要双控）
+				dual.POST("/backups", handlers.CreateBackup)
+				dual.PUT("/backups/:id", handlers.UpdateBackup)
+				dual.DELETE("/backups/:id", handlers.DeleteBackup)
+				dual.POST("/backups/:id/recoveries", handlers.CreateBackupRecovery)
+				dual.PUT("/backup-recoveries/:id", handlers.UpdateBackupRecovery)
+				dual.DELETE("/backup-recoveries/:id", handlers.DeleteBackupRecovery)
 			}
 		}
 	}

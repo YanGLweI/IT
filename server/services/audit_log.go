@@ -390,6 +390,27 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FileName":           "合规性报表",
 			"FixFileName":        "修复报表",
 		}
+	case "backup":
+		return map[string]string{
+			"ApplicationDate":    "申请日期",
+			"BackupSourceAssetID": "备份源",
+			"BackupTargetType":   "备份对象类型",
+			"BackupTarget":       "备份对象",
+			"BackupTool":         "备份工具",
+			"BackupMediumAssetID": "备份介质",
+			"BackupFrequency":    "备份频率",
+			"RetentionPolicy":    "保留策略",
+			"FullBackupStrategy": "全量备份策略",
+			"DepartmentID":       "所属部门",
+			"FileName":           "申请表",
+		}
+	case "backup_recovery":
+		return map[string]string{
+			"RecoveryType":   "恢复类型",
+			"RecoveryResult": "恢复结果",
+			"RecoveryDate":   "恢复日期",
+			"FileName":       "上传记录",
+		}
 	default:
 		return make(map[string]string)
 	}
