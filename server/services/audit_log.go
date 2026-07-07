@@ -409,7 +409,7 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"RecoveryType":   "恢复类型",
 			"RecoveryResult": "恢复结果",
 			"RecoveryDate":   "恢复日期",
-			"FileName":       "上传记录",
+			"FileName":       "恢复与还原记录表",
 		}
 	default:
 		return make(map[string]string)
