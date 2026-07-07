@@ -88,8 +88,8 @@
             @keyup.enter.native="searchNext"
             @clear="clearSearch"
           >
-            <el-button slot="append" icon="el-icon-bottom" @click="searchNext">下一个</el-button>
           </el-input>
+          <el-button icon="el-icon-bottom" @click="searchNext" size="small" style="margin-right: 10px">下一个</el-button>
           <span v-if="searchKeyword" class="search-info">{{ searchIndex + 1 }} / {{ searchTotal }}</span>
           <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFile">下载</el-button>
         </div>
