@@ -58,6 +58,8 @@ upload:
   backup_path: "./uploads/backups"
   # 恢复还原记录上传路径
   backup_recovery_path: "./uploads/backup_recoveries"
+  # 备份与恢复记录表模板上传路径
+  backup_template_path: "./uploads/backup_templates"
 
 # RSA 加密配置
 rsa:

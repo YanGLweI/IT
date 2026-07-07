@@ -174,7 +174,8 @@ export default {
         'firewall_check': '防火墙检查',
         'patch_update': '补丁更新',
         'backup': '备份记录',
-        'backup_recovery': '恢复还原记录'
+        'backup_recovery': '恢复还原记录',
+        'backup_template': '备份模板'
       }
     }
   },

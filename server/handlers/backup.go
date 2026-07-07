@@ -759,3 +759,183 @@ func DownloadBackupRecovery(c *gin.Context) {
 	c.File(recovery.FilePath)
 }
 
+// ============================================================
+// 模板管理
+// ============================================================
+
+// ListBackupTemplates 获取模板版本列表
+func ListBackupTemplates(c *gin.Context) {
+	var templates []models.BackupTemplate
+	if err := database.GetDB().Order("is_current DESC, created_at DESC").Find(&templates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": templates})
+}
+
+// GetCurrentBackupTemplate 获取当前版本模板
+func GetCurrentBackupTemplate(c *gin.Context) {
+	var template models.BackupTemplate
+	if err := database.GetDB().Where("is_current = ?", true).First(&template).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "暂无模板"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": template})
+}
+
+// UploadBackupTemplate 上传新版本模板
+func UploadBackupTemplate(c *gin.Context) {
+	version := c.PostForm("version")
+	description := c.PostForm("description")
+
+	if version == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "版本号不能为空"})
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请上传文件"})
+		return
+	}
+
+	// 仅允许 docx/doc/pdf
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if ext != ".docx" && ext != ".doc" && ext != ".pdf" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "仅支持 DOCX、DOC、PDF 格式文件"})
+		return
+	}
+
+	uploadDir := config.Cfg.Upload.BackupTemplatePath
+	os.MkdirAll(uploadDir, 0755)
+
+	// 生成唯一文件名
+	filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strings.TrimSuffix(filepath.Base(file.Filename), ext), ext)
+	filePath := filepath.Join(uploadDir, filename)
+
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件保存失败"})
+		return
+	}
+
+	// 事务：将旧版本 is_current 置为 0，插入新版本
+	tx := database.GetDB().Begin()
+
+	if err := tx.Model(&models.BackupTemplate{}).Where("is_current = ?", true).Update("is_current", false).Error; err != nil {
+		tx.Rollback()
+		os.Remove(filePath)
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新旧版本失败"})
+		return
+	}
+
+	template := models.BackupTemplate{
+		Version:     version,
+		Description: description,
+		FileName:    file.Filename,
+		FilePath:    filePath,
+		FileSize:    file.Size,
+		FileType:    file.Header.Get("Content-Type"),
+		IsCurrent:   true,
+	}
+
+	if err := tx.Create(&template).Error; err != nil {
+		tx.Rollback()
+		os.Remove(filePath)
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存模板失败"})
+		return
+	}
+
+	tx.Commit()
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "Version", FieldLabel: "版本号", NewValue: version},
+		{FieldName: "Description", FieldLabel: "版本说明", NewValue: description},
+		{FieldName: "FileName", FieldLabel: "文件名", NewValue: template.FileName},
+	}
+	services.LogOperation(username, displayName, "上传备份与恢复记录表模板", "backup_template", template.ID, template.FileName, approver, c.ClientIP(), details)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": template})
+}
+
+// DownloadBackupTemplate 下载模板文件
+func DownloadBackupTemplate(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var template models.BackupTemplate
+	if err := database.GetDB().First(&template, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "模板不存在"})
+		return
+	}
+
+	if _, err := os.Stat(template.FilePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "文件不存在"})
+		return
+	}
+
+	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Content-Disposition", "attachment; filename=\""+template.FileName+"\"")
+	c.Header("Content-Length", fmt.Sprintf("%d", template.FileSize))
+	c.File(template.FilePath)
+}
+
+// PreviewBackupTemplate 预览模板文件
+func PreviewBackupTemplate(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var template models.BackupTemplate
+	if err := database.GetDB().First(&template, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "模板不存在"})
+		return
+	}
+
+	if _, err := os.Stat(template.FilePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "文件不存在"})
+		return
+	}
+
+	ext := strings.ToLower(filepath.Ext(template.FileName))
+	switch ext {
+	case ".pdf":
+		c.Header("Content-Type", "application/pdf")
+	case ".docx", ".doc":
+		c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+	default:
+		c.Header("Content-Type", "application/octet-stream")
+	}
+	c.Header("Content-Disposition", "inline; filename=\""+template.FileName+"\"")
+	c.File(template.FilePath)
+}
+
+// DeleteBackupTemplate 删除历史版本模板（不可删除当前版本）
+func DeleteBackupTemplate(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var template models.BackupTemplate
+	if err := database.GetDB().First(&template, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "模板不存在"})
+		return
+	}
+
+	if template.IsCurrent {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不能删除当前版本模板"})
+		return
+	}
+
+	os.Remove(template.FilePath)
+
+	if err := database.GetDB().Delete(&template).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
+		return
+	}
+
+	// 记录操作日志
+	username, displayName, approver := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "Version", FieldLabel: "版本号", OldValue: template.Version},
+		{FieldName: "Description", FieldLabel: "版本说明", OldValue: template.Description},
+		{FieldName: "FileName", FieldLabel: "文件名", OldValue: template.FileName},
+	}
+	services.LogOperation(username, displayName, "删除备份与恢复记录表模板", "backup_template", template.ID, template.FileName, approver, c.ClientIP(), details)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
+}
+

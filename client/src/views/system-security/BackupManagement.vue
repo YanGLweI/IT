@@ -1,5 +1,61 @@
 <template>
   <div class="backup-management">
+
+    <!-- ==================== 区块一：模板管理 ==================== -->
+    <el-card style="margin-bottom: 20px">
+      <div slot="header" class="page-header">
+        <span>备份与恢复记录表模板</span>
+        <div class="page-header-right">
+          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showTemplateUpload = true">上传新版本</el-button>
+        </div>
+      </div>
+
+      <!-- 当前版本信息 -->
+      <div v-if="currentTemplate" class="current-template-info">
+        <div class="current-template-row">
+          <span class="label">当前版本：</span>
+          <el-tag type="success" size="medium">{{ currentTemplate.version }}</el-tag>
+          <span style="margin-left: 12px; color: #909399; font-size: 13px">
+            {{ currentTemplate.file_name }} · {{ formatSize(currentTemplate.file_size) }} · {{ formatDate(currentTemplate.created_at) }}
+          </span>
+          <span v-if="currentTemplate.description" style="margin-left: 12px; color: #606266; font-size: 13px">
+            （{{ currentTemplate.description }}）
+          </span>
+          <el-button type="primary" size="mini" icon="el-icon-view" style="margin-left: 16px" @click="previewTemplate(currentTemplate)">预览</el-button>
+          <el-button type="default" size="mini" icon="el-icon-download" @click="downloadTemplate(currentTemplate)">下载当前模板</el-button>
+        </div>
+      </div>
+      <el-empty v-else description="暂无模板，请上传第一个版本" :image-size="60" style="padding: 16px 0" />
+
+      <!-- 历史版本折叠面板 -->
+      <el-collapse v-if="templateHistory.length > 0" v-model="templateCollapseActive" style="margin-top: 16px">
+        <el-collapse-item title="历史版本" name="history">
+          <el-table :data="templateHistory" border size="small">
+            <el-table-column type="index" label="序号" width="56" align="center" />
+            <el-table-column prop="version" label="版本号" width="110" align="center" />
+            <el-table-column prop="description" label="版本说明" min-width="160" show-overflow-tooltip>
+              <template slot-scope="{ row }">{{ row.description || '-' }}</template>
+            </el-table-column>
+            <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
+            <el-table-column label="文件大小" width="100" align="center">
+              <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
+            </el-table-column>
+            <el-table-column label="上传时间" width="180" align="center">
+              <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="200" align="center">
+              <template slot-scope="{ row }">
+                <el-button size="mini" type="text" icon="el-icon-view" @click="previewTemplate(row)">预览</el-button>
+                <el-button size="mini" type="text" icon="el-icon-download" @click="downloadTemplate(row)">下载</el-button>
+                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteTemplate(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-collapse-item>
+      </el-collapse>
+    </el-card>
+
+    <!-- ==================== 区块二：备份管理 ==================== -->
     <el-card>
       <div slot="header" class="page-header">
         <span>备份管理</span>
@@ -237,6 +293,47 @@
 
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
+
+    <!-- 模板上传弹窗 -->
+    <el-dialog title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
+      <el-form :model="templateForm" ref="templateFormRef" :rules="templateRules" label-width="90px">
+        <el-form-item label="版本号" prop="version">
+          <el-input v-model="templateForm.version" placeholder="如：IT03-1.0" />
+        </el-form-item>
+        <el-form-item label="版本说明">
+          <el-input v-model="templateForm.description" type="textarea" :rows="2" placeholder="简要说明本次变更内容" />
+        </el-form-item>
+        <el-form-item label="模板文件" prop="file">
+          <el-upload ref="templateUploader" action="" :auto-upload="false" :limit="1" accept=".docx,.doc,.pdf"
+            :on-change="handleTemplateFileChange" :on-remove="handleTemplateFileRemove" :file-list="templateFileList" drag>
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">拖拽文件到此处，或<em>点击选择</em></div>
+            <div slot="tip" class="el-upload__tip">支持 DOCX、DOC、PDF 格式</div>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="showTemplateUpload = false">取消</el-button>
+        <el-button type="primary" :loading="templateUploading" @click="submitTemplateUpload">确定上传</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 模板预览弹窗 -->
+    <el-dialog :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
+      <div slot="title">
+        <span>模板预览</span>
+      </div>
+      <iframe v-if="templatePreviewType === 'pdf'" :src="templatePreviewUrl" style="width: 100%; height: 70vh; border: none" />
+      <div v-else-if="templatePreviewType === 'docx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
+        <div ref="templateDocxContainer" class="docx-preview-container"></div>
+      </div>
+      <div v-else style="text-align: center; padding: 40px">
+        <p>该文件格式不支持在线预览</p>
+      </div>
+      <span slot="footer">
+        <el-button type="primary" size="small" icon="el-icon-download" @click="downloadTemplate(templatePreviewRow)">下载</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -245,10 +342,13 @@ import {
   getBackups, createBackup, updateBackup, deleteBackup,
   getBackupPreviewUrl, getBackupDownloadUrl,
   createBackupRecovery, updateBackupRecovery, deleteBackupRecovery,
-  getBackupRecoveryPreviewUrl, getBackupRecoveryDownloadUrl
+  getBackupRecoveryPreviewUrl, getBackupRecoveryDownloadUrl,
+  getBackupTemplates, uploadBackupTemplate, deleteBackupTemplate,
+  getBackupTemplateDownloadUrl, getBackupTemplatePreviewUrl
 } from '@/api/backup'
 import { getAssets } from '@/api/asset'
 import { getDepartments } from '@/api/department'
+import { renderAsync } from 'docx-preview'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -257,6 +357,24 @@ export default {
   data() {
     const now = new Date()
     return {
+      // 模板相关
+      currentTemplate: null,
+      templateHistory: [],
+      templateCollapseActive: [],
+      showTemplateUpload: false,
+      templateUploading: false,
+      templateForm: { version: '', description: '' },
+      templateRules: {
+        version: [{ required: true, message: '请输入版本号', trigger: 'blur' }]
+      },
+      templateSelectedFile: null,
+      templateFileList: [],
+      // 模板预览
+      templatePreviewVisible: false,
+      templatePreviewUrl: '',
+      templatePreviewType: '',
+      templatePreviewRow: null,
+      // 备份记录
       records: [],
       loading: false,
       page: 1,
@@ -348,10 +466,157 @@ export default {
     }
   },
   mounted() {
+    this.fetchTemplates()
     this.fetchData()
     this.fetchDepartments()
   },
   methods: {
+    // ============ 模板管理 ============
+    async fetchTemplates() {
+      try {
+        const res = await getBackupTemplates()
+        const list = res.data || []
+        this.currentTemplate = list.find(t => t.is_current) || null
+        this.templateHistory = list.filter(t => !t.is_current)
+      } catch (e) {
+        console.error(e)
+      }
+    },
+    handleTemplateFileChange(file) {
+      this.templateSelectedFile = file.raw
+    },
+    handleTemplateFileRemove() {
+      this.templateSelectedFile = null
+    },
+    submitTemplateUpload() {
+      this.$refs.templateFormRef.validate(async valid => {
+        if (!valid) return
+        if (!this.templateSelectedFile) {
+          this.$message.warning('请选择模板文件')
+          return
+        }
+        this.templateUploading = true
+        try {
+          const formData = new FormData()
+          formData.append('version', this.templateForm.version)
+          formData.append('description', this.templateForm.description || '')
+          formData.append('file', this.templateSelectedFile)
+          const dualToken = await this.$refs.dualControl.open()
+          await uploadBackupTemplate(formData, dualToken)
+          this.$message.success('上传成功')
+          this.showTemplateUpload = false
+          this.templateForm = { version: '', description: '' }
+          this.templateSelectedFile = null
+          this.templateFileList = []
+          if (this.$refs.templateUploader) this.$refs.templateUploader.clearFiles()
+          this.fetchTemplates()
+        } catch (e) {
+          if (e.message !== 'canceled') console.error(e)
+        } finally {
+          this.templateUploading = false
+        }
+      })
+    },
+    async downloadTemplate(row) {
+      const url = getBackupTemplateDownloadUrl(row.id)
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const downloadUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = row.file_name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(downloadUrl)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
+    },
+    async previewTemplate(row) {
+      const url = getBackupTemplatePreviewUrl(row.id)
+      const fileName = (row.file_name || '').toLowerCase()
+      this.templatePreviewRow = row
+      this.templatePreviewUrl = ''
+
+      if (fileName.endsWith('.pdf')) {
+        this.templatePreviewType = 'pdf'
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        this.templatePreviewType = 'docx'
+      } else {
+        this.templatePreviewType = 'other'
+      }
+
+      this.templatePreviewVisible = true
+
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('预览失败')
+        const blob = await response.blob()
+        this.templatePreviewUrl = URL.createObjectURL(blob)
+
+        if (this.templatePreviewType === 'docx') {
+          this.$nextTick(() => {
+            this.renderTemplateDocx(blob)
+          })
+        }
+      } catch (e) {
+        console.error('预览失败:', e)
+        this.$message.error('模板预览失败')
+      }
+    },
+    async renderTemplateDocx(blob) {
+      try {
+        const arrayBuffer = await blob.arrayBuffer()
+        const container = this.$refs.templateDocxContainer
+        if (container) {
+          container.innerHTML = ''
+          await renderAsync(arrayBuffer, container)
+        }
+      } catch (e) {
+        console.error('docx渲染失败:', e)
+        this.$message.error('文件预览失败，请尝试下载后查看')
+      }
+    },
+    clearTemplatePreview() {
+      if (this.$refs.templateDocxContainer) {
+        this.$refs.templateDocxContainer.innerHTML = ''
+      }
+      if (this.templatePreviewUrl) {
+        URL.revokeObjectURL(this.templatePreviewUrl)
+        this.templatePreviewUrl = ''
+      }
+      this.templatePreviewRow = null
+    },
+    async deleteTemplate(row) {
+      try {
+        await this.$confirm(`确定要删除版本 ${row.version} 吗？`, '删除确认', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deleteBackupTemplate(row.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchTemplates()
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
+    },
+    formatSize(bytes) {
+      if (!bytes) return '-'
+      if (bytes < 1024) return bytes + ' B'
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '-'
+      const d = new Date(dateStr)
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+    },
     async fetchData() {
       this.loading = true
       try {

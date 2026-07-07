@@ -411,6 +411,12 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"RecoveryDate":   "恢复日期",
 			"FileName":       "恢复与还原记录表",
 		}
+	case "backup_template":
+		return map[string]string{
+			"Version":     "版本号",
+			"Description": "版本说明",
+			"FileName":    "文件名",
+		}
 	default:
 		return make(map[string]string)
 	}

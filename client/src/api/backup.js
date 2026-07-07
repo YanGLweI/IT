@@ -80,3 +80,40 @@ export function getBackupRecoveryPreviewUrl(id) {
 export function getBackupRecoveryDownloadUrl(id) {
   return `/api/backup-recoveries/${id}/download`
 }
+
+// ============================================================
+// 备份与恢复记录表模板
+// ============================================================
+
+// 获取模板列表
+export function getBackupTemplates() {
+  return request.get('/backup-templates')
+}
+
+// 上传新版本模板
+export function uploadBackupTemplate(formData, dualToken) {
+  const config = {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }
+  if (dualToken) {
+    config.headers['X-Dual-Control-Token'] = dualToken
+  }
+  return request.post('/backup-templates', formData, config)
+}
+
+// 删除历史版本模板
+export function deleteBackupTemplate(id, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.delete(`/backup-templates/${id}`, config)
+}
+
+// 获取模板下载URL
+export function getBackupTemplateDownloadUrl(id) {
+  return `/api/backup-templates/${id}/download`
+}
+
+// 获取模板预览URL
+export function getBackupTemplatePreviewUrl(id) {
+  return `/api/backup-templates/${id}/preview`
+}

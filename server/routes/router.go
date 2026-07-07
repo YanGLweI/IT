@@ -155,6 +155,9 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/backups/:id/download", handlers.DownloadBackup)
 			protected.GET("/backup-recoveries/:id/preview", handlers.PreviewBackupRecovery)
 			protected.GET("/backup-recoveries/:id/download", handlers.DownloadBackupRecovery)
+			protected.GET("/backup-templates", handlers.ListBackupTemplates)
+			protected.GET("/backup-templates/:id/download", handlers.DownloadBackupTemplate)
+			protected.GET("/backup-templates/:id/preview", handlers.PreviewBackupTemplate)
 
 			// 日志管理 - 查询（不需要双控）
 			protected.GET("/login-logs", handlers.ListLoginLogs)
@@ -293,6 +296,8 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/backups/:id/recoveries", handlers.CreateBackupRecovery)
 				dual.PUT("/backup-recoveries/:id", handlers.UpdateBackupRecovery)
 				dual.DELETE("/backup-recoveries/:id", handlers.DeleteBackupRecovery)
+				dual.POST("/backup-templates", handlers.UploadBackupTemplate)
+				dual.DELETE("/backup-templates/:id", handlers.DeleteBackupTemplate)
 			}
 		}
 	}
