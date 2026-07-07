@@ -170,7 +170,7 @@ func CreateBackup(c *gin.Context) {
 	}
 
 	// 生成唯一文件名
-	filename := formatFileName(file.Filename, ext)
+	filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strings.TrimSuffix(filepath.Base(file.Filename), ext), ext)
 	filePath := filepath.Join(yearDir, filename)
 
 	// 保存文件
@@ -548,7 +548,7 @@ func CreateBackupRecovery(c *gin.Context) {
 		return
 	}
 
-	filename := formatFileName(file.Filename, ext)
+	filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strings.TrimSuffix(filepath.Base(file.Filename), ext), ext)
 	filePath := filepath.Join(yearDir, filename)
 
 	if err := c.SaveUploadedFile(file, filePath); err != nil {
@@ -749,8 +749,3 @@ func DownloadBackupRecovery(c *gin.Context) {
 	c.File(recovery.FilePath)
 }
 
-// formatFileName 生成唯一文件名
-func formatFileName(originalName, ext string) string {
-	base := strings.TrimSuffix(filepath.Base(originalName), ext)
-	return fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), base, ext)
-}
