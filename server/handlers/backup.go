@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -260,6 +261,10 @@ func UpdateBackup(c *gin.Context) {
 
 	// 更新申请日期（年份变更时迁移文件）
 	if applicationDate != "" && applicationDate != record.ApplicationDate {
+		if len(applicationDate) < 4 || len(record.ApplicationDate) < 4 {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "日期格式不正确"})
+			return
+		}
 		newYear := applicationDate[:4]
 		oldYear := record.ApplicationDate[:4]
 		if newYear != oldYear {
@@ -272,8 +277,12 @@ func UpdateBackup(c *gin.Context) {
 				fileName := filepath.Base(record.FilePath)
 				newFilePath := filepath.Join(newYearDir, fileName)
 				if err := os.Rename(record.FilePath, newFilePath); err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件迁移失败"})
-					return
+					// 跨文件系统时 rename 会失败，回退到复制+删除
+					if copyErr := services.CopyFile(record.FilePath, newFilePath); copyErr != nil {
+						c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件迁移失败"})
+						return
+					}
+					os.Remove(record.FilePath)
 				}
 				record.FilePath = newFilePath
 			}
@@ -598,6 +607,10 @@ func UpdateBackupRecovery(c *gin.Context) {
 
 	// 年份变更时迁移文件
 	if recoveryDate != "" && recoveryDate != recovery.RecoveryDate {
+		if len(recoveryDate) < 4 || len(recovery.RecoveryDate) < 4 {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "日期格式不正确"})
+			return
+		}
 		newYear := recoveryDate[:4]
 		oldYear := recovery.RecoveryDate[:4]
 		if newYear != oldYear && recovery.FilePath != "" {
@@ -609,8 +622,12 @@ func UpdateBackupRecovery(c *gin.Context) {
 			fileName := filepath.Base(recovery.FilePath)
 			newFilePath := filepath.Join(newYearDir, fileName)
 			if err := os.Rename(recovery.FilePath, newFilePath); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件迁移失败"})
-				return
+				// 跨文件系统时 rename 会失败，回退到复制+删除
+				if copyErr := services.CopyFile(recovery.FilePath, newFilePath); copyErr != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件迁移失败"})
+					return
+				}
+				os.Remove(recovery.FilePath)
 			}
 			recovery.FilePath = newFilePath
 		}
@@ -735,5 +752,5 @@ func DownloadBackupRecovery(c *gin.Context) {
 // formatFileName 生成唯一文件名
 func formatFileName(originalName, ext string) string {
 	base := strings.TrimSuffix(filepath.Base(originalName), ext)
-	return base + "_" + time.Now().Format("20060102150405") + ext
+	return fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), base, ext)
 }
