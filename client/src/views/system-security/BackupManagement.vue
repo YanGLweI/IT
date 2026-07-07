@@ -101,7 +101,7 @@
     </el-card>
 
     <!-- 新增/编辑备份记录弹窗 -->
-    <el-dialog :title="isEdit ? '编辑备份记录' : '新增备份记录'" :visible.sync="showForm" width="650px" :close-on-click-modal="false" @close="handleFormClose">
+    <el-dialog :title="isEdit ? '编辑备份记录' : '新增备份记录'" :visible.sync="showForm" width="650px" :close-on-click-modal="false">
       <el-form :model="form" ref="formRef" :rules="formRules" label-width="110px">
         <el-form-item label="申请日期" prop="application_date">
           <el-date-picker v-model="form.application_date" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" style="width: 100%" />
@@ -187,7 +187,7 @@
     </el-dialog>
 
     <!-- 恢复记录弹窗 -->
-    <el-dialog :title="isRecoveryEdit ? '编辑恢复记录' : '新增恢复记录'" :visible.sync="showRecoveryForm" width="500px" :close-on-click-modal="false" @close="handleRecoveryFormClose">
+    <el-dialog :title="isRecoveryEdit ? '编辑恢复记录' : '新增恢复记录'" :visible.sync="showRecoveryForm" width="500px" :close-on-click-modal="false">
       <el-form :model="recoveryForm" ref="recoveryFormRef" :rules="recoveryFormRules" label-width="90px">
         <el-form-item label="恢复类型" prop="recovery_type">
           <el-radio-group v-model="recoveryForm.recovery_type">
@@ -412,16 +412,6 @@ export default {
         this.form.backup_target = ''
       }
     },
-    handleFormClose() {
-      this.$nextTick(() => {
-        if (this.$refs.formRef) this.$refs.formRef.clearValidate()
-      })
-    },
-    handleRecoveryFormClose() {
-      this.$nextTick(() => {
-        if (this.$refs.recoveryFormRef) this.$refs.recoveryFormRef.clearValidate()
-      })
-    },
     handleRetentionChange(val) {
       if (val !== '其它') {
         this.form.retention_policy = val
@@ -437,6 +427,7 @@ export default {
     openCreate() {
       this.resetForm()
       this.showForm = true
+      this.$nextTick(() => { if (this.$refs.formRef) this.$refs.formRef.clearValidate() })
     },
     // 编辑
     openEdit(row) {
@@ -474,6 +465,7 @@ export default {
         this.mediumAssetOptions = [row.backup_medium_asset]
       }
       this.showForm = true
+      this.$nextTick(() => { if (this.$refs.formRef) this.$refs.formRef.clearValidate() })
     },
     resetForm() {
       this.isEdit = false
@@ -632,6 +624,7 @@ export default {
       this.recoveryFileList = []
       this.recoveryForm = { recovery_type: '', recovery_result: '', recovery_date: '' }
       this.showRecoveryForm = true
+      this.$nextTick(() => { if (this.$refs.recoveryFormRef) this.$refs.recoveryFormRef.clearValidate() })
     },
     openRecoveryEdit(recovery, backupRow) {
       this.isRecoveryEdit = true
@@ -645,6 +638,7 @@ export default {
         recovery_date: recovery.recovery_date || ''
       }
       this.showRecoveryForm = true
+      this.$nextTick(() => { if (this.$refs.recoveryFormRef) this.$refs.recoveryFormRef.clearValidate() })
     },
     handleRecoveryFileChange(file) {
       this.recoverySelectedFile = file.raw
