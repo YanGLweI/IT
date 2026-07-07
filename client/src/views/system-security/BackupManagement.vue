@@ -42,7 +42,7 @@
                 </el-table-column>
                 <el-table-column prop="recovery_date" label="恢复日期" width="110" align="center" />
                 <el-table-column prop="file_name" label="上传文件" show-overflow-tooltip />
-                <el-table-column label="操作" width="240" align="center">
+                <el-table-column label="操作" width="320" align="center">
                   <template slot-scope="{ row: r }">
                     <div class="op-btns">
                       <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRecovery(r)">预览</el-button>
@@ -73,7 +73,7 @@
           <template slot-scope="{ row }">{{ row.department ? row.department.name : '-' }}</template>
         </el-table-column>
         <el-table-column prop="file_name" label="申请表" width="150" show-overflow-tooltip />
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right" align="center">
           <template slot-scope="{ row }">
             <div class="op-btns">
               <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
