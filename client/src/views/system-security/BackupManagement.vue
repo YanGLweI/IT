@@ -429,6 +429,9 @@ export default {
       } else {
         this.form.retention_policy = ''
       }
+      this.$nextTick(() => {
+        if (this.$refs.formRef) this.$refs.formRef.clearValidate(['retention_policy'])
+      })
     },
     // 新增
     openCreate() {
