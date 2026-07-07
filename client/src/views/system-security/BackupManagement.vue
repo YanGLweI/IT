@@ -117,8 +117,8 @@
         <el-table-column label="备份源" width="150" show-overflow-tooltip>
           <template slot-scope="{ row }">{{ row.backup_source_asset ? row.backup_source_asset.computer_name : '-' }}</template>
         </el-table-column>
-        <el-table-column prop="backup_target" label="备份对象" width="150" show-overflow-tooltip />
-        <el-table-column prop="backup_tool" label="备份工具" width="120" align="center" />
+        <el-table-column prop="backup_target" label="备份对象" width="150" show-overflow-tooltip/>
+        <el-table-column prop="backup_tool" label="备份工具" width="120" align="center" show-overflow-tooltip/>
         <el-table-column label="备份介质" width="150" show-overflow-tooltip>
           <template slot-scope="{ row }">{{ row.backup_medium_asset ? row.backup_medium_asset.computer_name : '-' }}</template>
         </el-table-column>
