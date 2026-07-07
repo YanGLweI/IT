@@ -1034,4 +1034,21 @@ export default {
   gap: 4px;
   justify-content: center;
 }
+.current-template-info {
+  background: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  border-radius: 4px;
+  padding: 12px 16px;
+}
+.current-template-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.current-template-row .label {
+  font-size: 14px;
+  color: #606266;
+  font-weight: bold;
+}
 </style>
