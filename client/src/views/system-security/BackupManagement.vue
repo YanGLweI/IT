@@ -107,7 +107,7 @@
           <el-date-picker v-model="form.application_date" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" style="width: 100%" />
         </el-form-item>
         <el-form-item label="备份源" prop="backup_source_asset_id">
-          <el-select v-model="form.backup_source_asset_id" filterable remote :remote-method="remoteSearchAsset" :loading="assetLoading" placeholder="输入关键词搜索资产" style="width: 100%">
+          <el-select v-model="form.backup_source_asset_id" filterable remote :remote-method="remoteSearchSourceAsset" :loading="assetLoading" placeholder="输入关键词搜索资产" style="width: 100%">
             <el-option v-for="a in sourceAssetOptions" :key="a.id" :label="`${a.computer_name} (${a.ip_address || '无IP'})`" :value="a.id" />
           </el-select>
         </el-form-item>
@@ -138,7 +138,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备份介质" prop="backup_medium_asset_id">
-          <el-select v-model="form.backup_medium_asset_id" filterable remote :remote-method="remoteSearchAsset" :loading="assetLoading" placeholder="输入关键词搜索资产" style="width: 100%">
+          <el-select v-model="form.backup_medium_asset_id" filterable remote :remote-method="remoteSearchMediumAsset" :loading="assetLoading" placeholder="输入关键词搜索资产" style="width: 100%">
             <el-option v-for="a in mediumAssetOptions" :key="a.id" :label="`${a.computer_name} (${a.ip_address || '无IP'})`" :value="a.id" />
           </el-select>
         </el-form-item>
@@ -377,18 +377,30 @@ export default {
         console.error(e)
       }
     },
-    async remoteSearchAsset(query) {
+    async remoteSearchSourceAsset(query) {
       if (!query) {
         this.sourceAssetOptions = []
+        return
+      }
+      this.assetLoading = true
+      try {
+        const res = await getAssets({ search: query, page: 1, page_size: 20 })
+        this.sourceAssetOptions = res.data || []
+      } catch (e) {
+        console.error(e)
+      } finally {
+        this.assetLoading = false
+      }
+    },
+    async remoteSearchMediumAsset(query) {
+      if (!query) {
         this.mediumAssetOptions = []
         return
       }
       this.assetLoading = true
       try {
         const res = await getAssets({ search: query, page: 1, page_size: 20 })
-        const assets = res.data || []
-        this.sourceAssetOptions = assets
-        this.mediumAssetOptions = assets
+        this.mediumAssetOptions = res.data || []
       } catch (e) {
         console.error(e)
       } finally {

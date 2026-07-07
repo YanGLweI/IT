@@ -98,6 +98,11 @@ func CreateBackup(c *gin.Context) {
 		return
 	}
 
+	if backupTargetType == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "备份对象类型不能为空"})
+		return
+	}
+
 	backupSourceAssetID, err := strconv.Atoi(backupSourceAssetIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "备份源资产ID格式不正确"})
@@ -140,6 +145,9 @@ func CreateBackup(c *gin.Context) {
 		backupTarget = "系统"
 	} else if backupTargetType == "配置文件" {
 		backupTarget = "配置文件"
+	} else if backupTarget == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "备份对象不能为空"})
+		return
 	}
 
 	// 获取上传文件
@@ -310,6 +318,8 @@ func UpdateBackup(c *gin.Context) {
 			record.BackupTarget = "配置文件"
 		} else if backupTarget != "" {
 			record.BackupTarget = backupTarget
+		} else {
+			record.BackupTarget = ""
 		}
 	}
 
