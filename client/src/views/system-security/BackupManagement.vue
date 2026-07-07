@@ -298,7 +298,7 @@
     <el-dialog title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="templateForm" ref="templateFormRef" :rules="templateRules" label-width="90px">
         <el-form-item label="版本号" prop="version">
-          <el-input v-model="templateForm.version" placeholder="如：IT03-1.0" />
+          <el-input v-model="templateForm.version" placeholder="如：IT12-1.0" />
         </el-form-item>
         <el-form-item label="版本说明">
           <el-input v-model="templateForm.description" type="textarea" :rows="2" placeholder="简要说明本次变更内容" />
