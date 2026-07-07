@@ -304,11 +304,11 @@
           <el-input v-model="templateForm.description" type="textarea" :rows="2" placeholder="简要说明本次变更内容" />
         </el-form-item>
         <el-form-item label="模板文件" prop="file">
-          <el-upload ref="templateUploader" action="" :auto-upload="false" :limit="1" accept=".docx,.doc,.pdf"
+          <el-upload ref="templateUploader" action="" :auto-upload="false" :limit="1" accept=".docx,.pdf"
             :on-change="handleTemplateFileChange" :on-remove="handleTemplateFileRemove" :file-list="templateFileList" drag>
             <i class="el-icon-upload"></i>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击选择</em></div>
-            <div slot="tip" class="el-upload__tip">支持 DOCX、DOC、PDF 格式</div>
+            <div slot="tip" class="el-upload__tip">支持 DOCX、PDF 格式</div>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -546,7 +546,7 @@ export default {
 
       if (fileName.endsWith('.pdf')) {
         this.templatePreviewType = 'pdf'
-      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+      } else if (fileName.endsWith('.docx')) {
         this.templatePreviewType = 'docx'
       } else {
         this.templatePreviewType = 'other'

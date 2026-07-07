@@ -88,10 +88,10 @@ func UploadChangeRecordTemplate(c *gin.Context) {
 		return
 	}
 
-	// 仅允许 docx/doc/pdf
+	// 仅允许 docx/pdf
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	if ext != ".docx" && ext != ".doc" && ext != ".pdf" {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "仅支持 DOCX、DOC、PDF 格式文件"})
+	if ext != ".docx" && ext != ".pdf" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "仅支持 DOCX、PDF 格式文件"})
 		return
 	}
 
@@ -186,7 +186,7 @@ func PreviewChangeRecordTemplate(c *gin.Context) {
 	switch ext {
 	case ".pdf":
 		c.Header("Content-Type", "application/pdf")
-	case ".docx", ".doc":
+	case ".docx":
 		c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 	default:
 		c.Header("Content-Type", "application/octet-stream")
