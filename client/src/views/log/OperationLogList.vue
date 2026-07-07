@@ -52,7 +52,7 @@
         </el-table-column>
         <el-table-column prop="username" label="用户名" width="120" align="center" />
         <el-table-column prop="display_name" label="姓名" width="120" align="center" />
-        <el-table-column prop="action" label="操作" width="150" align="center" />
+        <el-table-column prop="action" label="操作" width="200" align="center" show-overflow-tooltip/>
         <el-table-column prop="resource_type" label="资源类型" width="120" align="center">
           <template slot-scope="scope">
             {{ resourceTypeLabels[scope.row.resource_type] || scope.row.resource_type }}
