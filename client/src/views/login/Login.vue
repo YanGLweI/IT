@@ -316,7 +316,7 @@ export default {
 .code-scroll::before {
   content: 'function deploy() { return system.init(); }  const config = { mode: "production", secure: true };  if (status === "active") { console.log("system online"); }  class Server extends Node { constructor() { super(); this.port = 8080; } }  import { Router, Controller } from "@core";  export default defineConfig({ plugins: [vue()] });  SELECT * FROM assets WHERE status = \'active\' ORDER BY created_at DESC;  app.use(cors()); app.listen(3000, () => console.log("running")); const token = getAuthToken(); docker run -d --name gateway -p 80:80 nginx:alpine; git pull origin main && npm run build; const store = createPinia(); app.use(store); ';
   position: absolute; inset: 0;
-  color: rgba(148, 163, 184, 0.05);
+  color: rgba(211, 219, 230, 0.05);
   font-family: 'Maple Mono NF', 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 13px;
   line-height: 1.8;
