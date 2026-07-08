@@ -10,7 +10,7 @@
     </div>
     <el-row :gutter="24" class="stat-row">
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable chart-stagger" @click.native="navigateTo('/assets')">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/assets')">
           <div class="stat-card">
             <div class="stat-indicator" style="background: #409EFF"></div>
             <div class="stat-icon-wrap"><i class="el-icon-monitor" style="color: #409EFF"></i></div>
@@ -22,7 +22,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable chart-stagger" @click.native="navigateTo('/regions')">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/regions')">
           <div class="stat-card">
             <div class="stat-indicator" style="background: #67C23A"></div>
             <div class="stat-icon-wrap"><i class="el-icon-place" style="color: #67C23A"></i></div>
@@ -34,7 +34,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable chart-stagger" @click.native="navigateTo('/backup-management')">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/backup-management')">
           <div class="stat-card">
             <div class="stat-indicator" style="background: #E6A23C"></div>
             <div class="stat-icon-wrap"><i class="el-icon-folder-opened" style="color: #E6A23C"></i></div>
@@ -46,7 +46,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable chart-stagger" @click.native="navigateTo('/operation-logs')">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/operation-logs')">
           <div class="stat-card">
             <div class="stat-indicator" style="background: #FF9800"></div>
             <div class="stat-icon-wrap"><i class="el-icon-document" style="color: #FF9800"></i></div>
@@ -67,7 +67,7 @@
     </div>
     <el-row :gutter="24" class="stat-row">
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable chart-stagger" @click.native="navigateTo('/sftp-accounts')">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/sftp-accounts')">
           <div class="stat-card">
             <div class="stat-indicator" style="background: #00BCD4"></div>
             <div class="stat-icon-wrap"><i class="el-icon-connection" style="color: #00BCD4"></i></div>
@@ -79,7 +79,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable chart-stagger" @click.native="navigateTo('/user-permissions')">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/user-permissions')">
           <div class="stat-card">
             <div class="stat-indicator" style="background: #a855f7"></div>
             <div class="stat-icon-wrap"><i class="el-icon-user" style="color: #a855f7"></i></div>
@@ -91,7 +91,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable chart-stagger" :class="{ 'stat-alert': summary.need_update_software > 0 }" @click.native="navigateTo('/approved-software')">
+        <el-card shadow="hover" class="stat-card-clickable" :class="{ 'stat-alert': summary.need_update_software > 0 }" @click.native="navigateTo('/approved-software')">
           <div class="stat-card">
             <div class="stat-indicator" :style="{ background: summary.need_update_software > 0 ? '#EF4444' : '#22C55E' }"></div>
             <div class="stat-icon-wrap"><i class="el-icon-refresh" :style="{ color: summary.need_update_software > 0 ? '#EF4444' : '#22C55E' }"></i></div>
