@@ -17,7 +17,7 @@
 
 /* ---------- 2. Logo 区域 ---------- */
 .sidebar-logo {
-  padding: 20px 16px;
+  padding: 19px 16px;
   text-align: center;
   color: #F8FAFC;
   font-size: 15px;
@@ -28,6 +28,7 @@
   justify-content: center;
   gap: 10px;
   border-bottom: 1px solid #1E293B;
+  -webkit-user-select: none;
   user-select: none;
 }
 .sidebar-logo-icon {
@@ -184,6 +185,7 @@
   letter-spacing: 1.2px;
   color: #475569;
   font-weight: 600;
+  -webkit-user-select: none;
   user-select: none;
 }
 
