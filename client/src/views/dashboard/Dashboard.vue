@@ -25,12 +25,12 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/assets', { status: '在用' })">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/backup-management')">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #E6A23C"><i class="el-icon-check"></i></div>
+            <div class="stat-icon" style="background: #E6A23C"><i class="el-icon-folder-opened"></i></div>
             <div class="stat-info">
-              <div class="stat-value">{{ inUseCount }}</div>
-              <div class="stat-label">在用资产</div>
+              <div class="stat-value">{{ summary.backup_assets || 0 }}</div>
+              <div class="stat-label">备份资产</div>
             </div>
           </div>
         </el-card>
@@ -161,12 +161,6 @@ export default {
       trendChartInstance: null,
       softwareChartInstance: null,
       bgAnimationId: null
-    }
-  },
-  computed: {
-    inUseCount() {
-      const item = this.summary.status_stats.find(s => s.status === '在用')
-      return item ? item.count : 0
     }
   },
   mounted() {

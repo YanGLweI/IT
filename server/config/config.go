@@ -26,13 +26,21 @@ type DocumentConfig struct {
 	SystemHardeningDocumentVersion string `yaml:"system_hardening_document_version"`
 }
 
+// TLSConfig TLS/HTTPS 配置
+type TLSConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	CertPath string `yaml:"cert_path"`
+	KeyPath  string `yaml:"key_path"`
+}
+
 // ServerConfig 服务器配置
 type ServerConfig struct {
-	Port               string `yaml:"port"`
-	JWTSecret          string `yaml:"jwt_secret"`
-	GinMode            string `yaml:"gin_mode"`
-	AccessTokenExpiry  int    `yaml:"access_token_expiry"`  // 分钟，默认120
-	RefreshTokenExpiry int    `yaml:"refresh_token_expiry"` // 天，默认7
+	Port               string    `yaml:"port"`
+	JWTSecret          string    `yaml:"jwt_secret"`
+	GinMode            string    `yaml:"gin_mode"`
+	AccessTokenExpiry  int       `yaml:"access_token_expiry"`  // 分钟，默认120
+	RefreshTokenExpiry int       `yaml:"refresh_token_expiry"` // 天，默认7
+	TLS                TLSConfig `yaml:"tls"`
 }
 
 // DatabaseConfig 数据库配置
@@ -166,6 +174,13 @@ func LoadConfig() error {
 	}
 	if Cfg.RSA.PublicKeyPath == "" {
 		Cfg.RSA.PublicKeyPath = "./certificate/rsa_public.pem"
+	}
+
+	if Cfg.Server.TLS.CertPath == "" {
+		Cfg.Server.TLS.CertPath = "./certificate/server.crt"
+	}
+	if Cfg.Server.TLS.KeyPath == "" {
+		Cfg.Server.TLS.KeyPath = "./certificate/server.key"
 	}
 
 	return nil

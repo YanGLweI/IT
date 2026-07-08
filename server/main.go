@@ -34,6 +34,12 @@ func main() {
 	// 设置路由
 	r := routes.SetupRouter()
 
-	fmt.Printf("服务器启动在 %s\n", config.Cfg.Server.Port)
-	r.Run(config.Cfg.Server.Port)
+	// 启动服务器
+	if config.Cfg.Server.TLS.Enabled {
+		fmt.Printf("HTTPS 服务器启动在 %s\n", config.Cfg.Server.Port)
+		r.RunTLS(config.Cfg.Server.Port, config.Cfg.Server.TLS.CertPath, config.Cfg.Server.TLS.KeyPath)
+	} else {
+		fmt.Printf("HTTP 服务器启动在 %s\n", config.Cfg.Server.Port)
+		r.Run(config.Cfg.Server.Port)
+	}
 }

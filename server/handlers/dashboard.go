@@ -79,6 +79,13 @@ func DashboardSummary(c *gin.Context) {
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	db.Model(&models.OperationLog{}).Where("created_at >= ?", monthStart).Count(&monthlyOpCount)
 
+	// 备份资产数（去重的备份源资产）
+	var backupAssets int64
+	db.Table("backup_records").
+		Where("deleted_at IS NULL").
+		Select("COUNT(DISTINCT backup_source_asset_id)").
+		Scan(&backupAssets)
+
 	// 未修复漏洞总数
 	var totalUnfixedVulns int64
 	db.Table("vulnerability_scans").
@@ -146,6 +153,7 @@ func DashboardSummary(c *gin.Context) {
 			"need_update_software":  needUpdateSoftware,
 			"monthly_op_count":      monthlyOpCount,
 			"total_unfixed_vulns":   totalUnfixedVulns,
+			"backup_assets":         backupAssets,
 			"region_stats":          regionStats,
 			"os_stats":              osStats,
 			"status_stats":          statusStats,
