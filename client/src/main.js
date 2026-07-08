@@ -3,6 +3,7 @@ import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import './styles/dialog-theme.css'
 import './styles/header-theme.css'
+import './styles/sidebar-theme.css'
 import App from './App.vue'
 import router from './router'
 

@@ -1,0 +1,211 @@
+/* ============================================
+   Sidebar Theme — Minimal Dark Style
+   覆盖 Element UI el-menu 默认样式
+   ============================================ */
+
+/* ---------- 1. 基础容器 ---------- */
+.sidebar-aside {
+  background-color: #0F172A !important;
+  border-right: 1px solid #1E293B;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.sidebar-aside::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* ---------- 2. Logo 区域 ---------- */
+.sidebar-logo {
+  padding: 20px 16px;
+  text-align: center;
+  color: #F8FAFC;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-bottom: 1px solid #1E293B;
+  user-select: none;
+}
+.sidebar-logo-icon {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+}
+
+/* ---------- 3. el-menu 容器 ---------- */
+.sidebar-aside .el-menu {
+  background-color: transparent !important;
+  border-right: none !important;
+  padding: 8px 0;
+}
+
+/* ---------- 4. 菜单项通用样式 ---------- */
+.sidebar-aside .el-menu-item {
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 13.5px;
+  color: #94A3B8 !important;
+  padding-left: 20px !important;
+  margin: 2px 8px;
+  border-radius: 6px;
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* 4a. Hover 状态 */
+.sidebar-aside .el-menu-item:hover {
+  background: rgba(64, 158, 255, 0.06) !important;
+  color: #E2E8F0 !important;
+}
+
+/* 4b. Active 状态 */
+.sidebar-aside .el-menu-item.is-active {
+  background: rgba(64, 158, 255, 0.08) !important;
+  color: #F8FAFC !important;
+  font-weight: 500;
+}
+
+/* 4c. Active 左侧指示条 */
+.sidebar-aside .el-menu-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: #409EFF;
+  border-radius: 0 3px 3px 0;
+}
+
+/* ---------- 5. 子菜单标题 ---------- */
+.sidebar-aside .el-submenu > .el-submenu__title {
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 13.5px;
+  color: #94A3B8 !important;
+  padding-left: 20px !important;
+  margin: 2px 8px;
+  border-radius: 6px;
+  transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-aside .el-submenu > .el-submenu__title:hover {
+  background: rgba(64, 158, 255, 0.06) !important;
+  color: #E2E8F0 !important;
+}
+
+/* 展开箭头 */
+.sidebar-aside .el-submenu__icon-arrow {
+  color: #475569 !important;
+  font-size: 12px;
+  transition: transform 200ms ease, color 200ms ease;
+}
+
+.sidebar-aside .el-submenu.is-opened > .el-submenu__title {
+  color: #CBD5E1 !important;
+}
+
+.sidebar-aside .el-submenu.is-opened > .el-submenu__title .el-submenu__icon-arrow {
+  color: #94A3B8 !important;
+}
+
+/* ---------- 6. 子菜单项 (嵌套) ---------- */
+.sidebar-aside .el-submenu .el-menu {
+  background-color: transparent !important;
+  padding: 4px 0;
+}
+
+.sidebar-aside .el-submenu .el-menu-item {
+  height: 40px !important;
+  line-height: 40px !important;
+  font-size: 13px;
+  padding-left: 52px !important;
+  margin: 1px 8px;
+  min-width: auto !important;
+}
+
+.sidebar-aside .el-submenu .el-menu-item:hover {
+  background: rgba(64, 158, 255, 0.06) !important;
+  color: #E2E8F0 !important;
+}
+
+.sidebar-aside .el-submenu .el-menu-item.is-active {
+  background: rgba(64, 158, 255, 0.08) !important;
+  color: #F8FAFC !important;
+  font-weight: 500;
+}
+
+.sidebar-aside .el-submenu .el-menu-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  background: #409EFF;
+  border-radius: 0 3px 3px 0;
+}
+
+/* ---------- 7. SVG 图标统一样式 ---------- */
+.sidebar-aside .menu-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  color: currentColor;
+}
+
+/* 子菜单标题中的图标 */
+.sidebar-aside .el-submenu > .el-submenu__title .menu-icon {
+  margin-right: 10px;
+}
+
+/* 子菜单项中的图标 */
+.sidebar-aside .el-submenu .el-menu-item .menu-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+}
+
+/* ---------- 8. 分组标题 ---------- */
+.sidebar-group-label {
+  padding: 20px 20px 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #475569;
+  font-weight: 600;
+  user-select: none;
+}
+
+/* ---------- 9. Element UI 子菜单 popper 暗色适配 ---------- */
+/* 当侧边栏折叠时 el-menu 会以 popper 形式弹出，此处预留暗色适配 */
+.el-menu--popup {
+  background-color: #1E293B !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.el-menu--popup .el-menu-item {
+  color: #94A3B8 !important;
+}
+
+.el-menu--popup .el-menu-item:hover {
+  background: rgba(64, 158, 255, 0.06) !important;
+  color: #E2E8F0 !important;
+}
+
+.el-menu--popup .el-menu-item.is-active {
+  color: #F8FAFC !important;
+  background: rgba(64, 158, 255, 0.08) !important;
+}

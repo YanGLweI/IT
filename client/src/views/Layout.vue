@@ -7,144 +7,144 @@
       </div>
       <el-menu
         :default-active="activeMenu"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409EFF"
+        background-color="#0F172A"
+        text-color="#94A3B8"
+        active-text-color="#F8FAFC"
         router
       >
         <el-menu-item index="/dashboard">
-          <i class="el-icon-data-board"></i>
+          <svg-icon name="bar-chart-2" />
           <span slot="title">数据看板</span>
         </el-menu-item>
         <el-menu-item index="/policies">
-          <i class="el-icon-document"></i>
+          <svg-icon name="file-text" />
           <span slot="title">IT政策</span>
         </el-menu-item>
         <el-submenu index="asset">
           <template slot="title">
-            <i class="el-icon-monitor"></i>
+            <svg-icon name="monitor" />
             <span>资产管理</span>
           </template>
           <el-menu-item index="/assets">
-            <i class="el-icon-s-order"></i>
+            <svg-icon name="list" />
             <span>资产列表</span>
           </el-menu-item>
           <el-menu-item index="/regions">
-            <i class="el-icon-place"></i>
+            <svg-icon name="map-pin" />
             <span>区域管理</span>
           </el-menu-item>
           <el-menu-item index="/os-types">
-            <i class="el-icon-s-platform"></i>
+            <svg-icon name="layers" />
             <span>操作系统管理</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="network-security">
           <template slot="title">
-            <i class="el-icon-connection"></i>
+            <svg-icon name="shield" />
             <span>网络安全</span>
           </template>
           <el-menu-item index="/topology">
-            <i class="el-icon-share"></i>
+            <svg-icon name="network" />
             <span>网络拓扑图</span>
           </el-menu-item>
           <el-menu-item index="/change-management">
-            <i class="el-icon-document-copy"></i>
+            <svg-icon name="git-branch" />
             <span>变更管理</span>
           </el-menu-item>
           <el-menu-item index="/vulnerability-scan">
-            <i class="el-icon-search"></i>
+            <svg-icon name="search" />
             <span>漏洞扫描</span>
           </el-menu-item>
           <el-menu-item index="/penetration-test">
-            <i class="el-icon-cpu"></i>
+            <svg-icon name="crosshair" />
             <span>渗透测试</span>
           </el-menu-item>
           <el-menu-item index="/firewall-check">
-            <i class="el-icon-s-check"></i>
+            <svg-icon name="shield-check" />
             <span>防火墙检查</span>
           </el-menu-item>
           <el-menu-item index="/security-rectification">
-            <i class="el-icon-edit"></i>
+            <svg-icon name="pencil" />
             <span>安全整改记录</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="system-security">
           <template slot="title">
-            <i class="el-icon-setting"></i>
+            <svg-icon name="settings" />
             <span>系统安全</span>
           </template>
           <el-menu-item index="/system-hardening">
-            <i class="el-icon-s-tools"></i>
+            <svg-icon name="hammer" />
             <span>系统加固</span>
           </el-menu-item>
           <el-menu-item index="/patch-update">
-            <i class="el-icon-refresh"></i>
+            <svg-icon name="download" />
             <span>补丁更新</span>
           </el-menu-item>
           <el-menu-item index="/virus-control">
-            <i class="el-icon-warning"></i>
+            <svg-icon name="shield-alert" />
             <span>病毒控制</span>
           </el-menu-item>
           <el-menu-item index="/backup-management">
-            <i class="el-icon-files"></i>
+            <svg-icon name="database" />
             <span>备份管理</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="permission">
           <template slot="title">
-            <i class="el-icon-user"></i>
+            <svg-icon name="users" />
             <span>用户管理</span>
           </template>
           <el-menu-item index="/permissions">
-            <i class="el-icon-setting"></i>
+            <svg-icon name="key" />
             <span>岗位权限设置</span>
           </el-menu-item>
           <el-menu-item index="/user-permissions">
-            <i class="el-icon-user"></i>
+            <svg-icon name="user-check" />
             <span>用户权限一览</span>
           </el-menu-item>
           <el-menu-item index="/sftp-accounts">
-            <i class="el-icon-connection"></i>
+            <svg-icon name="terminal" />
             <span>SFTP账号一览</span>
           </el-menu-item>
           <el-menu-item index="/monthly-check-history">
-            <i class="el-icon-document-checked"></i>
+            <svg-icon name="calendar-check" />
             <span>月度检查历史</span>
           </el-menu-item>
           <el-menu-item index="/user-change-history">
-            <i class="el-icon-document-copy"></i>
+            <svg-icon name="user-cog" />
             <span>用户变更记录</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="third-party">
           <template slot="title">
-            <i class="el-icon-apple"></i>
+            <svg-icon name="layout-grid" />
             <span>第三方应用</span>
           </template>
           <el-menu-item index="/approved-software">
-            <i class="el-icon-document-checked"></i>
+            <svg-icon name="check-circle" />
             <span>核准软件目录</span>
           </el-menu-item>
           <el-menu-item index="/asset-software">
-            <i class="el-icon-s-grid"></i>
+            <svg-icon name="table" />
             <span>资产对应表</span>
           </el-menu-item>
           <el-menu-item index="/quarterly-check-history">
-            <i class="el-icon-document-checked"></i>
+            <svg-icon name="calendar" />
             <span>季度检查历史</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="log">
           <template slot="title">
-            <i class="el-icon-notebook-2"></i>
+            <svg-icon name="scroll-text" />
             <span>日志管理</span>
           </template>
           <el-menu-item index="/login-logs">
-            <i class="el-icon-s-check"></i>
+            <svg-icon name="log-in" />
             <span>登录日志</span>
           </el-menu-item>
           <el-menu-item index="/operation-logs">
-            <i class="el-icon-document"></i>
+            <svg-icon name="file-search" />
             <span>操作日志</span>
           </el-menu-item>
         </el-submenu>
@@ -185,9 +185,11 @@
 <script>
 import { logout } from '@/api/audit_log'
 import { animate, scrambleText } from 'animejs'
+import SvgIcon from '@/components/SvgIcon.vue'
 
 export default {
   name: 'Layout',
+  components: { SvgIcon },
   data() {
     return {
       displayName: localStorage.getItem('display_name') || '用户',
@@ -312,37 +314,6 @@ export default {
   padding: 0;
   background: transparent;
 }
-.sidebar-aside {
-  background-color: #304156;
-  overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-}
-::v-deep .sidebar-aside .el-menu {
-  border-right: none;
-  padding: 0;
-  margin: 0;
-}
-::v-deep .sidebar-aside::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-.sidebar-logo {
-  padding: 20px;
-  text-align: center;
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* gap: 8px; */
-}
-.sidebar-logo-icon {
-  width: 24px;
-  height: 24px;
-  vertical-align: middle;
-}
-
 </style>
 
 <style>
