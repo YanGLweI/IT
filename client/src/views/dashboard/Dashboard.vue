@@ -46,13 +46,13 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" :class="{ 'stat-alert': summary.total_unfixed_vulns > 0 }" @click.native="navigateTo('/vulnerability-scan')">
+        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/operation-logs')">
           <div class="stat-card">
-            <div class="stat-indicator" :style="{ background: summary.total_unfixed_vulns > 0 ? '#EF4444' : '#22C55E' }"></div>
-            <div class="stat-icon-wrap"><i class="el-icon-warning-outline" :style="{ color: summary.total_unfixed_vulns > 0 ? '#EF4444' : '#22C55E' }"></i></div>
+            <div class="stat-indicator" style="background: #FF9800"></div>
+            <div class="stat-icon-wrap"><i class="el-icon-document" style="color: #FF9800"></i></div>
             <div class="stat-info">
-              <div class="stat-value">{{ animatedValues.total_unfixed_vulns }}</div>
-              <div class="stat-label">漏洞总数</div>
+              <div class="stat-value">{{ animatedValues.monthly_op_count }}</div>
+              <div class="stat-label">本月操作</div>
             </div>
           </div>
         </el-card>
@@ -103,13 +103,13 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/operation-logs')">
+        <el-card shadow="hover" class="stat-card-clickable" :class="{ 'stat-alert': summary.total_unfixed_vulns > 0 }" @click.native="navigateTo('/vulnerability-scan')">
           <div class="stat-card">
-            <div class="stat-indicator" style="background: #FF9800"></div>
-            <div class="stat-icon-wrap"><i class="el-icon-document" style="color: #FF9800"></i></div>
+            <div class="stat-indicator" :style="{ background: summary.total_unfixed_vulns > 0 ? '#EF4444' : '#22C55E' }"></div>
+            <div class="stat-icon-wrap"><i class="el-icon-warning-outline" :style="{ color: summary.total_unfixed_vulns > 0 ? '#EF4444' : '#22C55E' }"></i></div>
             <div class="stat-info">
-              <div class="stat-value">{{ animatedValues.monthly_op_count }}</div>
-              <div class="stat-label">本月操作</div>
+              <div class="stat-value">{{ animatedValues.total_unfixed_vulns }}</div>
+              <div class="stat-label">漏洞总数</div>
             </div>
           </div>
         </el-card>
