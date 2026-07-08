@@ -18,7 +18,7 @@
       </el-table>
     </el-card>
 
-    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="500px">
+    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="500px" :close-on-click-modal="false">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
         <el-form-item label="区域名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入区域名称" />
