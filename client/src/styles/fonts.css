@@ -1,0 +1,66 @@
+/* ============================================
+   Global Font Face Declarations
+   全部字体本地加载，零外部 CDN 依赖
+   ============================================ */
+
+/* ===== Maple Mono NF — 标题/等宽 ===== */
+@font-face {
+  font-family: 'Maple Mono NF';
+  src: url('../assets/fonts/maple-mono-nf/MapleMono-NF-CN-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Maple Mono NF';
+  src: url('../assets/fonts/maple-mono-nf/MapleMono-NF-CN-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ===== Inter — 正文英文 ===== */
+@font-face {
+  font-family: 'Inter';
+  src: url('../assets/fonts/inter/Inter-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../assets/fonts/inter/Inter-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../assets/fonts/inter/Inter-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ===== Noto Sans SC — 正文中文 ===== */
+@font-face {
+  font-family: 'Noto Sans SC';
+  src: url('../assets/fonts/noto-sans-sc/NotoSansSC-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans SC';
+  src: url('../assets/fonts/noto-sans-sc/NotoSansSC-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans SC';
+  src: url('../assets/fonts/noto-sans-sc/NotoSansSC-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}

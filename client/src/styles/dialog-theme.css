@@ -87,7 +87,7 @@
   font-size: 15px !important;
   font-weight: 600 !important;
   letter-spacing: 0.3px;
-  font-family: 'SF Mono', 'Fira Code', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-family: 'Maple Mono NF', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   position: relative;
   z-index: 1;
 }
@@ -101,7 +101,7 @@
   font-size: 16px;
   margin-right: 8px;
   vertical-align: middle;
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: 'Maple Mono NF', 'SF Mono', 'Fira Code', 'Consolas', monospace;
 }
 
 .el-dialog__title::after {

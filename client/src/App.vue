@@ -16,4 +16,8 @@ html, body, #app {
   padding: 0;
   height: 100%;
 }
+body {
+  font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont,
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
 </style>

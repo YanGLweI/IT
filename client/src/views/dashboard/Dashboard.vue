@@ -639,7 +639,7 @@ export default {
   letter-spacing: 2px;
   color: rgba(64, 158, 255, 0.7);
   text-transform: uppercase;
-  font-family: 'Fira Code', monospace;
+  font-family: 'Maple Mono NF', 'Fira Code', monospace;
 }
 .section-subtitle {
   font-size: 12px;

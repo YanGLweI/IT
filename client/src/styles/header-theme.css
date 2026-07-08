@@ -55,7 +55,7 @@
   position: absolute;
   inset: 0;
   color: rgba(255, 255, 255, 0.12);
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: 'Maple Mono NF', 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 11px;
   line-height: 56px;
   white-space: nowrap;
@@ -71,7 +71,7 @@
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  font-family: 'SF Mono', 'Fira Code', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-family: 'Maple Mono NF', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   display: flex;
   align-items: center;
   position: relative;
@@ -83,7 +83,7 @@
   color: #409EFF;
   font-weight: 700;
   margin-right: 4px;
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: 'Maple Mono NF', 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 13px;
   text-shadow: 0 0 8px rgba(64, 158, 255, 0.4);
 }
@@ -127,7 +127,7 @@
   font-size: 11px;
   color: rgba(148, 163, 184, 0.7);
   letter-spacing: 1px;
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: 'Maple Mono NF', 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-weight: 400;
   line-height: 1.2;
   margin-top: 2px;
@@ -153,7 +153,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.03);
   transition: all 0.2s ease;
-  font-family: 'SF Mono', 'Fira Code', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
 }
 
 .app-header .user-info:hover {
