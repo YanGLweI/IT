@@ -3,9 +3,9 @@
     <canvas ref="bgCanvas" class="tech-bg-canvas"></canvas>
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/assets')">
+        <el-card shadow="hover" class="stat-card-clickable" @click="navigateTo('/assets')">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #409EFF"><i class="el-icon-monitor"></i></div>
+            <div class="stat-icon" style="background: #409EFF"><el-icon><Monitor /></el-icon></div>
             <div class="stat-info">
               <div class="stat-value">{{ summary.total_assets || 0 }}</div>
               <div class="stat-label">总资产数</div>
@@ -14,9 +14,9 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/regions')">
+        <el-card shadow="hover" class="stat-card-clickable" @click="navigateTo('/regions')">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #67C23A"><i class="el-icon-place"></i></div>
+            <div class="stat-icon" style="background: #67C23A"><el-icon><Location /></el-icon></div>
             <div class="stat-info">
               <div class="stat-value">{{ summary.total_regions || 0 }}</div>
               <div class="stat-label">区域数量</div>
@@ -25,9 +25,9 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/backup-management')">
+        <el-card shadow="hover" class="stat-card-clickable" @click="navigateTo('/backup-management')">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #E6A23C"><i class="el-icon-folder-opened"></i></div>
+            <div class="stat-icon" style="background: #E6A23C"><el-icon><FolderOpened /></el-icon></div>
             <div class="stat-info">
               <div class="stat-value">{{ summary.backup_assets || 0 }}</div>
               <div class="stat-label">备份资产</div>
@@ -36,9 +36,9 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/vulnerability-scan')">
+        <el-card shadow="hover" class="stat-card-clickable" @click="navigateTo('/vulnerability-scan')">
           <div class="stat-card">
-            <div class="stat-icon" :style="{ background: summary.total_unfixed_vulns > 0 ? '#F56C6C' : '#67C23A' }"><i class="el-icon-warning-outline"></i></div>
+            <div class="stat-icon" :style="{ background: summary.total_unfixed_vulns > 0 ? '#F56C6C' : '#67C23A' }"><el-icon><WarningFilled /></el-icon></div>
             <div class="stat-info">
               <div class="stat-value">{{ summary.total_unfixed_vulns || 0 }}</div>
               <div class="stat-label">漏洞总数</div>
@@ -49,9 +49,9 @@
     </el-row>
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/sftp-accounts')">
+        <el-card shadow="hover" class="stat-card-clickable" @click="navigateTo('/sftp-accounts')">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #00BCD4"><i class="el-icon-connection"></i></div>
+            <div class="stat-icon" style="background: #00BCD4"><el-icon><Connection /></el-icon></div>
             <div class="stat-info">
               <div class="stat-value">{{ summary.total_sftp_accounts || 0 }}</div>
               <div class="stat-label">SFTP账号</div>
@@ -60,9 +60,9 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/user-permissions')">
+        <el-card shadow="hover" class="stat-card-clickable" @click="navigateTo('/user-permissions')">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #9C27B0"><i class="el-icon-user"></i></div>
+            <div class="stat-icon" style="background: #9C27B0"><el-icon><User /></el-icon></div>
             <div class="stat-info">
               <div class="stat-value">{{ summary.total_user_permissions || 0 }}</div>
               <div class="stat-label">用户岗位</div>
@@ -71,9 +71,9 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/approved-software')">
+        <el-card shadow="hover" class="stat-card-clickable" @click="navigateTo('/approved-software')">
           <div class="stat-card">
-            <div class="stat-icon" :style="{ background: summary.need_update_software > 0 ? '#F56C6C' : '#67C23A' }"><i class="el-icon-refresh"></i></div>
+            <div class="stat-icon" :style="{ background: summary.need_update_software > 0 ? '#F56C6C' : '#67C23A' }"><el-icon><Refresh /></el-icon></div>
             <div class="stat-info">
               <div class="stat-value">{{ summary.need_update_software || 0 }}</div>
               <div class="stat-label">需更新软件</div>
@@ -82,9 +82,9 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="hover" class="stat-card-clickable" @click.native="navigateTo('/operation-logs')">
+        <el-card shadow="hover" class="stat-card-clickable" @click="navigateTo('/operation-logs')">
           <div class="stat-card">
-            <div class="stat-icon" style="background: #FF9800"><i class="el-icon-document"></i></div>
+            <div class="stat-icon" style="background: #FF9800"><el-icon><Document /></el-icon></div>
             <div class="stat-info">
               <div class="stat-value">{{ summary.monthly_op_count || 0 }}</div>
               <div class="stat-label">本月操作</div>
@@ -96,13 +96,13 @@
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="12">
         <el-card shadow="hover">
-          <div slot="header">区域资产分布</div>
+          <template #header><div>区域资产分布</div></template>
           <div ref="regionChart" style="height: 420px"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card shadow="hover">
-          <div slot="header">操作系统分布</div>
+          <template #header><div>操作系统分布</div></template>
           <div ref="osChart" style="height: 420px"></div>
         </el-card>
       </el-col>
@@ -110,13 +110,13 @@
     <el-row :gutter="20" style="margin-bottom: 20px">
       <el-col :span="12">
         <el-card shadow="hover">
-          <div slot="header">漏洞趋势</div>
+          <template #header><div>漏洞趋势</div></template>
           <div ref="vulnTrendChart" style="height: 420px"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card shadow="hover">
-          <div slot="header">近30天操作日志趋势</div>
+          <template #header><div>近30天操作日志趋势</div></template>
           <div ref="trendChart" style="height: 420px"></div>
         </el-card>
       </el-col>
@@ -124,7 +124,7 @@
     <el-row :gutter="20">
       <el-col :span="12">
         <el-card shadow="hover">
-          <div slot="header">软件更新状态</div>
+          <template #header><div>软件更新状态</div></template>
           <div ref="softwareChart" style="height: 420px"></div>
         </el-card>
       </el-col>
@@ -168,7 +168,7 @@ export default {
     this.fetchData()
     window.addEventListener('resize', this.handleResize)
   },
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('resize', this.handleResize)
     if (this.bgAnimationId) cancelAnimationFrame(this.bgAnimationId)
     if (this.regionChartInstance) this.regionChartInstance.dispose()
@@ -529,7 +529,7 @@ export default {
 }
 
 /* 玻璃卡片效果 */
-.dashboard ::v-deep .el-card {
+.dashboard :deep(.el-card) {
   background: rgba(13, 33, 55, 0.2) !important;
   border: 1px solid rgba(64, 158, 255, 0.2) !important;
   border-radius: 12px !important;
@@ -537,13 +537,13 @@ export default {
   position: relative;
   overflow: hidden;
 }
-.dashboard ::v-deep .el-card .el-card__header {
+.dashboard :deep(.el-card .el-card__header) {
   color: rgba(255, 255, 255, 0.95);
   border-bottom: 1px solid rgba(64, 158, 255, 0.15) !important;
   font-weight: 500;
   background: transparent !important;
 }
-.dashboard ::v-deep .el-card .el-card__body {
+.dashboard :deep(.el-card .el-card__body) {
   background: transparent !important;
 }
 
@@ -573,7 +573,7 @@ export default {
   margin-right: 15px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
-.stat-icon i {
+.stat-icon .el-icon {
   font-size: 28px;
   color: #fff;
 }

@@ -1,9 +1,10 @@
 <template>
   <div class="security-rectification">
     <el-card>
-      <div slot="header">
+      <template #header><div>
         <span>安全整改记录</span>
       </div>
+      </template>
       <el-empty description="功能开发中..." />
     </el-card>
   </div>

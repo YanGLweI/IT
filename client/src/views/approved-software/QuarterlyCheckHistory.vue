@@ -1,21 +1,23 @@
 <template>
   <div class="quarterly-check-history">
     <el-card>
-      <div slot="header" class="page-header">
+      <template #header>
+<div class="page-header">
         <span>季度检查历史</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="handleOpenUpload">上传记录</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+          <el-button type="primary" size="small" :icon="UploadFilled" @click="handleOpenUpload">上传记录</el-button>
+          <el-button type="default" size="small" :icon="Refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
+</template>
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
         <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
           <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
+        <el-button size="small" type="primary" :icon="Search" @click="handleFilterChange">搜索</el-button>
       </div>
 
       <!-- 数据表格 -->
@@ -23,16 +25,16 @@
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="year" label="年份" width="80" align="center" />
         <el-table-column label="季度" width="80" align="center">
-          <template slot-scope="{ row }">Q{{ row.quarter }}</template>
+          <template v-slot="{ row }">Q{{ row.quarter }}</template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <el-table-column label="关联软件" min-width="200">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <template v-if="row.software_list && row.software_list.length > 0">
               <el-tag
                 v-for="sw in row.software_list"
                 :key="sw.id"
-                size="mini"
+                size="small"
                 style="margin: 2px 4px 2px 0"
               >{{ sw.name }}</el-tag>
             </template>
@@ -41,18 +43,18 @@
         </el-table-column>
         <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
         <el-table-column label="文件大小" width="100" align="center">
-          <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
+          <template v-slot="{ row }">{{ formatSize(row.file_size) }}</template>
         </el-table-column>
         <el-table-column label="上传时间" width="180" align="center">
-          <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
+          <template v-slot="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="240" fixed="right" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
+              <el-button size="small" text :icon="View" @click="handlePreview(row)">预览</el-button>
+              <el-button size="small" text :icon="Download" @click="handleDownload(row)">下载</el-button>
+              <el-button size="small" text :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+              <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -73,7 +75,7 @@
     </el-card>
 
     <!-- 上传弹窗 -->
-    <el-dialog :title="isEdit ? '编辑季度检查记录' : '上传季度检查记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false" @close="resetUploadForm">
+    <el-dialog :title="isEdit ? '编辑季度检查记录' : '上传季度检查记录'" v-model="showUpload" width="520px" :close-on-click-modal="false" @close="resetUploadForm">
       <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -124,21 +126,23 @@
             :file-list="fileList"
             drag
           >
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-            <div slot="tip" class="el-upload__tip">仅支持 PDF 格式文件</div>
+            <template #tip class="el-upload__tip">仅支持 PDF 格式文件</template>
           </el-upload>
         </el-form-item>
         <el-alert v-else title="编辑模式下不可修改文件" type="info" :closable="false" show-icon />
       </el-form>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="showUpload = false">取消</el-button>
         <el-button type="primary" :loading="uploading" @click="handleUpload">{{ isEdit ? '保存' : '确定上传' }}</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+    <el-dialog title="文件预览" v-model="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
       <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
     </el-dialog>
 
@@ -147,14 +151,16 @@
   </div>
 </template>
 
+import { Delete, Download, Edit, Refresh, Search, Upload, UploadFilled, View } from '@element-plus/icons-vue'
 <script>
 import { getQuarterlyChecks, createQuarterlyCheck, updateQuarterlyCheck, deleteQuarterlyCheck, getQuarterlyCheckPreviewUrl, getQuarterlyCheckDownloadUrl } from '@/api/quarterly_check'
 import { getApprovedSoftwareNeedUpdate, getApprovedSoftware } from '@/api/approved_software'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
+
 export default {
+  components: { Delete, Download, DualControlDialog, Edit, Refresh, Search, Upload, UploadFilled, View },
   name: 'QuarterlyCheckHistory',
-  components: { DualControlDialog },
   data() {
     const now = new Date()
     return {

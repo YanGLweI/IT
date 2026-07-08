@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :title="isEdit ? '编辑资产' : '新增资产'" :visible.sync="dialogVisible" width="600px" @close="handleClose" :close-on-click-modal="false">
+  <el-dialog :title="isEdit ? '编辑资产' : '新增资产'" v-model="dialogVisible" width="600px" @close="handleClose" :close-on-click-modal="false">
     <DualControlDialog ref="dualControl" />
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
       <el-form-item label="计算机名" prop="computer_name">
@@ -39,10 +39,10 @@
         <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
       </el-form-item>
     </el-form>
-    <span slot="footer">
+    <template #footer>
       <el-button @click="dialogVisible = false">取消</el-button>
       <el-button type="primary" @click="handleSubmit">确定</el-button>
-    </span>
+    </template>
   </el-dialog>
 </template>
 

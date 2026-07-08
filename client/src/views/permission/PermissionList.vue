@@ -1,14 +1,17 @@
 <template>
   <div class="permission-page">
     <el-card>
-      <div slot="header" class="page-header">
+      <template #header>
+        <div class="page-header">
         <span>岗位权限设置规则</span>
         <div class="page-header-right">
-          <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExportChangeRecord">导出变更记录表</el-button>
-          <el-button type="primary" size="small" icon="el-icon-setting" @click="showManagement = true">管理配置</el-button>
-          <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+          <el-button type="success" size="small" :icon="Download" :loading="exporting" @click="handleExportChangeRecord">导出变更记录表</el-button>
+          <el-button type="primary" size="small" :icon="Setting" @click="showManagement = true">管理配置</el-button>
+          <el-button type="primary" size="small" :icon="Refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
+      </template>
+      
 
       <div class="table-wrapper" ref="tableWrapper">
         <el-table
@@ -20,7 +23,7 @@
           :max-height="tableMaxHeight"
         >
           <el-table-column label="岗位" width="200" fixed>
-            <template slot-scope="{ row }">
+            <template v-slot="{ row }">
               <strong>{{ row.position_name }}</strong>
             </template>
           </el-table-column>
@@ -31,7 +34,7 @@
             :label="sys"
             min-width="180"
           >
-            <template slot-scope="{ row }">
+            <template v-slot="{ row }">
               <div class="cell-roles">
                 <el-tag
                   v-for="role in getCellRoles(row, sys)"
@@ -53,21 +56,21 @@
     </el-card>
 
     <!-- 角色授权/取消授权确认弹窗 -->
-    <el-dialog title="保存确认" :visible.sync="dialogVisible" width="400px">
+    <el-dialog title="保存确认" v-model="dialogVisible" width="400px">
       <div>
         <p><strong>岗位：</strong>{{ editingPosition }}</p>
         <p><strong>系统：</strong>{{ editingSystem }}</p>
         <p><strong>角色：</strong>{{ editingRoleName }}</p>
         <p><strong>操作：</strong>{{ editingNewStatus ? '授权' : '取消授权' }}</p>
       </div>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="confirmSave">确定</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- ==================== 管理配置弹窗 ==================== -->
-    <el-dialog title="管理配置" :visible.sync="showManagement" width="750px" top="5vh">
+    <el-dialog title="管理配置" v-model="showManagement" width="750px" top="5vh">
       <el-tabs v-model="activeTab">
         <!-- Tab 1: 岗位管理 -->
         <el-tab-pane label="岗位管理" name="position">
@@ -77,20 +80,20 @@
           </div>
           <el-table :data="rules" stripe size="small" max-height="380">
             <el-table-column label="#" width="64">
-              <template slot-scope="{ $index }">
+              <template v-slot="{ $index }">
                 <div class="sort-btns">
-                  <el-button size="mini" type="text" icon="el-icon-arrow-up"
+                  <el-button size="small" text :icon="ArrowUp"
                     :disabled="$index === 0" @click="movePosition(rules[$index], 'up')" />
-                  <el-button size="mini" type="text" icon="el-icon-arrow-down"
+                  <el-button size="small" text :icon="ArrowDown"
                     :disabled="$index === rules.length - 1" @click="movePosition(rules[$index], 'down')" />
                 </div>
               </template>
             </el-table-column>
             <el-table-column prop="position_name" label="岗位名称" min-width="200" />
             <el-table-column label="操作" width="160">
-              <template slot-scope="{ row }">
-                <el-button size="mini" type="text" @click="startRenamePosition(row)">重命名</el-button>
-                <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDeletePosition(row)">删除</el-button>
+              <template v-slot="{ row }">
+                <el-button size="small" text @click="startRenamePosition(row)">重命名</el-button>
+                <el-button size="small" text style="color:#F56C6C" @click="confirmDeletePosition(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -104,20 +107,20 @@
           </div>
           <el-table :data="systemList" stripe size="small" max-height="380">
             <el-table-column label="#" width="64">
-              <template slot-scope="{ $index }">
+              <template v-slot="{ $index }">
                 <div class="sort-btns">
-                  <el-button size="mini" type="text" icon="el-icon-arrow-up"
+                  <el-button size="small" text :icon="ArrowUp"
                     :disabled="$index === 0" @click="moveSystem(systems[$index], 'up')" />
-                  <el-button size="mini" type="text" icon="el-icon-arrow-down"
+                  <el-button size="small" text :icon="ArrowDown"
                     :disabled="$index === systems.length - 1" @click="moveSystem(systems[$index], 'down')" />
                 </div>
               </template>
             </el-table-column>
             <el-table-column prop="name" label="系统名称" min-width="200" />
             <el-table-column label="操作" width="160">
-              <template slot-scope="{ row }">
-                <el-button size="mini" type="text" @click="startRenameSystem(row)">重命名</el-button>
-                <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDeleteSystem(row.name)">删除</el-button>
+              <template v-slot="{ row }">
+                <el-button size="small" text @click="startRenameSystem(row)">重命名</el-button>
+                <el-button size="small" text style="color:#F56C6C" @click="confirmDeleteSystem(row.name)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -138,9 +141,9 @@
           <el-table v-if="selectedSystemForRole && currentRoles.length > 0" :data="currentRoles" stripe size="small" max-height="250">
             <el-table-column prop="name" label="角色名称" min-width="200" />
             <el-table-column label="操作" width="160">
-              <template slot-scope="{ row }">
-                <el-button size="mini" type="text" @click="startRenameRole(row)">重命名</el-button>
-                <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDeleteRole(row.name)">删除</el-button>
+              <template v-slot="{ row }">
+                <el-button size="small" text @click="startRenameRole(row)">重命名</el-button>
+                <el-button size="small" text style="color:#F56C6C" @click="confirmDeleteRole(row.name)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -151,16 +154,16 @@
     </el-dialog>
 
     <!-- 重命名弹窗（复用：岗位/系统/角色） -->
-    <el-dialog :title="renameTitle" :visible.sync="renameDialogVisible" width="400px">
+    <el-dialog :title="renameTitle" v-model="renameDialogVisible" width="400px">
       <el-form>
         <el-form-item :label="renameLabel" required>
           <el-input v-model="renameValue" @keyup.enter="confirmRename" />
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="renameDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="confirmRename">确定</el-button>
-      </span>
+      </template>
     </el-dialog>
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
@@ -226,7 +229,7 @@ export default {
     this.$nextTick(() => this.calcTableHeight())
     window.addEventListener('resize', this.handleResize)
   },
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('resize', this.handleResize)
   },
   methods: {

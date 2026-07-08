@@ -1,32 +1,33 @@
 <template>
   <div class="ostype-list">
     <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
+      <template #header><div style="display: flex; justify-content: space-between; align-items: center">
         <span>操作系统类型管理</span>
-        <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增类型</el-button>
+        <el-button type="primary" size="small" :icon="Plus" @click="handleAdd">新增类型</el-button>
       </div>
+      </template>
       <el-table :data="osTypes" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="name" label="操作系统类型" />
         <el-table-column label="操作" width="200" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+          <template v-slot="scope">
+            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
-    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="500px">
+    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="500px">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="类型名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入操作系统类型名称，如 Windows 11" />
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleSubmit">确定</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->

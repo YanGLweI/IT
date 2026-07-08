@@ -1,15 +1,16 @@
 <template>
   <div class="approved-software-list">
     <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
+      <template #header><div style="display: flex; justify-content: space-between; align-items: center">
         <span>核准软件目录</span>
-        <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增软件</el-button>
+        <el-button type="primary" size="small" :icon="Plus" @click="handleAdd">新增软件</el-button>
       </div>
+      </template>
       <el-table :data="list" border stripe v-loading="loading">
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="name" label="软件名称" min-width="150" show-overflow-tooltip />
         <el-table-column label="厂商官网" min-width="180" show-overflow-tooltip>
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <a v-if="row.vendor_website" :href="row.vendor_website" target="_blank" class="link">{{ row.vendor_website }}</a>
             <span v-else>-</span>
           </template>
@@ -17,18 +18,18 @@
         <el-table-column prop="version" label="软件版本" width="150" show-overflow-tooltip />
         <el-table-column prop="latest_version" label="最新版本" width="150" show-overflow-tooltip />
         <el-table-column label="是否更新" width="90" align="center">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <el-tag :type="scope.row.need_update ? 'danger' : 'success'" size="small">
               {{ scope.row.need_update ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right" align="center">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <div class="op-btns">
-              <el-button size="mini" type="info" @click="handleDetail(scope.row)">详情</el-button>
-              <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-              <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+              <el-button size="small" type="info" @click="handleDetail(scope.row)">详情</el-button>
+              <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -36,7 +37,7 @@
     </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="680px" :close-on-click-modal="false">
+    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="680px" :close-on-click-modal="false">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="软件名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入软件名称" />
@@ -84,14 +85,14 @@
           <el-input v-model="form.purpose" type="textarea" :rows="2" placeholder="请输入软件用途说明" />
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="软件详情" :visible.sync="detailVisible" width="650px">
+    <el-dialog title="软件详情" v-model="detailVisible" width="650px">
       <el-descriptions :column="2" border v-if="detailRow" label-class-name="detail-label" content-class-name="detail-content">
         <el-descriptions-item label="软件名称" :span="2">{{ detailRow.name }}</el-descriptions-item>
         <el-descriptions-item label="软件版本">{{ detailRow.version || '-' }}</el-descriptions-item>
@@ -116,9 +117,9 @@
         <el-descriptions-item label="创建时间" :span="2">{{ formatTime(detailRow.created_at) }}</el-descriptions-item>
         <el-descriptions-item label="修改时间" :span="2">{{ formatTime(detailRow.updated_at) }}</el-descriptions-item>
       </el-descriptions>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->

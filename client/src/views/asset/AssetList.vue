@@ -1,7 +1,8 @@
 <template>
   <div class="asset-list">
     <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
+      <template #header>
+<div style="display: flex; justify-content: space-between; align-items: center">
         <span>IT资产管理</span>
         <div style="display: flex; align-items: center; gap: 10px">
           <el-input
@@ -11,14 +12,15 @@
             clearable
             style="width: 220px"
             @clear="handleSearch"
-            @keyup.enter.native="handleSearch"
+            @keyup.enter="handleSearch"
           >
-            <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
+            <template #append><el-button :icon="Search" @click="handleSearch"></el-button></template>
           </el-input>
           <el-button size="small" @click="handleReset">重置</el-button>
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增资产</el-button>
+          <el-button type="primary" size="small" :icon="Plus" @click="handleAdd">新增资产</el-button>
         </div>
       </div>
+</template>
 
       <div v-if="statusFilter" style="margin-bottom: 10px">
         <el-tag closable @close="clearStatusFilter" type="warning">状态筛选: {{ statusFilter }}</el-tag>
@@ -45,26 +47,26 @@
         <el-table-column prop="computer_name" label="计算机名" sortable="custom" />
         <el-table-column prop="ip_address" label="IP地址" sortable="custom" />
         <el-table-column prop="os_type" label="操作系统" sortable="custom">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             {{ scope.row.os_type ? scope.row.os_type.name : '-' }}
           </template>
         </el-table-column>
         <el-table-column prop="purpose" label="用途" show-overflow-tooltip/>
         <el-table-column prop="asset_level" label="资产等级" width="100" sortable="custom">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <el-tag v-if="scope.row.asset_level" size="small">{{ scope.row.asset_level }}</el-tag>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="80" sortable="custom">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <el-tag :type="statusType(scope.row.status)" size="small">{{ scope.row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+          <template v-slot="scope">
+            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -83,7 +85,7 @@
     </el-card>
 
     <asset-form
-      :visible.sync="formVisible"
+      v-model="formVisible"
       :edit-data="editData"
       :regions="regions"
       @success="fetchData"
@@ -94,15 +96,17 @@
   </div>
 </template>
 
+import { Plus, Search } from '@element-plus/icons-vue'
 <script>
 import { getAssets, deleteAsset } from '@/api/asset'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import { getRegions } from '@/api/region'
 import AssetForm from './AssetForm.vue'
 
+
 export default {
+  components: { AssetForm, DualControlDialog, Plus, Search },
   name: 'AssetList',
-  components: { AssetForm, DualControlDialog },
   data() {
     return {
       assets: [],

@@ -3,12 +3,15 @@
 
     <!-- ==================== 区块一：模板管理 ==================== -->
     <el-card style="margin-bottom: 20px">
-      <div slot="header" class="page-header">
+      <template #header>
+        <div class="page-header">
         <span>变更记录表模板</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showTemplateUpload = true">上传新版本</el-button>
+          <el-button type="primary" size="small" :icon="Upload" @click="showTemplateUpload = true">上传新版本</el-button>
         </div>
       </div>
+      </template>
+      
 
       <!-- 当前版本信息 -->
       <div v-if="currentTemplate" class="current-template-info">
@@ -21,8 +24,8 @@
           <span v-if="currentTemplate.description" style="margin-left: 12px; color: #606266; font-size: 13px">
             （{{ currentTemplate.description }}）
           </span>
-          <el-button type="primary" size="mini" icon="el-icon-view" style="margin-left: 16px" @click="previewTemplate(currentTemplate)">预览</el-button>
-          <el-button type="default" size="mini" icon="el-icon-download" @click="downloadTemplate(currentTemplate)">下载当前模板</el-button>
+          <el-button type="primary" size="small" :icon="View" style="margin-left: 16px" @click="previewTemplate(currentTemplate)">预览</el-button>
+          <el-button type="default" size="small" :icon="Download" @click="downloadTemplate(currentTemplate)">下载当前模板</el-button>
         </div>
       </div>
       <el-empty v-else description="暂无模板，请上传第一个版本" :image-size="60" style="padding: 16px 0" />
@@ -34,20 +37,20 @@
             <el-table-column type="index" label="序号" width="56" align="center" />
             <el-table-column prop="version" label="版本号" width="110" align="center" />
             <el-table-column prop="description" label="版本说明" min-width="160" show-overflow-tooltip>
-              <template slot-scope="{ row }">{{ row.description || '-' }}</template>
+              <template v-slot="{ row }">{{ row.description || '-' }}</template>
             </el-table-column>
             <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
             <el-table-column label="文件大小" width="100" align="center">
-              <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
+              <template v-slot="{ row }">{{ formatSize(row.file_size) }}</template>
             </el-table-column>
             <el-table-column label="上传时间" width="180" align="center">
-              <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
+              <template v-slot="{ row }">{{ formatDate(row.created_at) }}</template>
             </el-table-column>
             <el-table-column label="操作" width="200" align="center">
-              <template slot-scope="{ row }">
-                <el-button size="mini" type="text" icon="el-icon-view" @click="previewTemplate(row)">预览</el-button>
-                <el-button size="mini" type="text" icon="el-icon-download" @click="downloadTemplate(row)">下载</el-button>
-                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteTemplate(row)">删除</el-button>
+              <template v-slot="{ row }">
+                <el-button size="small" text :icon="View" @click="previewTemplate(row)">预览</el-button>
+                <el-button size="small" text :icon="Download" @click="downloadTemplate(row)">下载</el-button>
+                <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="deleteTemplate(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -57,14 +60,17 @@
 
     <!-- ==================== 区块二：扫描件存档 ==================== -->
     <el-card>
-      <div slot="header" class="page-header">
+      <template #header>
+        <div class="page-header">
         <span>变更记录扫描件</span>
         <div class="page-header-right">
-          <el-button type="default" size="small" icon="el-icon-s-operation" @click="showTypeManager = true">类型管理</el-button>
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="openRecordUpload">上传记录</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchRecords" :loading="recordsLoading">刷新</el-button>
+          <el-button type="default" size="small" :icon="Operation" @click="showTypeManager = true">类型管理</el-button>
+          <el-button type="primary" size="small" :icon="Upload" @click="openRecordUpload">上传记录</el-button>
+          <el-button type="default" size="small" :icon="Refresh" @click="fetchRecords" :loading="recordsLoading">刷新</el-button>
         </div>
       </div>
+      </template>
+      
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
@@ -74,8 +80,8 @@
         <el-select v-model="filterTypeId" placeholder="全部类型" size="small" clearable @change="handleRecordFilterChange" style="width: 150px" multiple collapse-tags>
           <el-option v-for="t in changeTypes" :key="t.id" :label="t.name" :value="t.id" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="handleRecordFilterChange" @clear="handleRecordFilterChange" style="width: 200px" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleRecordFilterChange">搜索</el-button>
+        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter="handleRecordFilterChange" @clear="handleRecordFilterChange" style="width: 200px" />
+        <el-button size="small" type="primary" :icon="Search" @click="handleRecordFilterChange">搜索</el-button>
       </div>
 
       <!-- 数据表格 -->
@@ -83,32 +89,32 @@
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="year" label="年份" width="80" align="center" />
         <el-table-column prop="month" label="月份" width="80" align="center">
-          <template slot-scope="{ row }">{{ row.month }}月</template>
+          <template v-slot="{ row }">{{ row.month }}月</template>
         </el-table-column>
         <el-table-column label="变更类型" width="200" align="center">
-          <template slot-scope="{ row }">
-            <el-tag v-for="t in (row.change_types || [])" :key="t.id" size="mini" style="margin: 2px">{{ t.name }}</el-tag>
+          <template v-slot="{ row }">
+            <el-tag v-for="t in (row.change_types || [])" :key="t.id" size="small" style="margin: 2px">{{ t.name }}</el-tag>
             <span v-if="!row.change_types || row.change_types.length === 0">-</span>
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
         <el-table-column label="文件大小" width="100" align="center">
-          <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
+          <template v-slot="{ row }">{{ formatSize(row.file_size) }}</template>
         </el-table-column>
         <el-table-column label="申请日期" width="120" align="center">
-          <template slot-scope="{ row }">{{ formatDateOnly(row.apply_date) }}</template>
+          <template v-slot="{ row }">{{ formatDateOnly(row.apply_date) }}</template>
         </el-table-column>
         <el-table-column label="实施日期" width="120" align="center">
-          <template slot-scope="{ row }">{{ formatDateOnly(row.implement_date) }}</template>
+          <template v-slot="{ row }">{{ formatDateOnly(row.implement_date) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="240" fixed="right" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="previewRecord(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-download" @click="downloadRecord(row)">下载</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="editRecord(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteRecord(row)">删除</el-button>
+              <el-button size="small" text :icon="View" @click="previewRecord(row)">预览</el-button>
+              <el-button size="small" text :icon="Download" @click="downloadRecord(row)">下载</el-button>
+              <el-button size="small" text :icon="Edit" @click="editRecord(row)">编辑</el-button>
+              <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="deleteRecord(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -120,8 +126,8 @@
         background
         layout="total, sizes, prev, pager, next, jumper"
         :total="recordsTotal"
-        :page-size.sync="recordsPageSize"
-        :current-page.sync="recordsPage"
+        :page-size="recordsPageSize"
+        :current-page="recordsPage"
         :page-sizes="[10, 20, 50]"
         @size-change="handleRecordSizeChange"
         @current-change="fetchRecords"
@@ -129,7 +135,7 @@
     </el-card>
 
     <!-- ==================== 弹窗：上传新版本模板 ==================== -->
-    <el-dialog title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog title="上传新版本模板" v-model="showTemplateUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="templateForm" ref="templateFormRef" :rules="templateRules" label-width="90px">
         <el-form-item label="版本号" prop="version">
           <el-input v-model="templateForm.version" placeholder="如：IT02-3.0" />
@@ -140,20 +146,20 @@
         <el-form-item label="模板文件" prop="file">
           <el-upload ref="templateUploader" action="" :auto-upload="false" :limit="1" accept=".docx,.pdf"
             :on-change="handleTemplateFileChange" :on-remove="handleTemplateFileRemove" :file-list="templateFileList" drag>
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击选择</em></div>
-            <div slot="tip" class="el-upload__tip">支持 DOCX、PDF 格式</div>
+            <template #tip><div  class="el-upload__tip">支持 DOCX、PDF 格式</div></template>
           </el-upload>
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="showTemplateUpload = false">取消</el-button>
         <el-button type="primary" :loading="templateUploading" @click="submitTemplateUpload">确定上传</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- ==================== 弹窗：上传/编辑扫描件 ==================== -->
-    <el-dialog :title="recordIsEdit ? '编辑变更记录' : '上传变更记录'" :visible.sync="showRecordUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog :title="recordIsEdit ? '编辑变更记录' : '上传变更记录'" v-model="showRecordUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="recordForm" ref="recordFormRef" :rules="recordRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -192,66 +198,66 @@
         <el-form-item label="文件" prop="file" v-if="!recordIsEdit">
           <el-upload ref="recordUploader" action="" :auto-upload="false" :limit="1" accept=".pdf"
             :on-change="handleRecordFileChange" :on-remove="handleRecordFileRemove" :file-list="recordFileList" drag>
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-            <div slot="tip" class="el-upload__tip">仅支持 PDF 格式文件</div>
+            <template #tip><div  class="el-upload__tip">仅支持 PDF 格式文件</div></template>
           </el-upload>
         </el-form-item>
         <el-alert v-else title="编辑模式下不可修改文件" type="info" :closable="false" show-icon />
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="showRecordUpload = false">取消</el-button>
         <el-button type="primary" :loading="recordUploading" @click="submitRecordUpload">{{ recordIsEdit ? '保存' : '确定上传' }}</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- ==================== 弹窗：类型管理 ==================== -->
-    <el-dialog title="变更类型管理" :visible.sync="showTypeManager" width="600px">
+    <el-dialog title="变更类型管理" v-model="showTypeManager" width="600px">
       <div style="margin-bottom: 12px">
-        <el-button type="primary" size="small" icon="el-icon-plus" @click="openTypeDialog()">新增类型</el-button>
+        <el-button type="primary" size="small" :icon="Plus" @click="openTypeDialog()">新增类型</el-button>
       </div>
       <el-table :data="changeTypes" border size="small">
         <el-table-column label="#" width="64" align="center">
-          <template slot-scope="{ $index }">
+          <template v-slot="{ $index }">
             <div class="sort-btns">
-              <el-button size="mini" type="text" icon="el-icon-arrow-up"
+              <el-button size="small" text :icon="ArrowUp"
                 :disabled="$index === 0" @click="moveType(changeTypes[$index], 'up')" />
-              <el-button size="mini" type="text" icon="el-icon-arrow-down"
+              <el-button size="small" text :icon="ArrowDown"
                 :disabled="$index === changeTypes.length - 1" @click="moveType(changeTypes[$index], 'down')" />
             </div>
           </template>
         </el-table-column>
         <el-table-column prop="name" label="类型名称" min-width="200" />
         <el-table-column label="操作" width="160" align="center">
-          <template slot-scope="{ row }">
-            <el-button size="mini" type="text" icon="el-icon-edit" @click="openTypeDialog(row)">编辑</el-button>
-            <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteType(row)">删除</el-button>
+          <template v-slot="{ row }">
+            <el-button size="small" text :icon="Edit" @click="openTypeDialog(row)">编辑</el-button>
+            <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="deleteType(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-dialog>
 
     <!-- ==================== 弹窗：新增/编辑类型 ==================== -->
-    <el-dialog :title="typeIsEdit ? '编辑变更类型' : '新增变更类型'" :visible.sync="showTypeDialog" width="420px" :close-on-click-modal="false">
+    <el-dialog :title="typeIsEdit ? '编辑变更类型' : '新增变更类型'" v-model="showTypeDialog" width="420px" :close-on-click-modal="false">
       <el-form :model="typeForm" ref="typeFormRef" :rules="typeRules" label-width="80px">
         <el-form-item label="类型名称" prop="name">
           <el-input v-model="typeForm.name" placeholder="请输入类型名称" />
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="showTypeDialog = false">取消</el-button>
         <el-button type="primary" @click="submitType">确定</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- ==================== 弹窗：模板预览（支持docx/pdf） ==================== -->
-    <el-dialog :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
-      <div class="preview-toolbar" slot="title">
+    <el-dialog v-model="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
+      <template #title><div class="preview-toolbar">
         <span>模板预览</span>
         <div class="preview-toolbar-right">
-          <el-button type="primary" size="small" icon="el-icon-download" @click="downloadTemplate(templatePreviewRow)">下载</el-button>
+          <el-button type="primary" size="small" :icon="Download" @click="downloadTemplate(templatePreviewRow)">下载</el-button>
         </div>
-      </div>
+      </div></template>
       <div v-if="templatePreviewType === 'pdf'" style="height: 70vh">
         <iframe :src="templatePreviewUrl" style="width: 100%; height: 100%; border: none" />
       </div>
@@ -265,7 +271,7 @@
     </el-dialog>
 
     <!-- ==================== 弹窗：PDF预览 ==================== -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+    <el-dialog title="文件预览" v-model="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
       <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
     </el-dialog>
 
@@ -804,23 +810,23 @@ export default {
 .docx-preview-container {
   background: #fff;
 }
-.docx-preview-container >>> .docx-wrapper {
+.docx-preview-container :deep(.docx-wrapper) {
   background: #fff;
   padding: 0;
   width: 100%;
   min-width: 100%;
   overflow-x: auto;
 }
-.docx-preview-container >>> .docx {
+.docx-preview-container :deep(.docx) {
   width: 100%;
   overflow-x: auto;
 }
-.docx-preview-container >>> .docx table {
+.docx-preview-container :deep(.docx) table {
   width: 100% !important;
   table-layout: auto;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
+.docx-preview-container :deep(.docx) table td,
+.docx-preview-container :deep(.docx) table th {
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal !important;

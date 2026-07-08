@@ -1,9 +1,10 @@
 <template>
   <div class="virus-control">
     <el-card>
-      <div slot="header">
+      <template #header><div>
         <span>病毒控制</span>
       </div>
+      </template>
       <el-empty description="功能开发中，敬请期待..."></el-empty>
     </el-card>
   </div>

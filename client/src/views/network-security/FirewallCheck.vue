@@ -1,13 +1,15 @@
 <template>
   <div class="firewall-check">
     <el-card>
-      <div slot="header" class="page-header">
+      <template #header>
+<div class="page-header">
         <span>防火墙检查</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openCreate">新增记录</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+          <el-button type="primary" size="small" :icon="Plus" @click="openCreate">新增记录</el-button>
+          <el-button type="default" size="small" :icon="Refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
+</template>
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
@@ -21,7 +23,7 @@
           <el-option label="合规" value="compliant" />
           <el-option label="不合规" value="non_compliant" />
         </el-select>
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+        <el-button size="small" type="primary" :icon="Search" @click="handleFilterChange">搜索</el-button>
       </div>
 
       <!-- 数据表格 -->
@@ -29,49 +31,49 @@
         <el-table-column type="index" label="#" width="50" align="center" />
         <el-table-column prop="year" label="年份" width="70" align="center" />
         <el-table-column label="季度" width="70" align="center">
-          <template slot-scope="{ row }">Q{{ row.quarter }}</template>
+          <template v-slot="{ row }">Q{{ row.quarter }}</template>
         </el-table-column>
         <el-table-column prop="report_date" label="报告日期" width="110" align="center" />
         <el-table-column label="防火墙" min-width="150" show-overflow-tooltip>
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <span v-if="row.asset">{{ row.asset.computer_name }}</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="检查结果" width="100" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <el-tag :type="row.check_result === 'compliant' ? 'success' : 'danger'" size="small">
               {{ row.check_result === 'compliant' ? '合规' : '不合规' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="file_name" label="检查报告" min-width="180" show-overflow-tooltip>
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <span v-if="row.file_name">{{ row.file_name }}</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="整改报告" width="140" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <template v-if="row.check_result === 'non_compliant'">
               <template v-if="row.rect_file_name">
                 <div class="op-btns" style="justify-content: center">
-                  <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRect(row)">预览</el-button>
-                  <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDeleteRect(row)">删除</el-button>
+                  <el-button size="small" text :icon="View" @click="handlePreviewRect(row)">预览</el-button>
+                  <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="handleDeleteRect(row)">删除</el-button>
                 </div>
               </template>
-              <el-button v-else size="mini" type="text" icon="el-icon-document-checked" style="color: #E6A23C" @click="openRectUpload(row)">整改</el-button>
+              <el-button v-else size="small" text :icon="DocumentChecked" style="color: #E6A23C" @click="openRectUpload(row)">整改</el-button>
             </template>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="240" fixed="right" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="openEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
+              <el-button size="small" text :icon="View" @click="handlePreview(row)">预览</el-button>
+              <el-button size="small" text :icon="Download" @click="handleDownload(row)">下载</el-button>
+              <el-button size="small" text :icon="Edit" @click="openEdit(row)">编辑</el-button>
+              <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -92,7 +94,7 @@
     </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog :title="isEdit ? '编辑检查记录' : '新增检查记录'" :visible.sync="showForm" width="580px" :close-on-click-modal="false">
+    <el-dialog :title="isEdit ? '编辑检查记录' : '新增检查记录'" v-model="showForm" width="580px" :close-on-click-modal="false">
       <el-form :model="form" ref="formRef" :rules="formRules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -134,21 +136,23 @@
             :file-list="fileList"
             drag
           >
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-            <div slot="tip" class="el-upload__tip">支持 PDF / DOCX 格式文件</div>
+            <template #tip class="el-upload__tip">支持 PDF / DOCX 格式文件</template>
           </el-upload>
         </el-form-item>
         <el-alert v-else title="编辑模式下不可更换文件" type="info" :closable="false" show-icon />
       </el-form>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="showForm = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存' : '确定上传' }}</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 整改报告上传弹窗 -->
-    <el-dialog title="上传整改报告" :visible.sync="showRectUpload" width="480px" :close-on-click-modal="false">
+    <el-dialog title="上传整改报告" v-model="showRectUpload" width="480px" :close-on-click-modal="false">
       <el-upload
         ref="rectUploader"
         action=""
@@ -160,36 +164,42 @@
         :file-list="rectFileList"
         drag
       >
-        <i class="el-icon-upload"></i>
+        <el-icon><Upload /></el-icon>
         <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-        <div slot="tip" class="el-upload__tip">支持 PDF / DOCX 格式文件</div>
+        <template #tip class="el-upload__tip">支持 PDF / DOCX 格式文件</template>
       </el-upload>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="showRectUpload = false">取消</el-button>
         <el-button type="primary" :loading="rectUploading" @click="handleRectUpload">确定上传</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 检查报告预览弹窗 -->
-    <el-dialog title="检查报告预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
+    <el-dialog title="检查报告预览" v-model="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
       <iframe v-if="previewUrl && isPdf && pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
         <div ref="docxContainer" class="docx-preview-container"></div>
       </div>
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
+      <template #footer>
+<span>
+        <el-button type="primary" size="small" :icon="Download" @click="handleDownloadFromPreview">下载</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 整改报告预览弹窗 -->
-    <el-dialog title="整改报告预览" :visible.sync="rectPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearRectPreview">
+    <el-dialog title="整改报告预览" v-model="rectPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearRectPreview">
       <iframe v-if="rectPreviewUrl && rectIsPdf && rectPdfBlobUrl" :src="rectPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <div v-else-if="!rectIsPdf" ref="rectDocxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
         <div ref="rectDocxContainer" class="docx-preview-container"></div>
       </div>
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadRect">下载</el-button>
+      <template #footer>
+<span>
+        <el-button type="primary" size="small" :icon="Download" @click="handleDownloadRect">下载</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
@@ -197,6 +207,7 @@
   </div>
 </template>
 
+import { Delete, DocumentChecked, Download, Edit, Plus, Refresh, Search, Upload, View } from '@element-plus/icons-vue'
 <script>
 import {
   getFirewallChecks, createFirewallCheck, updateFirewallCheck, deleteFirewallCheck,
@@ -209,9 +220,10 @@ import { getRegions } from '@/api/region'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import { renderAsync } from 'docx-preview'
 
+
 export default {
+  components: { Delete, DocumentChecked, Download, DualControlDialog, Edit, Plus, Refresh, Search, Upload, View },
   name: 'FirewallCheck',
-  components: { DualControlDialog },
   data() {
     const now = new Date()
     return {
@@ -627,15 +639,15 @@ export default {
   justify-content: center;
 }
 /* DOCX 预览容器样式 */
-.docx-preview-container >>> .docx-wrapper {
+.docx-preview-container :deep(.docx-wrapper) {
   background: #fff;
 }
-.docx-preview-container >>> .docx table {
+.docx-preview-container :deep(.docx) table {
   border-collapse: collapse;
   width: 100%;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
+.docx-preview-container :deep(.docx) table td,
+.docx-preview-container :deep(.docx) table th {
   border: 1px solid #ddd;
   padding: 8px;
 }

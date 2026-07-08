@@ -1,22 +1,24 @@
 <template>
   <div class="user-permission-page">
     <el-card>
-      <div slot="header" class="page-header">
+      <template #header>
+<div class="page-header">
         <span>用户权限一览</span>
         <div class="page-header-right">
           <el-input
             v-model="searchKeyword"
             placeholder="搜索姓名"
-            prefix-icon="el-icon-search"
+            :prefix-icon="Search"
             clearable
             size="small"
             style="width: 220px; margin-right: 8px"
           />
-          <el-button type="primary" size="small" icon="el-icon-setting" @click="showDeptManage = true">管理配置</el-button>
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openUserForm">新增用户</el-button>
-          <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+          <el-button type="primary" size="small" :icon="Setting" @click="showDeptManage = true">管理配置</el-button>
+          <el-button type="primary" size="small" :icon="Plus" @click="openUserForm">新增用户</el-button>
+          <el-button type="primary" size="small" :icon="Refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
+</template>
 
       <!-- 部门 Tabs -->
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
@@ -31,7 +33,7 @@
 
       <!-- 导出按钮（仅选中具体部门时显示） -->
       <div v-if="activeTab !== 'all'" class="export-bar">
-        <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出月度确认表</el-button>
+        <el-button type="success" size="small" :icon="Download" :loading="exporting" @click="handleExport">导出月度确认表</el-button>
       </div>
 
       <!-- 用户表格 -->
@@ -46,7 +48,7 @@
         >
           <el-table-column prop="name" label="姓名" width="150" />
           <el-table-column label="岗位" width="200">
-            <template slot-scope="{ row }">
+            <template v-slot="{ row }">
               <div class="cell-roles">
                 <template v-if="row.position_name">
                   <el-tag
@@ -64,7 +66,7 @@
             </template>
           </el-table-column>
           <el-table-column label="系统角色" min-width="400">
-            <template slot-scope="{ row }">
+            <template v-slot="{ row }">
               <div class="cell-roles">
                 <template v-if="parseSystemRoles(row.system_roles_json).length > 0">
                   <el-tag
@@ -82,9 +84,9 @@
             </template>
           </el-table-column>
           <el-table-column label="操作" width="150" fixed="right" align="center">
-            <template slot-scope="{ row }">
-              <el-button size="mini" type="text" @click="openUserForm(row)">编辑</el-button>
-              <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDelete(row)">删除</el-button>
+            <template v-slot="{ row }">
+              <el-button size="small" text @click="openUserForm(row)">编辑</el-button>
+              <el-button size="small" text style="color:#F56C6C" @click="confirmDelete(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -92,7 +94,7 @@
     </el-card>
 
     <!-- 新增/编辑用户弹窗 -->
-    <el-dialog :title="isEdit ? '编辑用户' : '新增用户'" :visible.sync="userFormVisible" width="650px" top="5vh" @close="resetUserForm">
+    <el-dialog :title="isEdit ? '编辑用户' : '新增用户'" v-model="userFormVisible" width="650px" top="5vh" @close="resetUserForm">
       <el-form :model="userForm" :rules="userRules" ref="userForm" label-width="100px">
         <el-form-item label="姓名" prop="name">
           <el-input v-model="userForm.name" placeholder="请输入姓名" />
@@ -141,20 +143,23 @@
           </div>
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="userFormVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="handleSave">确定</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 管理配置弹窗 -->
-    <DepartmentManage ref="deptManage" :visible.sync="showDeptManage" @updated="fetchData" />
+    <DepartmentManage ref="deptManage" v-model="showDeptManage" @updated="fetchData" />
 
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
   </div>
 </template>
 
+import { Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 <script>
 import { getDepartments, getDepartmentPositions } from '@/api/department'
 import { getUserPermissions, createUserPermission, updateUserPermission, deleteUserPermission, exportDepartmentConfirmation } from '@/api/userPermission'
@@ -162,8 +167,9 @@ import { getPermissionRules, getPositionPermissions } from '@/api/permission'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import DepartmentManage from './DepartmentManage.vue'
 
+
 export default {
-  components: { DualControlDialog, DepartmentManage },
+  components: { DepartmentManage, Download, DualControlDialog, Plus, Refresh, Search, Setting },
   name: 'UserPermissionList',
   data() {
     return {
@@ -259,7 +265,7 @@ export default {
     this.$nextTick(() => this.calcTableHeight())
     window.addEventListener('resize', this.handleResize)
   },
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('resize', this.handleResize)
   },
   methods: {

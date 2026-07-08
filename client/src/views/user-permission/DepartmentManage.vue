@@ -1,5 +1,5 @@
 <template>
-  <el-dialog title="管理配置" :visible.sync="dialogVisible" width="750px" top="5vh" @close="handleClose">
+  <el-dialog title="管理配置" v-model="dialogVisible" width="750px" top="5vh" @close="handleClose">
     <el-tabs v-model="activeTab">
       <!-- Tab 1: 部门管理 -->
       <el-tab-pane label="部门管理" name="dept">
@@ -10,9 +10,9 @@
         <el-table :data="departments" stripe size="small" max-height="380">
           <el-table-column label="部门名称" prop="name" min-width="200" />
           <el-table-column label="操作" width="160">
-            <template slot-scope="{ row }">
-              <el-button size="mini" type="text" @click="startRenameDept(row)">重命名</el-button>
-              <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDeleteDept(row)">删除</el-button>
+            <template v-slot="{ row }">
+              <el-button size="small" text @click="startRenameDept(row)">重命名</el-button>
+              <el-button size="small" text style="color:#F56C6C" @click="confirmDeleteDept(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -28,7 +28,7 @@
         </div>
         <template v-if="selectedDeptId">
           <div class="mgmt-add-row" style="margin-top:12px">
-            <el-select v-model="positionInput" placeholder="选择岗位" size="small" filterable style="flex:1" @keyup.enter.native="addPosition">
+            <el-select v-model="positionInput" placeholder="选择岗位" size="small" filterable style="flex:1" @keyup.enter="addPosition">
               <el-option
                 v-for="pos in availablePermissionPositions"
                 :key="pos"
@@ -42,8 +42,8 @@
           <el-table v-if="currentPositions.length > 0" :data="currentPositions" stripe size="small" max-height="250">
             <el-table-column label="岗位名称" prop="name" min-width="200" />
             <el-table-column label="操作" width="100">
-              <template slot-scope="{ row }">
-                <el-button size="mini" type="text" style="color:#F56C6C" @click="removePosition(row)">移除</el-button>
+              <template v-slot="{ row }">
+                <el-button size="small" text style="color:#F56C6C" @click="removePosition(row)">移除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -54,16 +54,18 @@
     </el-tabs>
 
     <!-- 重命名弹窗 -->
-    <el-dialog title="重命名部门" :visible.sync="renameDialogVisible" width="400px" append-to-body>
+    <el-dialog title="重命名部门" v-model="renameDialogVisible" width="400px" append-to-body>
       <el-form>
         <el-form-item label="部门名称" required>
           <el-input v-model="renameValue" @keyup.enter="confirmRename" />
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="renameDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="confirmRename">确定</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->

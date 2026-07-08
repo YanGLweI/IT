@@ -1,9 +1,10 @@
 <template>
   <div class="login-log-list">
     <el-card>
-      <div slot="header">
+      <template #header><div>
         <span>登录日志</span>
       </div>
+      </template>
       
       <!-- 筛选区 -->
       <el-form :inline="true" :model="filters" class="filter-form">
@@ -30,14 +31,14 @@
       <el-table :data="logs" border stripe v-loading="loading">
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="created_at" label="时间" width="180" align="center">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             {{ formatDate(scope.row.created_at) }}
           </template>
         </el-table-column>
         <el-table-column prop="username" label="用户名" width="120" align="center" />
         <el-table-column prop="display_name" label="姓名" width="120" align="center" />
         <el-table-column prop="action" label="操作" width="120" align="center">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <el-tag :type="getActionTagType(scope.row.action)" size="small">
               {{ getActionLabel(scope.row.action) }}
             </el-tag>

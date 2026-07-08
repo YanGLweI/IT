@@ -1,13 +1,15 @@
 <template>
   <div class="patch-update">
     <el-card>
-      <div slot="header" class="page-header">
+      <template #header>
+<div class="page-header">
         <span>补丁更新</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="openCreate">上传合规性报表</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+          <el-button type="primary" size="small" :icon="UploadFilled" @click="openCreate">上传合规性报表</el-button>
+          <el-button type="default" size="small" :icon="Refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
+</template>
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
@@ -18,8 +20,8 @@
           <el-option label="合规" value="compliant" />
           <el-option label="不合规" value="non_compliant" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索文件名..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+        <el-input v-model="keyword" placeholder="搜索文件名..." size="small" clearable @keyup.enter="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
+        <el-button size="small" type="primary" :icon="Search" @click="handleFilterChange">搜索</el-button>
       </div>
 
       <!-- 数据表格 -->
@@ -27,41 +29,41 @@
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="year" label="年份" width="80" align="center" />
         <el-table-column prop="month" label="月份" width="80" align="center">
-          <template slot-scope="{ row }">{{ row.month }}月</template>
+          <template v-slot="{ row }">{{ row.month }}月</template>
         </el-table-column>
         <el-table-column prop="total_assets" label="资产总数" width="100" align="center" />
         <el-table-column label="合规性" width="100" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <el-tag :type="row.compliance === 'compliant' ? 'success' : 'danger'" size="small">
               {{ row.compliance === 'compliant' ? '合规' : '不合规' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="不合规资产数" width="120" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <span :style="row.fix_file_name ? 'text-decoration: line-through' : ''">{{ row.non_compliant_assets }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="file_name" label="合规性报表" min-width="200" show-overflow-tooltip />
         <el-table-column label="修复报表" width="150" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <template v-if="row.fix_file_name">
               <div class="op-btns" style="justify-content: center">
-                <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewFix(row)">预览</el-button>
-                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDeleteFix(row)">删除</el-button>
+                <el-button size="small" text :icon="View" @click="handlePreviewFix(row)">预览</el-button>
+                <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="handleDeleteFix(row)">删除</el-button>
               </div>
             </template>
-            <el-button v-else-if="row.compliance === 'non_compliant'" size="mini" type="text" icon="el-icon-s-check" style="color: #67C23A" @click="openFixUpload(row)">修复</el-button>
+            <el-button v-else-if="row.compliance === 'non_compliant'" size="small" text :icon="CircleCheck" style="color: #67C23A" @click="openFixUpload(row)">修复</el-button>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="240" fixed="right" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
+              <el-button size="small" text :icon="View" @click="handlePreview(row)">预览</el-button>
+              <el-button size="small" text :icon="Download" @click="handleDownload(row)">下载</el-button>
+              <el-button size="small" text :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+              <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -82,7 +84,7 @@
     </el-card>
 
     <!-- 上传/编辑弹窗 -->
-    <el-dialog :title="isEdit ? '编辑合规性报表' : '上传合规性报表'" :visible.sync="showForm" width="560px" :close-on-click-modal="false">
+    <el-dialog :title="isEdit ? '编辑合规性报表' : '上传合规性报表'" v-model="showForm" width="560px" :close-on-click-modal="false">
       <el-form :model="form" ref="formRef" :rules="formRules" label-width="110px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -122,21 +124,23 @@
             :file-list="fileList"
             drag
           >
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-            <div slot="tip" class="el-upload__tip">仅支持 PDF 格式文件</div>
+            <template #tip class="el-upload__tip">仅支持 PDF 格式文件</template>
           </el-upload>
         </el-form-item>
         <el-alert v-else title="编辑模式下不可更换文件" type="info" :closable="false" show-icon />
       </el-form>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="showForm = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存' : '确定上传' }}</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 修复报表上传弹窗 -->
-    <el-dialog title="上传修复报表" :visible.sync="showFixUpload" width="480px" :close-on-click-modal="false">
+    <el-dialog title="上传修复报表" v-model="showFixUpload" width="480px" :close-on-click-modal="false">
       <el-upload
         ref="fixUploader"
         action=""
@@ -148,23 +152,25 @@
         :file-list="fixFileList"
         drag
       >
-        <i class="el-icon-upload"></i>
+        <el-icon><Upload /></el-icon>
         <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-        <div slot="tip" class="el-upload__tip">仅支持 PDF 格式文件</div>
+        <template #tip class="el-upload__tip">仅支持 PDF 格式文件</template>
       </el-upload>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="showFixUpload = false">取消</el-button>
         <el-button type="primary" :loading="fixUploading" @click="handleFixUpload">确定上传</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
+    <el-dialog title="文件预览" v-model="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
       <iframe v-if="pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
     </el-dialog>
 
     <!-- 修复报表预览弹窗 -->
-    <el-dialog title="修复报表预览" :visible.sync="fixPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearFixPreview">
+    <el-dialog title="修复报表预览" v-model="fixPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearFixPreview">
       <iframe v-if="fixPdfBlobUrl" :src="fixPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
     </el-dialog>
 
@@ -181,10 +187,11 @@ import {
   getPatchFixPreviewUrl, getPatchFixDownloadUrl
 } from '@/api/patch_update'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import { CircleCheck, Delete, Download, Edit, Refresh, Search, Upload, UploadFilled, View } from '@element-plus/icons-vue'
 
 export default {
+  components: { DualControlDialog, CircleCheck, Delete, Download, Edit, Refresh, Search, Upload, UploadFilled, View },
   name: 'PatchUpdate',
-  components: { DualControlDialog },
   data() {
     const now = new Date()
     return {

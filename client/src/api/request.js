@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Message } from 'element-ui'
+import { ElMessage } from 'element-plus'
 import router from '@/router'
 
 const request = axios.create({
@@ -39,10 +39,10 @@ function handleLogout(msg) {
   localStorage.removeItem('token')
   localStorage.removeItem('username')
   localStorage.removeItem('display_name')
-  const currentPath = router.currentRoute.path
+  const currentPath = router.currentRoute.value.path
   if (currentPath !== '/login') {
     if (msg) {
-      Message.error(msg)
+      ElMessage.error(msg)
     }
     router.push('/login').catch(() => {})
   }
@@ -65,7 +65,7 @@ request.interceptors.response.use(
   response => {
     const res = response.data
     if (res.code && res.code !== 200) {
-      Message.error(res.message || '请求失败')
+      ElMessage.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message || '请求失败'))
     }
     return res
@@ -137,7 +137,7 @@ request.interceptors.response.use(
     }
 
     // 其他错误显示提示
-    Message.error(error.response?.data?.message || error.message || '网络错误')
+    ElMessage.error(error.response?.data?.message || error.message || '网络错误')
     return Promise.reject(error)
   }
 )

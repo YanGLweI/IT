@@ -1,32 +1,34 @@
 <template>
   <div class="policy-list">
     <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
-        <span>IT政策管理</span>
-        <el-button type="primary" size="small" icon="el-icon-upload2" @click="uploadVisible = true">上传政策</el-button>
-      </div>
+      <template #header>
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <span>IT政策管理</span>
+          <el-button type="primary" size="small" :icon="Upload" @click="uploadVisible = true">上传政策</el-button>
+        </div>
+      </template>
       <el-table :data="policies" border stripe>
         <el-table-column prop="title" label="标题" />
         <el-table-column prop="description" label="描述" show-overflow-tooltip />
         <el-table-column prop="file_name" label="文件名" />
         <el-table-column label="文件大小" width="120">
-          <template slot-scope="scope">{{ formatSize(scope.row.file_size) }}</template>
+          <template v-slot="scope">{{ formatSize(scope.row.file_size) }}</template>
         </el-table-column>
         <el-table-column label="上传时间" width="180">
-          <template slot-scope="scope">{{ formatDate(scope.row.created_at) }}</template>
+          <template v-slot="scope">{{ formatDate(scope.row.created_at) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="280" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handlePreview(scope.row)">预览</el-button>
-            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+          <template v-slot="scope">
+            <el-button size="small" @click="handlePreview(scope.row)">预览</el-button>
+            <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
     <!-- 上传弹窗 -->
-    <el-dialog title="上传政策文件" :visible.sync="uploadVisible" width="500px">
+    <el-dialog title="上传政策文件" v-model="uploadVisible" width="500px">
       <el-form :model="uploadForm" :rules="uploadRules" ref="uploadFormRef" label-width="80px">
         <el-form-item label="标题" prop="title">
           <el-input v-model="uploadForm.title" placeholder="请输入政策标题" />
@@ -44,20 +46,20 @@
             :file-list="fileList"
             drag
           >
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
-            <div class="el-upload__tip" slot="tip">支持 PDF、DOC、DOCX、XLS、XLSX 等格式</div>
+            <template #tip><div class="el-upload__tip" >支持 PDF、DOC、DOCX、XLS、XLSX 等格式</div></template>
           </el-upload>
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="uploadVisible = false">取消</el-button>
         <el-button type="primary" :loading="uploading" @click="handleUpload">上传</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- 编辑弹窗 -->
-    <el-dialog title="编辑政策" :visible.sync="editVisible" width="500px">
+    <el-dialog title="编辑政策" v-model="editVisible" width="500px">
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="标题">
           <el-input v-model="editForm.title" />
@@ -66,34 +68,34 @@
           <el-input v-model="editForm.description" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="editVisible = false">取消</el-button>
         <el-button type="primary" @click="handleEditSubmit">保存</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" @closed="clearDocxPreview">
+    <el-dialog title="文件预览" v-model="previewVisible" width="80%" top="5vh" @closed="clearDocxPreview">
       <!-- 工具栏：搜索 + 下载 -->
-      <div class="preview-toolbar" slot="title">
+      <template #title><div class="preview-toolbar">
         <span>文件预览</span>
         <div class="preview-toolbar-right">
           <el-input
             v-model="searchKeyword"
             placeholder="搜索关键词"
             size="small"
-            prefix-icon="el-icon-search"
+            :prefix-icon="Search"
             clearable
             style="width: 320px; margin-right: 10px"
-            @keyup.enter.native="searchNext"
+            @keyup.enter="searchNext"
             @clear="clearSearch"
           >
           </el-input>
-          <el-button icon="el-icon-bottom" @click="searchNext" size="small" style="margin-right: 10px">下一个</el-button>
+          <el-button :icon="Bottom" @click="searchNext" size="small" style="margin-right: 10px">下一个</el-button>
           <span v-if="searchKeyword" class="search-info">{{ searchIndex + 1 }} / {{ searchTotal }}</span>
-          <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFile">下载</el-button>
+          <el-button type="primary" size="small" :icon="Download" @click="downloadFile">下载</el-button>
         </div>
-      </div>
+      </div></template>
       <div v-if="previewType === 'pdf'" style="height: 70vh">
         <iframe ref="pdfFrame" :src="previewUrl" style="width: 100%; height: 100%; border: none"></iframe>
       </div>
@@ -472,36 +474,36 @@ export default {
 .docx-preview-container {
   background: #fff;
 }
-.docx-preview-container >>> .docx-wrapper {
+.docx-preview-container :deep(.docx-wrapper) {
   background: #fff;
   padding: 0;
   width: 100%;
   min-width: 100%;
   overflow-x: auto;
 }
-.docx-preview-container >>> .docx {
+.docx-preview-container :deep(.docx) {
   width: 100%;
   overflow-x: auto;
 }
-.docx-preview-container >>> .docx table {
+.docx-preview-container :deep(.docx) table {
   width: 100% !important;
   table-layout: auto;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
+.docx-preview-container :deep(.docx) table td,
+.docx-preview-container :deep(.docx) table th {
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal !important;
   min-width: 40px;
 }
-/* 搜索高亮样式 - 不能用 scoped，需要用 >>> */
-.docx-preview-container >>> mark.search-highlight {
+/* 搜索高亮样式 */
+.docx-preview-container :deep(mark.search-highlight) {
   background-color: #fff3cd;
   color: inherit;
   padding: 1px 2px;
   border-radius: 2px;
 }
-.docx-preview-container >>> mark.search-highlight-active {
+.docx-preview-container :deep(mark.search-highlight-active) {
   background-color: #ff9632;
   color: #fff;
   padding: 1px 2px;

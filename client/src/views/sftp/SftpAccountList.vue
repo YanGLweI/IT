@@ -1,14 +1,16 @@
 <template>
   <div class="sftp-page">
     <el-card>
-      <div slot="header" class="page-header">
+      <template #header>
+<div class="page-header">
         <span>SFTP账号一览</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-setting" @click="showServerManage = true">配置管理</el-button>
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openAccountForm()" :disabled="servers.length === 0">新增账号</el-button>
-          <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+          <el-button type="primary" size="small" :icon="Setting" @click="showServerManage = true">配置管理</el-button>
+          <el-button type="primary" size="small" :icon="Plus" @click="openAccountForm()" :disabled="servers.length === 0">新增账号</el-button>
+          <el-button type="primary" size="small" :icon="Refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
+</template>
 
       <!-- 服务器 Tabs -->
       <el-tabs v-model="activeServerId" @tab-click="handleTabClick">
@@ -25,16 +27,18 @@
         <el-input
           v-model="searchKeyword"
           placeholder="搜索账号"
-          prefix-icon="el-icon-search"
+          :prefix-icon="Search"
           clearable
           size="small"
           style="width: 240px"
           @clear="handleSearch"
-          @keyup.enter.native="handleSearch"
+          @keyup.enter="handleSearch"
         >
-          <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
+          <template #append>
+<el-button :icon="Search" @click="handleSearch"></el-button>
+</template>
         </el-input>
-        <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出月度确认表</el-button>
+        <el-button type="success" size="small" :icon="Download" :loading="exporting" @click="handleExport">导出月度确认表</el-button>
       </div>
 
       <!-- 账号表格 -->
@@ -50,7 +54,7 @@
         <el-table-column prop="created_time" label="创建时间" width="120" />
         <el-table-column prop="validity" label="有效期" width="120" />
         <el-table-column label="权限" width="100">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <template v-if="parsePermissions(row.permissions_json).length > 0">
               <el-tag
                 v-for="perm in parsePermissions(row.permissions_json)"
@@ -68,7 +72,7 @@
         <el-table-column prop="contact_person" label="所属对接人" width="120" />
         <el-table-column prop="department" label="所属部门" width="120" />
         <el-table-column label="白名单IP" min-width="180">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <template v-if="parseWhitelist(row.whitelist_json).length > 0">
               <el-tag
                 v-for="(ip, idx) in parseWhitelist(row.whitelist_json)"
@@ -84,9 +88,9 @@
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right" align="center">
-          <template slot-scope="{ row }">
-            <el-button size="mini" type="text" @click="openAccountForm(row)">编辑</el-button>
-            <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDelete(row)">删除</el-button>
+          <template v-slot="{ row }">
+            <el-button size="small" text @click="openAccountForm(row)">编辑</el-button>
+            <el-button size="small" text style="color:#F56C6C" @click="confirmDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -105,13 +109,13 @@
     </el-card>
 
     <!-- 服务器配置管理弹窗 -->
-    <el-dialog title="SFTP服务器配置" :visible.sync="showServerManage" width="500px" @close="fetchData">
+    <el-dialog title="SFTP服务器配置" v-model="showServerManage" width="500px" @close="fetchData">
       <div class="server-list">
         <div v-for="server in servers" :key="server.id" class="server-item">
           <span>{{ server.name }}</span>
           <div>
-            <el-button size="mini" type="text" @click="editServer(server)">编辑</el-button>
-            <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDeleteServer(server)">删除</el-button>
+            <el-button size="small" text @click="editServer(server)">编辑</el-button>
+            <el-button size="small" text style="color:#F56C6C" @click="confirmDeleteServer(server)">删除</el-button>
           </div>
         </div>
         <div v-if="servers.length === 0" class="empty-text">暂无服务器，请添加</div>
@@ -123,7 +127,7 @@
     </el-dialog>
 
     <!-- 账号表单弹窗 -->
-    <el-dialog :title="isEdit ? '编辑账号' : '新增账号'" :visible.sync="accountFormVisible" width="600px" @close="resetAccountForm">
+    <el-dialog :title="isEdit ? '编辑账号' : '新增账号'" v-model="accountFormVisible" width="600px" @close="resetAccountForm">
       <el-form :model="accountForm" :rules="accountRules" ref="accountForm" label-width="100px">
         <el-form-item label="所属服务器" prop="server_id">
           <el-select v-model="accountForm.server_id" placeholder="请选择所属服务器" style="width:100%">
@@ -171,10 +175,12 @@
           <el-input v-model="accountForm.whitelist" type="textarea" :rows="3" placeholder="每行一个IP地址，或用逗号分隔" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer>
+<div>
         <el-button @click="accountFormVisible = false">取消</el-button>
         <el-button type="primary" @click="submitAccountForm" :loading="saving">确定</el-button>
       </div>
+</template>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
@@ -182,12 +188,14 @@
   </div>
 </template>
 
+import { Download, Plus, Refresh, Search, Setting } from '@element-plus/icons-vue'
 <script>
 import { getSftpServers, createSftpServer, updateSftpServer, deleteSftpServer, getSftpAccounts, createSftpAccount, updateSftpAccount, deleteSftpAccount, exportSftpConfirmation } from '@/api/sftp'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
+
 export default {
-  components: { DualControlDialog },
+  components: { Download, DualControlDialog, Plus, Refresh, Search, Setting },
   name: 'SftpAccountList',
   data() {
     return {

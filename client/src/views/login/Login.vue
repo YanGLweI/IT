@@ -15,7 +15,7 @@
     <div class="login-card">
       <div class="login-header">
         <div class="logo-icon">
-          <i class="el-icon-monitor"></i>
+          <el-icon :size="36" color="#fff"><Monitor /></el-icon>
         </div>
         <h1 ref="titleText">IT 管理平台</h1>
         <p ref="subtitleText" class="subtitle">IT Management Platform</p>
@@ -27,8 +27,8 @@
             ref="usernameInput"
             v-model="loginForm.username"
             placeholder="请输入域账号"
-            prefix-icon="el-icon-user"
-            @keyup.enter.native="handleLogin"
+            :prefix-icon="User"
+            @keyup.enter="handleLogin"
           />
         </el-form-item>
         <el-form-item prop="password">
@@ -36,9 +36,9 @@
             v-model="loginForm.password"
             type="password"
             placeholder="请输入密码"
-            prefix-icon="el-icon-lock"
+            :prefix-icon="Lock"
             show-password
-            @keyup.enter.native="handleLogin"
+            @keyup.enter="handleLogin"
           />
         </el-form-item>
         <el-form-item>
@@ -63,9 +63,11 @@
 <script>
 import { login } from '@/api/auth'
 import { animate, stagger, splitText, scrambleText } from 'animejs'
+import { User, Lock, Monitor } from '@element-plus/icons-vue'
 
 export default {
   name: 'Login',
+  components: { User, Lock, Monitor },
   data() {
     return {
       loginForm: {
@@ -97,7 +99,7 @@ export default {
     this.initTitleAnimation()
     this.initSubtitleAnimation()
   },
-  beforeDestroy() {
+  beforeUnmount() {
     if (this.titleAnimation) {
       this.titleAnimation.pause()
     }
@@ -378,7 +380,7 @@ export default {
   box-shadow: 0 8px 24px rgba(24, 144, 255, 0.3);
 }
 
-.logo-icon i {
+.logo-icon .el-icon {
   font-size: 36px;
   color: #fff;
 }
@@ -402,10 +404,15 @@ export default {
   margin-top: 10px;
 }
 
+.login-form .el-input__wrapper {
+  height: 46px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
 .login-form .el-input__inner {
   height: 46px;
   line-height: 46px;
-  border-radius: 8px;
   font-size: 14px;
 }
 

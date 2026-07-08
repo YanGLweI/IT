@@ -163,7 +163,7 @@
   box-shadow: 0 0 12px rgba(64, 158, 255, 0.15);
 }
 
-.app-header .user-info i:first-child {
+.app-header .user-info .el-icon:first-child {
   margin-right: 6px;
   font-size: 14px;
   color: #409EFF;

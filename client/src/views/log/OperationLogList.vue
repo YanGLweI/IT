@@ -1,9 +1,10 @@
 <template>
   <div class="operation-log-list">
     <el-card>
-      <div slot="header">
+      <template #header><div>
         <span>操作日志</span>
       </div>
+      </template>
       
       <!-- 筛选区 -->
       <el-form :inline="true" :model="filters" class="filter-form">
@@ -46,7 +47,7 @@
       <el-table :data="logs" border stripe v-loading="loading">
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="created_at" label="时间" width="180" align="center">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             {{ formatDate(scope.row.created_at) }}
           </template>
         </el-table-column>
@@ -54,15 +55,15 @@
         <el-table-column prop="display_name" label="姓名" width="120" align="center" />
         <el-table-column prop="action" label="操作" width="200" align="center" show-overflow-tooltip/>
         <el-table-column prop="resource_type" label="资源类型" width="120" align="center">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             {{ resourceTypeLabels[scope.row.resource_type] || scope.row.resource_type }}
           </template>
         </el-table-column>
         <el-table-column prop="resource_name" label="资源名称" show-overflow-tooltip />
         <el-table-column prop="approver" label="审批人" width="120" align="center" />
         <el-table-column label="操作" width="100" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handleViewDetail(scope.row)">详情</el-button>
+          <template v-slot="scope">
+            <el-button size="small" @click="handleViewDetail(scope.row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -81,7 +82,7 @@
     </el-card>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="操作日志详情" :visible.sync="detailDialogVisible" width="700px">
+    <el-dialog title="操作日志详情" v-model="detailDialogVisible" width="700px">
       <div v-if="currentLog">
         <el-descriptions :column="2" border size="medium">
           <el-descriptions-item label="操作时间">{{ formatDate(currentLog.created_at) }}</el-descriptions-item>
@@ -98,13 +99,13 @@
           <el-table :data="currentDetails" border stripe size="small">
             <el-table-column prop="field_label" label="字段名" width="150" />
             <el-table-column prop="old_value" label="旧值" show-overflow-tooltip>
-              <template slot-scope="scope">
+              <template v-slot="scope">
                 <pre v-if="isJson(scope.row.old_value)" class="json-display">{{ formatFieldValue(scope.row.field_name, scope.row.old_value) }}</pre>
                 <span v-else>{{ formatFieldValue(scope.row.field_name, scope.row.old_value) }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="new_value" label="新值" show-overflow-tooltip>
-              <template slot-scope="scope">
+              <template v-slot="scope">
                 <pre v-if="isJson(scope.row.new_value)" class="json-display">{{ formatFieldValue(scope.row.field_name, scope.row.new_value) }}</pre>
                 <span v-else>{{ formatFieldValue(scope.row.field_name, scope.row.new_value) }}</span>
               </template>

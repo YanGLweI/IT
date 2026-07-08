@@ -174,20 +174,29 @@
 }
 
 /* Input / Textarea */
-.el-dialog .el-input__inner,
+.el-dialog .el-input__wrapper,
 .el-dialog .el-textarea__inner {
   background-color: #f6f8fa !important;
   border-color: #d0d7de !important;
-  color: #1f2328 !important;
   border-radius: 6px;
   transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
-.el-dialog .el-input__inner:focus,
+.el-dialog .el-input__wrapper {
+  box-shadow: none !important;
+}
+
+.el-dialog .el-input__inner,
+.el-dialog .el-textarea__inner {
+  background-color: transparent !important;
+  color: #1f2328 !important;
+}
+
+.el-dialog .el-input__wrapper:focus-within,
 .el-dialog .el-textarea__inner:focus {
   background-color: #ffffff !important;
   border-color: #0969da !important;
-  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12) !important;
 }
 
 .el-dialog .el-input__inner::placeholder,
@@ -251,7 +260,7 @@
   color: #0969da !important;
 }
 
-.el-dialog .el-upload-dragger .el-icon-upload {
+.el-dialog .el-upload-dragger .el-icon {
   color: #0969da !important;
 }
 

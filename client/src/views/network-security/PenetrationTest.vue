@@ -6,21 +6,23 @@
         <el-tab-pane label="内部渗透测试" name="internal" />
         <el-tab-pane label="外部渗透测试" name="external" />
       </el-tabs>
-      <div slot="header" class="page-header">
+      <template #header>
+<div class="page-header">
         <span>渗透测试</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="openUpload">上传报告</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+          <el-button type="primary" size="small" :icon="UploadFilled" @click="openUpload">上传报告</el-button>
+          <el-button type="default" size="small" :icon="Refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
+</template>
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
         <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
           <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索文件名/日期/描述..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 220px" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+        <el-input v-model="keyword" placeholder="搜索文件名/日期/描述..." size="small" clearable @keyup.enter="handleFilterChange" @clear="handleFilterChange" style="width: 220px" />
+        <el-button size="small" type="primary" :icon="Search" @click="handleFilterChange">搜索</el-button>
       </div>
 
       <!-- 数据表格 -->
@@ -29,17 +31,17 @@
         <el-table-column prop="year" label="年份" width="70" align="center" />
         <el-table-column prop="report_date" label="报告日期" width="110" align="center" />
         <el-table-column label="可渗透漏洞数" width="110" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <span style="color: #F56C6C; font-weight: bold">{{ row.vuln_count }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="description" label="结果描述" min-width="200" show-overflow-tooltip />
         <el-table-column label="关联漏洞扫描报告" width="320" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
               <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark" :enterable="false">
-                <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
-                <el-tag size="mini" style="margin: 2px; cursor: pointer;" @click.native="handlePreviewVulnScan(vs)">
+                <template #content>{{ formatVulnScanTooltip(vs) }}</template>
+                <el-tag size="small" style="margin: 2px; cursor: pointer;" @click="handlePreviewVulnScan(vs)">
                   {{ formatVulnScanLabel(vs) }}
                 </el-tag>
               </el-tooltip>
@@ -49,11 +51,11 @@
         </el-table-column>
         <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
         <el-table-column label="操作" width="180" fixed="right" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
+              <el-button size="small" text :icon="View" @click="handlePreview(row)">预览</el-button>
+              <el-button size="small" text :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+              <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -74,7 +76,7 @@
     </el-card>
 
     <!-- 上传/编辑弹窗 -->
-    <el-dialog :title="isEdit ? '编辑渗透测试报告' : '上传渗透测试报告'" :visible.sync="showUpload" width="680px" :close-on-click-modal="false">
+    <el-dialog :title="isEdit ? '编辑渗透测试报告' : '上传渗透测试报告'" v-model="showUpload" width="680px" :close-on-click-modal="false">
       <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="120px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -111,28 +113,32 @@
             :file-list="fileList"
             drag
           >
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-            <div slot="tip" class="el-upload__tip">支持 PDF / DOCX 格式文件</div>
+            <template #tip class="el-upload__tip">支持 PDF / DOCX 格式文件</template>
           </el-upload>
         </el-form-item>
         <el-alert v-else title="编辑模式下不可更换文件" type="info" :closable="false" show-icon />
       </el-form>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="showUpload = false">取消</el-button>
         <el-button type="primary" :loading="uploading" @click="handleUpload">{{ isEdit ? '保存' : '确定上传' }}</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
+    <el-dialog title="文件预览" v-model="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
       <iframe v-if="previewUrl && isPdf && pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
         <div ref="docxContainer" class="docx-preview-container"></div>
       </div>
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
+      <template #footer>
+<span>
+        <el-button type="primary" size="small" :icon="Download" @click="handleDownloadFromPreview">下载</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
@@ -140,6 +146,7 @@
   </div>
 </template>
 
+import { Delete, Download, Edit, Refresh, Search, Upload, UploadFilled, View } from '@element-plus/icons-vue'
 <script>
 import {
   getPenetrationTests, createPenetrationTest, updatePenetrationTest, deletePenetrationTest,
@@ -149,9 +156,10 @@ import { getVulnerabilityScans, getVulnerabilityScanPreviewUrl, getVulnerability
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import { renderAsync } from 'docx-preview'
 
+
 export default {
+  components: { Delete, Download, DualControlDialog, Edit, Refresh, Search, Upload, UploadFilled, View },
   name: 'PenetrationTest',
-  components: { DualControlDialog },
   data() {
     const now = new Date()
     return {
@@ -489,12 +497,12 @@ export default {
   justify-content: center;
 }
 /* 漏洞扫描报告选择器 tag 样式 */
-.vuln-scan-select ::v-deep .el-tag {
+.vuln-scan-select :deep(.el-tag) {
   max-width: 280px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
-.vuln-scan-select ::v-deep .el-tag .el-select__tags-text {
+.vuln-scan-select :deep(.el-tag .el-select__tags-text) {
   max-width: 240px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -508,15 +516,15 @@ export default {
   text-overflow: ellipsis !important;
 }
 /* DOCX 预览容器样式 */
-.docx-preview-container >>> .docx-wrapper {
+.docx-preview-container :deep(.docx-wrapper) {
   background: #fff;
 }
-.docx-preview-container >>> .docx table {
+.docx-preview-container :deep(.docx) table {
   border-collapse: collapse;
   width: 100%;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
+.docx-preview-container :deep(.docx) table td,
+.docx-preview-container :deep(.docx) table th {
   border: 1px solid #ddd;
   padding: 8px;
 }

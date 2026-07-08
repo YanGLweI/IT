@@ -3,12 +3,15 @@
 
     <!-- ==================== 区块一：模板管理 ==================== -->
     <el-card style="margin-bottom: 20px">
-      <div slot="header" class="page-header">
+      <template #header>
+        <div class="page-header">
         <span>备份与恢复记录表模板</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showTemplateUpload = true">上传新版本</el-button>
+          <el-button type="primary" size="small" :icon="Upload" @click="showTemplateUpload = true">上传新版本</el-button>
         </div>
       </div>
+      </template>
+      
 
       <!-- 当前版本信息 -->
       <div v-if="currentTemplate" class="current-template-info">
@@ -21,8 +24,8 @@
           <span v-if="currentTemplate.description" style="margin-left: 12px; color: #606266; font-size: 13px">
             （{{ currentTemplate.description }}）
           </span>
-          <el-button type="primary" size="mini" icon="el-icon-view" style="margin-left: 16px" @click="previewTemplate(currentTemplate)">预览</el-button>
-          <el-button type="default" size="mini" icon="el-icon-download" @click="downloadTemplate(currentTemplate)">下载当前模板</el-button>
+          <el-button type="primary" size="small" :icon="View" style="margin-left: 16px" @click="previewTemplate(currentTemplate)">预览</el-button>
+          <el-button type="default" size="small" :icon="Download" @click="downloadTemplate(currentTemplate)">下载当前模板</el-button>
         </div>
       </div>
       <el-empty v-else description="暂无模板，请上传第一个版本" :image-size="60" style="padding: 16px 0" />
@@ -34,20 +37,20 @@
             <el-table-column type="index" label="序号" width="56" align="center" />
             <el-table-column prop="version" label="版本号" width="110" align="center" />
             <el-table-column prop="description" label="版本说明" min-width="160" show-overflow-tooltip>
-              <template slot-scope="{ row }">{{ row.description || '-' }}</template>
+              <template v-slot="{ row }">{{ row.description || '-' }}</template>
             </el-table-column>
             <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
             <el-table-column label="文件大小" width="100" align="center">
-              <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
+              <template v-slot="{ row }">{{ formatSize(row.file_size) }}</template>
             </el-table-column>
             <el-table-column label="上传时间" width="180" align="center">
-              <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
+              <template v-slot="{ row }">{{ formatDate(row.created_at) }}</template>
             </el-table-column>
             <el-table-column label="操作" width="200" align="center">
-              <template slot-scope="{ row }">
-                <el-button size="mini" type="text" icon="el-icon-view" @click="previewTemplate(row)">预览</el-button>
-                <el-button size="mini" type="text" icon="el-icon-download" @click="downloadTemplate(row)">下载</el-button>
-                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteTemplate(row)">删除</el-button>
+              <template v-slot="{ row }">
+                <el-button size="small" text :icon="View" @click="previewTemplate(row)">预览</el-button>
+                <el-button size="small" text :icon="Download" @click="downloadTemplate(row)">下载</el-button>
+                <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="deleteTemplate(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -57,13 +60,16 @@
 
     <!-- ==================== 区块二：备份管理 ==================== -->
     <el-card>
-      <div slot="header" class="page-header">
+      <template #header>
+        <div class="page-header">
         <span>备份管理</span>
         <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openCreate">新增备份记录</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+          <el-button type="primary" size="small" :icon="Plus" @click="openCreate">新增备份记录</el-button>
+          <el-button type="default" size="small" :icon="Refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
       </div>
+      </template>
+      
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
@@ -76,35 +82,35 @@
         <el-select v-model="filterTool" placeholder="全部备份工具" size="small" clearable @change="handleFilterChange" style="width: 150px">
           <el-option v-for="t in backupToolOptions" :key="t" :label="t" :value="t" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索备份对象/工具/资产名" size="small" clearable style="width: 220px" @clear="handleFilterChange" @keyup.enter.native="handleFilterChange" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+        <el-input v-model="keyword" placeholder="搜索备份对象/工具/资产名" size="small" clearable style="width: 220px" @clear="handleFilterChange" @keyup.enter="handleFilterChange" />
+        <el-button size="small" type="primary" :icon="Search" @click="handleFilterChange">搜索</el-button>
       </div>
 
       <!-- 数据表格 -->
       <el-table :data="records" border stripe v-loading="loading" style="margin-top: 12px">
         <el-table-column type="expand">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <div style="padding: 8px 20px">
               <div style="margin-bottom: 8px">
-                <el-button size="mini" type="primary" icon="el-icon-plus" @click="openRecoveryForm(row)">添加恢复记录</el-button>
+                <el-button size="small" type="primary" :icon="Plus" @click="openRecoveryForm(row)">添加恢复记录</el-button>
               </div>
               <el-table :data="row.recoveries || []" border size="small">
                 <el-table-column type="index" label="#" width="50" align="center" />
                 <el-table-column prop="recovery_type" label="恢复类型" width="100" align="center" />
                 <el-table-column label="恢复结果" width="80" align="center">
-                  <template slot-scope="{ row: r }">
+                  <template v-slot="{ row: r }">
                     <el-tag :type="r.recovery_result === '成功' ? 'success' : 'danger'" size="small">{{ r.recovery_result }}</el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column prop="recovery_date" label="恢复日期" width="110" align="center" />
                 <el-table-column prop="file_name" label="恢复与还原记录表" show-overflow-tooltip />
                 <el-table-column label="操作" width="300" align="center">
-                  <template slot-scope="{ row: r }">
+                  <template v-slot="{ row: r }">
                     <div class="op-btns">
-                      <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRecovery(r)">预览</el-button>
-                      <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownloadRecovery(r)">下载</el-button>
-                      <el-button size="mini" type="text" icon="el-icon-edit" @click="openRecoveryEdit(r, row)">编辑</el-button>
-                      <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDeleteRecovery(r)">删除</el-button>
+                      <el-button size="small" text :icon="View" @click="handlePreviewRecovery(r)">预览</el-button>
+                      <el-button size="small" text :icon="Download" @click="handleDownloadRecovery(r)">下载</el-button>
+                      <el-button size="small" text :icon="Edit" @click="openRecoveryEdit(r, row)">编辑</el-button>
+                      <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="handleDeleteRecovery(r)">删除</el-button>
                     </div>
                   </template>
                 </el-table-column>
@@ -115,28 +121,28 @@
         <el-table-column type="index" label="#" width="50" align="center" />
         <el-table-column prop="application_date" label="申请日期" width="110" align="center" />
         <el-table-column label="备份源" width="150" show-overflow-tooltip>
-          <template slot-scope="{ row }">{{ row.backup_source_asset ? row.backup_source_asset.computer_name : '-' }}</template>
+          <template v-slot="{ row }">{{ row.backup_source_asset ? row.backup_source_asset.computer_name : '-' }}</template>
         </el-table-column>
         <el-table-column prop="backup_target" label="备份对象" width="150" show-overflow-tooltip/>
         <el-table-column prop="backup_tool" label="备份工具" width="120" align="center" show-overflow-tooltip/>
         <el-table-column label="备份介质" width="150" show-overflow-tooltip>
-          <template slot-scope="{ row }">{{ row.backup_medium_asset ? row.backup_medium_asset.computer_name : '-' }}</template>
+          <template v-slot="{ row }">{{ row.backup_medium_asset ? row.backup_medium_asset.computer_name : '-' }}</template>
         </el-table-column>
         <el-table-column prop="backup_frequency" label="备份频率" width="80" align="center" />
         <el-table-column prop="retention_policy" label="保留策略" width="90" align="center" show-overflow-tooltip />
         <el-table-column prop="full_backup_strategy" label="全量备份" width="80" align="center" />
         <el-table-column label="所属部门" width="100" align="center">
-          <template slot-scope="{ row }">{{ row.department ? row.department.name : '-' }}</template>
+          <template v-slot="{ row }">{{ row.department ? row.department.name : '-' }}</template>
         </el-table-column>
         <el-table-column prop="file_name" label="申请表" min-width="150" show-overflow-tooltip />
         <el-table-column label="操作" width="320" fixed="right" align="center">
-          <template slot-scope="{ row }">
+          <template v-slot="{ row }">
             <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="openEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
-              <el-button size="mini" type="text" icon="el-icon-refresh-right" style="color: #409EFF" @click="openRecoveryForm(row)">恢复</el-button>
+              <el-button size="small" text :icon="View" @click="handlePreview(row)">预览</el-button>
+              <el-button size="small" text :icon="Download" @click="handleDownload(row)">下载</el-button>
+              <el-button size="small" text :icon="Edit" @click="openEdit(row)">编辑</el-button>
+              <el-button size="small" text :icon="Delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
+              <el-button size="small" text :icon="RefreshRight" style="color: #409EFF" @click="openRecoveryForm(row)">恢复</el-button>
             </div>
           </template>
         </el-table-column>
@@ -148,8 +154,8 @@
         background
         layout="total, sizes, prev, pager, next, jumper"
         :total="total"
-        :page-size.sync="pageSize"
-        :current-page.sync="page"
+        :page-size="pageSize"
+        :current-page="page"
         :page-sizes="[10, 20, 50]"
         @size-change="handleSizeChange"
         @current-change="fetchData"
@@ -157,7 +163,7 @@
     </el-card>
 
     <!-- 新增/编辑备份记录弹窗 -->
-    <el-dialog :title="isEdit ? '编辑备份记录' : '新增备份记录'" :visible.sync="showForm" width="650px" :close-on-click-modal="false">
+    <el-dialog :title="isEdit ? '编辑备份记录' : '新增备份记录'" v-model="showForm" width="650px" :close-on-click-modal="false">
       <el-form :model="form" ref="formRef" :rules="formRules" label-width="110px">
         <el-form-item label="申请日期" prop="application_date">
           <el-date-picker v-model="form.application_date" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" style="width: 100%" />
@@ -229,21 +235,21 @@
         </el-form-item>
         <el-form-item label="申请表" v-if="!isEdit">
           <el-upload ref="uploader" action="" :auto-upload="false" :limit="1" accept=".pdf" :on-change="handleFileChange" :on-remove="handleFileRemove" :file-list="fileList" drag>
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-            <div slot="tip" class="el-upload__tip">仅支持 PDF 格式文件</div>
+            <template #tip><div  class="el-upload__tip">仅支持 PDF 格式文件</div></template>
           </el-upload>
         </el-form-item>
         <el-alert v-else title="编辑模式下不可更换文件" type="info" :closable="false" show-icon />
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="showForm = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存' : '确定上传' }}</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- 恢复记录弹窗 -->
-    <el-dialog :title="isRecoveryEdit ? '编辑恢复记录' : '新增恢复记录'" :visible.sync="showRecoveryForm" width="500px" :close-on-click-modal="false">
+    <el-dialog :title="isRecoveryEdit ? '编辑恢复记录' : '新增恢复记录'" v-model="showRecoveryForm" width="500px" :close-on-click-modal="false">
       <el-form :model="recoveryForm" ref="recoveryFormRef" :rules="recoveryFormRules" label-width="90px">
         <el-form-item label="恢复类型" prop="recovery_type">
           <el-radio-group v-model="recoveryForm.recovery_type">
@@ -262,40 +268,40 @@
         </el-form-item>
         <el-form-item label="上传记录" v-if="!isRecoveryEdit">
           <el-upload ref="recoveryUploader" action="" :auto-upload="false" :limit="1" accept=".pdf" :on-change="handleRecoveryFileChange" :on-remove="handleRecoveryFileRemove" :file-list="recoveryFileList" drag>
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
-            <div slot="tip" class="el-upload__tip">仅支持 PDF 格式文件</div>
+            <template #tip><div  class="el-upload__tip">仅支持 PDF 格式文件</div></template>
           </el-upload>
         </el-form-item>
         <el-alert v-else title="编辑模式下不可更换文件" type="info" :closable="false" show-icon />
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="showRecoveryForm = false">取消</el-button>
         <el-button type="primary" :loading="recoverySubmitting" @click="handleRecoverySubmit">{{ isRecoveryEdit ? '保存' : '确定上传' }}</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- 申请表预览弹窗 -->
-    <el-dialog title="申请表预览" :visible.sync="previewVisible" width="80%" top="3vh" @close="clearPreview">
+    <el-dialog title="申请表预览" v-model="previewVisible" width="80%" top="3vh" @close="clearPreview">
       <iframe v-if="pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
-      </span>
+      <template #footer>
+        <el-button type="primary" size="small" :icon="Download" @click="handleDownloadFromPreview">下载</el-button>
+      </template>
     </el-dialog>
 
     <!-- 恢复记录预览弹窗 -->
-    <el-dialog title="恢复记录预览" :visible.sync="recoveryPreviewVisible" width="80%" top="3vh" @close="clearRecoveryPreview">
+    <el-dialog title="恢复记录预览" v-model="recoveryPreviewVisible" width="80%" top="3vh" @close="clearRecoveryPreview">
       <iframe v-if="recoveryPdfBlobUrl" :src="recoveryPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadRecoveryFromPreview">下载</el-button>
-      </span>
+      <template #footer>
+        <el-button type="primary" size="small" :icon="Download" @click="handleDownloadRecoveryFromPreview">下载</el-button>
+      </template>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
 
     <!-- 模板上传弹窗 -->
-    <el-dialog title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog title="上传新版本模板" v-model="showTemplateUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="templateForm" ref="templateFormRef" :rules="templateRules" label-width="90px">
         <el-form-item label="版本号" prop="version">
           <el-input v-model="templateForm.version" placeholder="如：IT12-1.0" />
@@ -306,23 +312,23 @@
         <el-form-item label="模板文件" prop="file">
           <el-upload ref="templateUploader" action="" :auto-upload="false" :limit="1" accept=".docx,.pdf"
             :on-change="handleTemplateFileChange" :on-remove="handleTemplateFileRemove" :file-list="templateFileList" drag>
-            <i class="el-icon-upload"></i>
+            <el-icon><Upload /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或<em>点击选择</em></div>
-            <div slot="tip" class="el-upload__tip">支持 DOCX、PDF 格式</div>
+            <template #tip><div  class="el-upload__tip">支持 DOCX、PDF 格式</div></template>
           </el-upload>
         </el-form-item>
       </el-form>
-      <span slot="footer">
+      <template #footer>
         <el-button @click="showTemplateUpload = false">取消</el-button>
         <el-button type="primary" :loading="templateUploading" @click="submitTemplateUpload">确定上传</el-button>
-      </span>
+      </template>
     </el-dialog>
 
     <!-- 模板预览弹窗 -->
-    <el-dialog :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
-      <div slot="title">
+    <el-dialog v-model="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
+      <template #title><div>
         <span>模板预览</span>
-      </div>
+      </div></template>
       <iframe v-if="templatePreviewType === 'pdf'" :src="templatePreviewUrl" style="width: 100%; height: 70vh; border: none" />
       <div v-else-if="templatePreviewType === 'docx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
         <div ref="templateDocxContainer" class="docx-preview-container"></div>
@@ -330,9 +336,9 @@
       <div v-else style="text-align: center; padding: 40px">
         <p>该文件格式不支持在线预览</p>
       </div>
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="downloadTemplate(templatePreviewRow)">下载</el-button>
-      </span>
+      <template #footer>
+        <el-button type="primary" size="small" :icon="Download" @click="downloadTemplate(templatePreviewRow)">下载</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>

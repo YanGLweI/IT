@@ -1,17 +1,17 @@
 <template>
   <el-dialog
     title="双控验证"
-    :visible.sync="visible"
+    v-model="visible"
     width="420px"
     :close-on-click-modal="false"
     :append-to-body="true"
     @close="handleCancel"
   >
     <div class="dual-control-hint">
-      <i class="el-icon-warning-outline"></i>
+      <el-icon><WarningFilled /></el-icon>
       此操作需要另一名IT组成员进行双控验证确认
     </div>
-    <el-form :model="form" :rules="rules" ref="form" label-width="100px" @submit.native.prevent="handleConfirm">
+    <el-form :model="form" :rules="rules" ref="form" label-width="100px" @submit.prevent="handleConfirm">
       <el-form-item label="审批人账号" prop="username">
         <el-input
           ref="usernameInput"
@@ -32,12 +32,12 @@
       <!-- 隐藏的提交按钮：使回车键触发表单提交 -->
       <button type="submit" style="display:none"></button>
     </el-form>
-    <span slot="footer">
+    <template #footer>
       <el-button @click="handleCancel">取消</el-button>
       <el-button type="danger" :loading="verifying" @click="handleConfirm">
         验证并执行
       </el-button>
-    </span>
+    </template>
   </el-dialog>
 </template>
 

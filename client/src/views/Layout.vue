@@ -13,138 +13,138 @@
         router
       >
         <el-menu-item index="/dashboard">
-          <i class="el-icon-data-board"></i>
-          <span slot="title">数据看板</span>
+          <el-icon><DataBoard /></el-icon>
+          <template #title>数据看板</template>
         </el-menu-item>
         <el-menu-item index="/policies">
-          <i class="el-icon-document"></i>
-          <span slot="title">IT政策</span>
+          <el-icon><Document /></el-icon>
+          <template #title>IT政策</template>
         </el-menu-item>
         <el-submenu index="asset">
-          <template slot="title">
-            <i class="el-icon-monitor"></i>
+          <template #title>
+            <el-icon><Monitor /></el-icon>
             <span>资产管理</span>
           </template>
           <el-menu-item index="/assets">
-            <i class="el-icon-s-order"></i>
+            <el-icon><List /></el-icon>
             <span>资产列表</span>
           </el-menu-item>
           <el-menu-item index="/regions">
-            <i class="el-icon-place"></i>
+            <el-icon><Location /></el-icon>
             <span>区域管理</span>
           </el-menu-item>
           <el-menu-item index="/os-types">
-            <i class="el-icon-s-platform"></i>
+            <el-icon><Platform /></el-icon>
             <span>操作系统管理</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="network-security">
-          <template slot="title">
-            <i class="el-icon-connection"></i>
+          <template #title>
+            <el-icon><Connection /></el-icon>
             <span>网络安全</span>
           </template>
           <el-menu-item index="/topology">
-            <i class="el-icon-share"></i>
+            <el-icon><Share /></el-icon>
             <span>网络拓扑图</span>
           </el-menu-item>
           <el-menu-item index="/change-management">
-            <i class="el-icon-document-copy"></i>
+            <el-icon><CopyDocument /></el-icon>
             <span>变更管理</span>
           </el-menu-item>
           <el-menu-item index="/vulnerability-scan">
-            <i class="el-icon-search"></i>
+            <el-icon><Search /></el-icon>
             <span>漏洞扫描</span>
           </el-menu-item>
           <el-menu-item index="/penetration-test">
-            <i class="el-icon-cpu"></i>
+            <el-icon><Monitor /></el-icon>
             <span>渗透测试</span>
           </el-menu-item>
           <el-menu-item index="/firewall-check">
-            <i class="el-icon-s-check"></i>
+            <el-icon><Check /></el-icon>
             <span>防火墙检查</span>
           </el-menu-item>
           <el-menu-item index="/security-rectification">
-            <i class="el-icon-edit"></i>
+            <el-icon><Edit /></el-icon>
             <span>安全整改记录</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="system-security">
-          <template slot="title">
-            <i class="el-icon-setting"></i>
+          <template #title>
+            <el-icon><Setting /></el-icon>
             <span>系统安全</span>
           </template>
           <el-menu-item index="/system-hardening">
-            <i class="el-icon-s-tools"></i>
+            <el-icon><Operation /></el-icon>
             <span>系统加固</span>
           </el-menu-item>
           <el-menu-item index="/patch-update">
-            <i class="el-icon-refresh"></i>
+            <el-icon><Refresh /></el-icon>
             <span>补丁更新</span>
           </el-menu-item>
           <el-menu-item index="/virus-control">
-            <i class="el-icon-warning"></i>
+            <el-icon><Warning /></el-icon>
             <span>病毒控制</span>
           </el-menu-item>
           <el-menu-item index="/backup-management">
-            <i class="el-icon-files"></i>
+            <el-icon><FolderOpened /></el-icon>
             <span>备份管理</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="permission">
-          <template slot="title">
-            <i class="el-icon-user"></i>
+          <template #title>
+            <el-icon><User /></el-icon>
             <span>用户管理</span>
           </template>
           <el-menu-item index="/permissions">
-            <i class="el-icon-setting"></i>
+            <el-icon><Setting /></el-icon>
             <span>岗位权限设置</span>
           </el-menu-item>
           <el-menu-item index="/user-permissions">
-            <i class="el-icon-user"></i>
+            <el-icon><User /></el-icon>
             <span>用户权限一览</span>
           </el-menu-item>
           <el-menu-item index="/sftp-accounts">
-            <i class="el-icon-connection"></i>
+            <el-icon><Connection /></el-icon>
             <span>SFTP账号一览</span>
           </el-menu-item>
           <el-menu-item index="/monthly-check-history">
-            <i class="el-icon-document-checked"></i>
+            <el-icon><DocumentChecked /></el-icon>
             <span>月度检查历史</span>
           </el-menu-item>
           <el-menu-item index="/user-change-history">
-            <i class="el-icon-document-copy"></i>
+            <el-icon><CopyDocument /></el-icon>
             <span>用户变更记录</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="third-party">
-          <template slot="title">
-            <i class="el-icon-apple"></i>
+          <template #title>
+            <el-icon><Grid /></el-icon>
             <span>第三方应用</span>
           </template>
           <el-menu-item index="/approved-software">
-            <i class="el-icon-document-checked"></i>
+            <el-icon><DocumentChecked /></el-icon>
             <span>核准软件目录</span>
           </el-menu-item>
           <el-menu-item index="/asset-software">
-            <i class="el-icon-s-grid"></i>
+            <el-icon><Grid /></el-icon>
             <span>资产对应表</span>
           </el-menu-item>
           <el-menu-item index="/quarterly-check-history">
-            <i class="el-icon-document-checked"></i>
+            <el-icon><DocumentChecked /></el-icon>
             <span>季度检查历史</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="log">
-          <template slot="title">
-            <i class="el-icon-notebook-2"></i>
+          <template #title>
+            <el-icon><Notebook /></el-icon>
             <span>日志管理</span>
           </template>
           <el-menu-item index="/login-logs">
-            <i class="el-icon-s-check"></i>
+            <el-icon><Check /></el-icon>
             <span>登录日志</span>
           </el-menu-item>
           <el-menu-item index="/operation-logs">
-            <i class="el-icon-document"></i>
+            <el-icon><Document /></el-icon>
             <span>操作日志</span>
           </el-menu-item>
         </el-submenu>
@@ -163,15 +163,17 @@
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
-              <i class="el-icon-user-solid"></i>
+              <el-icon><UserFilled /></el-icon>
               {{ displayName }}
-              <i class="el-icon-arrow-down el-icon--right"></i>
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </span>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item command="logout">
-                <i class="el-icon-switch-button"></i> 退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="logout">
+                  <el-icon><SwitchButton /></el-icon> 退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
           </el-dropdown>
         </div>
       </el-header>
@@ -214,7 +216,7 @@ export default {
       this.startTitleTypingAnimation()
     })
   },
-  beforeDestroy() {
+  beforeUnmount() {
     if (this.subtitleAnimation) {
       this.subtitleAnimation.pause()
     }
@@ -318,12 +320,12 @@ export default {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
 }
-::v-deep .sidebar-aside .el-menu {
+:deep(.sidebar-aside .el-menu) {
   border-right: none;
   padding: 0;
   margin: 0;
 }
-::v-deep .sidebar-aside::-webkit-scrollbar {
+:deep(.sidebar-aside::-webkit-scrollbar) {
   display: none; /* Chrome/Safari */
 }
 .sidebar-logo {

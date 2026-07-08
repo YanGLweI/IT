@@ -1,10 +1,11 @@
 <template>
   <div class="asset-software-list">
     <el-card>
-      <div slot="header">
+      <template #header>
+<div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
           <span>第三方软件与资产关联表</span>
-          <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出补丁更新记录表</el-button>
+          <el-button type="success" size="small" :icon="Download" :loading="exporting" @click="handleExport">导出补丁更新记录表</el-button>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
           <el-input
@@ -14,9 +15,9 @@
             clearable
             style="width: 240px"
             @clear="handleSearch"
-            @keyup.enter.native="handleSearch"
+            @keyup.enter="handleSearch"
           >
-            <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
+            <template #append><el-button :icon="Search" @click="handleSearch"></el-button></template>
           </el-input>
           <el-select
             v-model="selectedSoftwareFilter"
@@ -38,12 +39,13 @@
           <el-button size="small" @click="handleResetFilter">重置</el-button>
         </div>
       </div>
+</template>
       <el-table :data="list" border stripe v-loading="loading">
         <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
         <el-table-column prop="computer_name" label="计算机名" min-width="150" />
         <el-table-column prop="ip_address" label="IP地址" width="150" />
         <el-table-column label="第三方软件" min-width="250">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <template v-if="scope.row.software_list && scope.row.software_list.length > 0">
               <el-tag
                 v-for="sw in scope.row.software_list"
@@ -56,8 +58,8 @@
           </template>
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handleEdit(scope.row)">关联</el-button>
+          <template v-slot="scope">
+            <el-button size="small" @click="handleEdit(scope.row)">关联</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -76,7 +78,7 @@
     </el-card>
 
     <!-- 编辑关联软件弹窗 -->
-    <el-dialog title="关联核准软件" :visible.sync="editDialogVisible" width="560px" :close-on-click-modal="false">
+    <el-dialog title="关联核准软件" v-model="editDialogVisible" width="560px" :close-on-click-modal="false">
       <div style="margin-bottom: 12px; color: #606266; font-size: 14px">
         资产：<strong>{{ editRow ? editRow.computer_name : '' }}</strong>（{{ editRow ? editRow.ip_address : '' }}）
       </div>
@@ -96,10 +98,12 @@
       <div v-if="allSoftware.length === 0" style="text-align: center; color: #999; padding: 20px">
         暂无核准软件，请先在"核准软件目录"中添加
       </div>
-      <span slot="footer">
+      <template #footer>
+<span>
         <el-button @click="editDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSaveLinks">保存</el-button>
       </span>
+</template>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
@@ -107,6 +111,7 @@
   </div>
 </template>
 
+import { Download, Search } from '@element-plus/icons-vue'
 <script>
 import {
   getAssetSoftwareList,
@@ -117,9 +122,10 @@ import {
 } from '@/api/approved_software'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
+
 export default {
+  components: { Download, DualControlDialog, Search },
   name: 'AssetSoftwareList',
-  components: { DualControlDialog },
   data() {
     return {
       list: [],
