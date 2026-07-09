@@ -64,6 +64,10 @@ upload:
   backup_recovery_path: "./uploads/backup_recoveries"
   # 备份与恢复记录表模板上传路径
   backup_template_path: "./uploads/backup_templates"
+  # 表单保管区上传路径
+  form_vault_path: "./uploads/form_vault"
+  # 表单保管区快照路径
+  form_vault_snapshot_path: "./uploads/form_vault/snapshots"
 
 # RSA 加密配置
 rsa:

@@ -148,6 +148,10 @@
             <span>操作日志</span>
           </el-menu-item>
         </el-submenu>
+        <el-menu-item index="/form-publish">
+          <svg-icon name="upload-cloud" />
+          <span>表单发布</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>

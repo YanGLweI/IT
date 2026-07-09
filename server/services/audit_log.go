@@ -417,6 +417,16 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"Description": "版本说明",
 			"FileName":    "文件名",
 		}
+	case "form_vault":
+		return map[string]string{
+			"Title":        "标题",
+			"Description":  "描述",
+			"Category":     "分类",
+			"SourceType":   "来源类型",
+			"FileName":     "文件名",
+			"IsPublished":  "发布状态",
+			"RefModule":    "引用模块",
+		}
 	default:
 		return make(map[string]string)
 	}

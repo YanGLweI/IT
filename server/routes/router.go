@@ -26,6 +26,11 @@ func SetupRouter() *gin.Engine {
 			public.POST("/login", handlers.Login)
 			public.GET("/public-key", handlers.GetPublicKey)
 			public.POST("/refresh-token", handlers.RefreshToken)
+
+			// 免登录表单下载（公开接口）
+			public.GET("/public/forms", handlers.ListPublicForms)
+			public.GET("/public/forms/:id/download", handlers.PublicDownloadForm)
+			public.GET("/public/forms/:id/preview", handlers.PublicPreviewForm)
 		}
 
 		// 受保护接口（需要JWT认证）
@@ -165,6 +170,13 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/operation-logs/:id/details", handlers.GetOperationLogDetails)
 			protected.POST("/logout", handlers.Logout)
 
+			// 表单发布 - 读操作（不需要双控）
+			protected.GET("/form-vault", handlers.ListFormVaultItems)
+			protected.GET("/form-vault/cross-module-sources", handlers.ListCrossModuleSources)
+			protected.GET("/form-vault/cross-module-sources/:module/files", handlers.ListCrossModuleFiles)
+			protected.GET("/form-vault/:id/preview", handlers.PreviewFormVaultItem)
+			protected.GET("/form-vault/:id/download", handlers.DownloadFormVaultItem)
+
 			// ============ 双控保护接口（需要JWT + 双控验证）============
 			dual := protected.Group("")
 			dual.Use(middleware.DualControl())
@@ -298,6 +310,14 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/backup-recoveries/:id", handlers.DeleteBackupRecovery)
 				dual.POST("/backup-templates", handlers.UploadBackupTemplate)
 				dual.DELETE("/backup-templates/:id", handlers.DeleteBackupTemplate)
+
+				// 表单发布 - 写操作（需要双控）
+				dual.POST("/form-vault", handlers.UploadFormVaultItem)
+				dual.PUT("/form-vault/:id", handlers.UpdateFormVaultItem)
+				dual.DELETE("/form-vault/:id", handlers.DeleteFormVaultItem)
+				dual.PUT("/form-vault/:id/publish", handlers.PublishFormVaultItem)
+				dual.PUT("/form-vault/:id/unpublish", handlers.UnpublishFormVaultItem)
+				dual.POST("/form-vault/cross-module", handlers.CreateCrossModuleRef)
 			}
 		}
 	}

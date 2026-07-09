@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Layout from '../views/Layout.vue'
+import PublicLayout from '../views/public/PublicLayout.vue'
 
 Vue.use(VueRouter)
 
@@ -11,6 +12,23 @@ const routes = [
     component: () => import('../views/login/Login.vue'),
     meta: { title: '登录', public: true }
   },
+
+  // 免登录模块
+  {
+    path: '/public',
+    component: PublicLayout,
+    redirect: '/public/forms',
+    children: [
+      {
+        path: 'forms',
+        name: 'PublicForms',
+        component: () => import('../views/public/FormDownload.vue'),
+        meta: { title: '表单下载', public: true }
+      }
+    ]
+  },
+
+  // 管理端
   {
     path: '/',
     component: Layout,
@@ -40,7 +58,8 @@ const routes = [
       { path: 'operation-logs', name: 'OperationLogs', component: () => import('../views/log/OperationLogList.vue'), meta: { title: '操作日志', enTitle: 'Operation Logs' } },
       { path: 'monthly-check-history', name: 'MonthlyCheckHistory', component: () => import('../views/permission/MonthlyCheckHistory.vue'), meta: { title: '月度检查历史', enTitle: 'Monthly Check History' } },
       { path: 'quarterly-check-history', name: 'QuarterlyCheckHistory', component: () => import('../views/approved-software/QuarterlyCheckHistory.vue'), meta: { title: '季度检查历史', enTitle: 'Quarterly Check History' } },
-      { path: 'user-change-history', name: 'UserChangeHistory', component: () => import('../views/permission/UserChangeHistory.vue'), meta: { title: '用户变更记录', enTitle: 'User Change History' } }
+      { path: 'user-change-history', name: 'UserChangeHistory', component: () => import('../views/permission/UserChangeHistory.vue'), meta: { title: '用户变更记录', enTitle: 'User Change History' } },
+      { path: 'form-publish', name: 'FormPublish', component: () => import('../views/form-publish/FormVault.vue'), meta: { title: '表单发布', enTitle: 'Form Publishing' } }
     ]
   }
 ]
@@ -55,8 +74,8 @@ router.beforeEach((to, from, next) => {
   // 设置页面标题
   document.title = to.meta.title ? `${to.meta.title} - IT管理平台` : 'IT管理平台'
 
-  // 公开页面直接放行
-  if (to.meta.public) {
+  // 检查匹配链中是否有 public 标记（支持嵌套路由）
+  if (to.matched.some(record => record.meta.public)) {
     next()
     return
   }

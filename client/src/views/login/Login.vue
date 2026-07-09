@@ -84,6 +84,18 @@
         </el-form-item>
       </el-form>
 
+      <!-- 免登录入口 -->
+      <div class="public-access">
+        <a class="public-access-btn" @click="$router.push('/public/forms')">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          免登录访问 — 表单下载
+        </a>
+      </div>
+
       <!-- 底部 -->
       <div class="login-footer">
         <p>
@@ -598,6 +610,29 @@ export default {
 }
 .login-btn:hover::before {
   left: 120%;
+}
+
+/* ===== 免登录入口 ===== */
+.public-access {
+  text-align: center;
+  margin-top: 12px;
+  position: relative; z-index: 1;
+}
+
+.public-access-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.5);
+  cursor: pointer;
+  transition: color 0.25s ease;
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  text-decoration: none;
+}
+
+.public-access-btn:hover {
+  color: #409EFF;
 }
 
 /* ===== 底部 ===== */

@@ -189,6 +189,12 @@ const icons = {
     { tag: 'polyline', points: '14 2 14 8 20 8' },
     { tag: 'circle', cx: 11.5, cy: 14.5, r: 2.5 },
     { tag: 'line', x1: 13.3, y1: 16.3, x2: 15, y2: 18 }
+  ],
+  'upload-cloud': [
+    { tag: 'path', d: 'M16 16l-4-4-4 4' },
+    { tag: 'path', d: 'M12 12v9' },
+    { tag: 'path', d: 'M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3' },
+    { tag: 'path', d: 'M16 16l-4-4-4 4' }
   ]
 }
 
