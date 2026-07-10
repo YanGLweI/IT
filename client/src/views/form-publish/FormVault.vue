@@ -162,6 +162,40 @@
             <el-table-column prop="file_name" label="文件名" width="180" show-overflow-tooltip />
           </el-table>
         </el-form-item>
+        
+        <!-- 动态类型的参数输入 -->
+        <div v-if="crossForm.source_type === 'dynamic' && generatorParams.length > 0" style="margin-top: 10px;">
+          <el-divider content-position="left">参数配置</el-divider>
+          <el-form-item 
+            v-for="param in generatorParams" 
+            :key="param.name" 
+            :label="param.label"
+          >
+            <!-- select 类型 -->
+            <el-select 
+              v-if="param.type === 'select'" 
+              v-model="paramValues[param.name]" 
+              placeholder="请选择" 
+              style="width: 100%"
+              @change="onParamValueChange"
+            >
+              <el-option 
+                v-for="opt in paramOptions[param.name]" 
+                :key="opt.value" 
+                :label="opt.label" 
+                :value="opt.value" 
+              />
+            </el-select>
+            
+            <!-- input 类型 -->
+            <el-input 
+              v-else-if="param.type === 'input'" 
+              v-model="paramValues[param.name]" 
+              :placeholder="'请输入' + param.label" 
+            />
+          </el-form-item>
+        </div>
+        
         <el-form-item label="标题">
           <el-input v-model="crossForm.title" placeholder="表单标题" />
         </el-form-item>
@@ -176,6 +210,29 @@
         <el-button @click="crossModuleVisible = false">取消</el-button>
         <el-button type="primary" :loading="crossSubmitting" @click="handleCrossModuleSubmit">确认引用</el-button>
       </span>
+    </el-dialog>
+
+    <!-- 预览弹窗 -->
+    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" @closed="clearDocxPreview">
+      <div class="preview-toolbar" slot="title">
+        <span>文件预览</span>
+        <div class="preview-toolbar-right">
+          <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFromPreview">下载</el-button>
+        </div>
+      </div>
+      <div v-if="previewType === 'pdf'" style="height: 70vh">
+        <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 100%; border: none;"></iframe>
+      </div>
+      <div v-else-if="previewType === 'image'" style="text-align: center">
+        <img v-if="previewUrl" :src="previewUrl" style="max-width: 100%; max-height: 70vh;" />
+      </div>
+      <div v-else-if="previewType === 'docx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px;">
+        <div ref="docxContainer" class="docx-preview-container"></div>
+      </div>
+      <div v-else style="text-align: center; padding: 40px;">
+        <p>该文件格式不支持在线预览</p>
+        <el-button type="primary" @click="downloadFromPreview">下载文件</el-button>
+      </div>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
@@ -193,10 +250,11 @@ import {
   unpublishFormVaultItem,
   getCrossModuleSources,
   getCrossModuleFiles,
-  createCrossModuleRef,
-  getFormVaultPreviewUrl,
-  getFormVaultDownloadUrl
+  getGeneratorParams,
+  createCrossModuleRef
 } from '@/api/form_vault'
+import { getDepartments } from '@/api/department'
+import { renderAsync } from 'docx-preview'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -242,7 +300,18 @@ export default {
       crossSources: [],
       crossFiles: [],
       crossSelectedFile: null,
-      crossSubmitting: false
+      crossSubmitting: false,
+      // 动态生成器参数
+      generatorParams: [],      // 当前选中生成器的参数定义
+      paramValues: {},          // 用户填写的参数值
+      paramOptions: {},         // 存储各参数的下拉选项 { paramName: [{label, value}] }
+      // 预览
+      previewVisible: false,
+      previewUrl: '',
+      previewType: '',
+      previewFileName: '',
+      previewRowId: null,
+      previewBlob: null
     }
   },
   computed: {
@@ -405,11 +474,104 @@ export default {
     },
 
     // ---- 预览/下载 ----
-    handlePreview(row) {
-      window.open(getFormVaultPreviewUrl(row.id), '_blank')
+    async handlePreview(row) {
+      const fileName = (row.file_name || '').toLowerCase()
+      this.previewFileName = row.file_name || '文件'
+      this.previewRowId = row.id
+      // 检测文件类型
+      if (fileName.endsWith('.pdf')) {
+        this.previewType = 'pdf'
+      } else if (fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.gif') || fileName.endsWith('.bmp')) {
+        this.previewType = 'image'
+      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        this.previewType = 'docx'
+      } else {
+        this.previewType = 'other'
+      }
+      this.previewVisible = true
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`/api/form-vault/${row.id}/preview`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (!response.ok) throw new Error('预览失败')
+        const blob = await response.blob()
+        this.previewBlob = blob
+        if (this.previewUrl) URL.revokeObjectURL(this.previewUrl)
+        this.previewUrl = URL.createObjectURL(blob)
+        if (this.previewType === 'docx') {
+          this.$nextTick(() => {
+            this.renderDocxFromBlob(blob)
+          })
+        }
+      } catch (e) {
+        console.error('预览失败:', e)
+        this.$message.error('预览失败')
+      }
     },
-    handleDownload(row) {
-      window.open(getFormVaultDownloadUrl(row.id), '_blank')
+    async renderDocxFromBlob(blob) {
+      try {
+        const arrayBuffer = await blob.arrayBuffer()
+        const container = this.$refs.docxContainer
+        if (container) {
+          container.innerHTML = ''
+          await renderAsync(arrayBuffer, container)
+        }
+      } catch (e) {
+        console.error('docx渲染失败:', e)
+        this.$message.error('文件预览失败，请尝试下载后查看')
+      }
+    },
+    clearDocxPreview() {
+      if (this.$refs.docxContainer) {
+        this.$refs.docxContainer.innerHTML = ''
+      }
+      if (this.previewUrl) {
+        URL.revokeObjectURL(this.previewUrl)
+        this.previewUrl = ''
+      }
+      this.previewBlob = null
+    },
+    async downloadFromPreview() {
+      if (!this.previewRowId) return
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`/api/form-vault/${this.previewRowId}/download`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = this.previewFileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
+    },
+    async handleDownload(row) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`/api/form-vault/${row.id}/download`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = row.file_name || 'download'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
     },
 
     // ---- 跨模块引用 ----
@@ -434,17 +596,75 @@ export default {
     async onCrossModuleChange(moduleKey) {
       this.crossFiles = []
       this.crossSelectedFile = null
+      this.generatorParams = []
+      this.paramValues = {}
       if (!moduleKey) return
+      
+      // 如果是动态类型，获取生成器参数定义
+      if (this.crossForm.source_type === 'dynamic') {
+        await this.fetchGeneratorParams(moduleKey)
+      } else {
+        try {
+          const res = await getCrossModuleFiles(moduleKey)
+          this.crossFiles = res.data || []
+          // 动态类型自动填充标题
+          if (this.crossForm.source_type === 'dynamic' && this.crossFiles.length > 0) {
+            this.crossForm.title = this.crossForm.title || this.crossFiles[0].name
+          }
+        } catch (e) {
+          console.error('获取文件列表失败:', e)
+        }
+      }
+    },
+    
+    // 获取动态生成器的参数定义
+    async fetchGeneratorParams(moduleKey) {
+      // 映射 moduleKey 到 generatorName
+      const moduleToGeneratorMap = {
+        'user_change_record': 'export_user_change_record',
+        'department_confirmation': 'export_department_confirmation'
+      }
+      
+      const generatorName = moduleToGeneratorMap[moduleKey]
+      if (!generatorName) {
+        console.warn(`未找到模块 ${moduleKey} 对应的生成器`)
+        return
+      }
+      
       try {
-        const res = await getCrossModuleFiles(moduleKey)
-        this.crossFiles = res.data || []
-        // 动态类型自动填充标题
-        if (this.crossForm.source_type === 'dynamic' && this.crossFiles.length > 0) {
-          this.crossForm.title = this.crossForm.title || this.crossFiles[0].name
+        const res = await getGeneratorParams(generatorName)
+        this.generatorParams = res.data || []
+        
+        // 为 select 类型的参数加载选项
+        for (const param of this.generatorParams) {
+          if (param.type === 'select' && param.source) {
+            await this.loadParamOptions(param)
+          }
         }
       } catch (e) {
-        console.error('获取文件列表失败:', e)
+        console.error('获取生成器参数失败:', e)
       }
+    },
+    
+    // 加载参数选项（如部门列表）
+    async loadParamOptions(param) {
+      if (param.source === '/api/departments') {
+        try {
+          const res = await getDepartments()
+          this.$set(this.paramOptions, param.name, (res.data || []).map(d => ({
+            label: d.name,
+            value: d.id
+          })))
+        } catch (e) {
+          console.error(`加载参数 ${param.name} 的选项失败:`, e)
+        }
+      }
+    },
+    
+    // 参数值变化时的处理
+    onParamValueChange() {
+      // 可选：根据参数值自动更新标题
+      // 例如：选择部门后，标题变为 "部门用户确认表 - {部门名}"
     },
     onCrossFileSelect(row) {
       this.crossSelectedFile = row
@@ -468,6 +688,16 @@ export default {
         this.$message.warning('请选择文件')
         return
       }
+      
+      // 验证动态类型的必填参数
+      if (this.crossForm.source_type === 'dynamic') {
+        for (const param of this.generatorParams) {
+          if (param.required && !this.paramValues[param.name]) {
+            this.$message.warning(`请填写必填参数：${param.label}`)
+            return
+          }
+        }
+      }
 
       this.crossSubmitting = true
       try {
@@ -479,6 +709,11 @@ export default {
         fd.append('source_type', this.crossForm.source_type)
         if (this.crossForm.source_type === 'static' && this.crossSelectedFile) {
           fd.append('ref_id', this.crossSelectedFile.id)
+        }
+        
+        // 添加动态生成器参数
+        if (this.crossForm.source_type === 'dynamic' && Object.keys(this.paramValues).length > 0) {
+          fd.append('ref_params', JSON.stringify(this.paramValues))
         }
 
         const dualToken = await this.$refs.dualControl.open()
@@ -524,5 +759,43 @@ export default {
 .pagination-wrap {
   margin-top: 16px;
   text-align: right;
+}
+
+/* 预览弹窗 */
+.preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.preview-toolbar-right {
+  display: flex;
+  align-items: center;
+  margin-right: 30px;
+}
+.docx-preview-container {
+  background: #fff;
+}
+.docx-preview-container >>> .docx-wrapper {
+  background: #fff;
+  padding: 0;
+  width: 100%;
+  min-width: 100%;
+  overflow-x: auto;
+}
+.docx-preview-container >>> .docx {
+  width: 100%;
+  overflow-x: auto;
+}
+.docx-preview-container >>> .docx table {
+  width: 100% !important;
+  table-layout: auto;
+}
+.docx-preview-container >>> .docx table td,
+.docx-preview-container >>> .docx table th {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal !important;
+  min-width: 40px;
 }
 </style>

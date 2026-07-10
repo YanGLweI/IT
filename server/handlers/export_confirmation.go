@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -380,9 +381,21 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	}
 
 	// 输出Excel文件
+	// 优先使用保管区中定义的文件名（通过 context 传递）
 	fileName := fmt.Sprintf("用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)
+	if preferredName, exists := c.Get("preferred_filename"); exists {
+		if nameStr, ok := preferredName.(string); ok && nameStr != "" {
+			fileName = nameStr
+		}
+	}
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename*=UTF-8''%s", fileName))
+	// 同时设置 filename（ASCII 回退）和 filename*（UTF-8）以兼容不同浏览器
+	asciiName := toASCIIFallback(fileName)
+	c.Header("Content-Disposition", fmt.Sprintf(
+		"attachment; filename=\"%s\"; filename*=UTF-8''%s",
+		asciiName,
+		url.PathEscape(fileName),
+	))
 	c.Header("Access-Control-Expose-Headers", "Content-Disposition")
 
 	if err := f.Write(c.Writer); err != nil {

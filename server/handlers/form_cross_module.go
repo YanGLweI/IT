@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -212,6 +213,18 @@ func CreateCrossModuleRef(c *gin.Context) {
 			return
 		}
 		item.RefHandler = handlerName
+
+		// 接收并验证参数
+		refParams := c.PostForm("ref_params")
+		if refParams != "" {
+			// 验证 JSON 格式
+			var params map[string]interface{}
+			if err := json.Unmarshal([]byte(refParams), &params); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数格式错误"})
+				return
+			}
+			item.RefParams = refParams
+		}
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不支持的来源类型"})

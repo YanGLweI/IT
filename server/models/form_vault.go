@@ -34,6 +34,7 @@ type FormVaultItem struct {
 	RefModule    string `gorm:"type:varchar(100)" json:"ref_module"`     // 引用模块标识
 	RefID        uint   `gorm:"type:int unsigned" json:"ref_id"`         // 引用记录的 ID
 	RefHandler   string `gorm:"type:varchar(200)" json:"ref_handler"`    // 动态生成处理器名（仅 dynamic 类型）
+	RefParams    string `gorm:"type:text" json:"ref_params"`             // 动态生成器参数(JSON格式)
 	SnapshotPath string `gorm:"type:varchar(500)" json:"snapshot_path"`  // static 类型的快照文件路径
 
 	// 发布状态

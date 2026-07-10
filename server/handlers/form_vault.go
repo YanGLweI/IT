@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -280,7 +282,13 @@ func serveFormFile(c *gin.Context, item *models.FormVaultItem) {
 			return
 		}
 		c.Header("Content-Type", "application/octet-stream")
-		c.Header("Content-Disposition", "attachment; filename=\""+item.FileName+"\"")
+		// 同时设置 filename（ASCII 回退）和 filename*（UTF-8）以兼容不同浏览器
+		asciiName := toASCIIFallback(item.FileName)
+		c.Header("Content-Disposition", fmt.Sprintf(
+			"attachment; filename=\"%s\"; filename*=UTF-8''%s",
+			asciiName,
+			url.PathEscape(item.FileName),
+		))
 		c.File(item.FilePath)
 
 	case models.SourceTypeStatic:
@@ -289,16 +297,31 @@ func serveFormFile(c *gin.Context, item *models.FormVaultItem) {
 			return
 		}
 		c.Header("Content-Type", "application/octet-stream")
-		c.Header("Content-Disposition", "attachment; filename=\""+item.FileName+"\"")
+		// 同时设置 filename（ASCII 回退）和 filename*（UTF-8）以兼容不同浏览器
+		asciiName := toASCIIFallback(item.FileName)
+		c.Header("Content-Disposition", fmt.Sprintf(
+			"attachment; filename=\"%s\"; filename*=UTF-8''%s",
+			asciiName,
+			url.PathEscape(item.FileName),
+		))
 		c.File(item.SnapshotPath)
 
 	case models.SourceTypeDynamic:
-		generator, err := GetDynamicGenerator(item.RefHandler)
+		info, err := GetDynamicGenerator(item.RefHandler)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "动态生成器未找到: " + item.RefHandler})
 			return
 		}
-		generator(c)
+		// 如果有参数，将参数附加到请求URL
+		if item.RefParams != "" {
+			queryStr := buildQueryString(item.RefParams)
+			if queryStr != "" {
+				c.Request.URL.RawQuery = queryStr
+			}
+		}
+		// 动态生成器需要知道期望的文件名，通过 context 传递
+		c.Set("preferred_filename", item.FileName)
+		info.Handler(c)
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "未知的来源类型"})
@@ -327,12 +350,21 @@ func serveFormFileInline(c *gin.Context, item *models.FormVaultItem) {
 		c.File(item.SnapshotPath)
 
 	case models.SourceTypeDynamic:
-		generator, err := GetDynamicGenerator(item.RefHandler)
+		info, err := GetDynamicGenerator(item.RefHandler)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "动态生成器未找到: " + item.RefHandler})
 			return
 		}
-		generator(c)
+		// 如果有参数，将参数附加到请求URL
+		if item.RefParams != "" {
+			queryStr := buildQueryString(item.RefParams)
+			if queryStr != "" {
+				c.Request.URL.RawQuery = queryStr
+			}
+		}
+		// 动态生成器需要知道期望的文件名，通过 context 传递
+		c.Set("preferred_filename", item.FileName)
+		info.Handler(c)
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "未知的来源类型"})
@@ -352,4 +384,46 @@ func setInlineContentType(c *gin.Context, fileName string) {
 	default:
 		c.Header("Content-Type", "application/octet-stream")
 	}
+}
+
+// toASCIIFallback 将文件名转换为纯 ASCII 回退名，用于 Content-Disposition 的 filename 参数
+func toASCIIFallback(fileName string) string {
+	ascii := strings.Map(func(r rune) rune {
+		if r > 127 {
+			return -1 // 丢弃非 ASCII 字符
+		}
+		if r == ' ' {
+			return '_'
+		}
+		return r
+	}, fileName)
+	// 防止文件名为空或只剩扩展名
+	if ascii == "" || ascii == filepath.Ext(ascii) {
+		return "download"
+	}
+	return ascii
+}
+
+// buildQueryString 将 JSON 格式的参数转换为 URL 查询字符串
+func buildQueryString(paramsJSON string) string {
+	var params map[string]interface{}
+	if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
+		return ""
+	}
+	values := url.Values{}
+	for k, v := range params {
+		values.Set(k, fmt.Sprintf("%v", v))
+	}
+	return values.Encode()
+}
+
+// GetGeneratorParams 获取动态生成器的参数定义
+func GetGeneratorParams(c *gin.Context) {
+	name := c.Param("name")
+	info, err := GetDynamicGenerator(name)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "生成器不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": info.Params})
 }

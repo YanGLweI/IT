@@ -174,6 +174,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/form-vault", handlers.ListFormVaultItems)
 			protected.GET("/form-vault/cross-module-sources", handlers.ListCrossModuleSources)
 			protected.GET("/form-vault/cross-module-sources/:module/files", handlers.ListCrossModuleFiles)
+			protected.GET("/form-vault/cross-module/generators/:name/params", handlers.GetGeneratorParams)
 			protected.GET("/form-vault/:id/preview", handlers.PreviewFormVaultItem)
 			protected.GET("/form-vault/:id/download", handlers.DownloadFormVaultItem)
 

@@ -93,16 +93,10 @@
         <!-- 下载按钮 -->
         <div class="card-footer">
           <a
-            :href="getPublicDownloadUrl(item.id)"
-            class="download-btn"
-            download
-            @click="handleDownload(item)"
+            :href="'/api/public/forms/' + item.id + '/download'"
+            class="download-link"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
+            <i class="el-icon-download"></i>
             下载
           </a>
         </div>
@@ -122,7 +116,7 @@
 </template>
 
 <script>
-import { getPublicForms, getPublicDownloadUrl } from '@/api/public_form'
+import { getPublicForms } from '@/api/public_form'
 
 export default {
   name: 'FormDownload',
@@ -151,9 +145,10 @@ export default {
           keyword: this.keyword || undefined,
           category: this.categoryFilter || undefined
         })
-        const data = res.data || res
-        this.items = data.data || []
-        this.categories = data.categories || []
+        // publicRequest 没有响应拦截器，返回完整 axios response
+        // res.data = { code, data: [...], categories: [] }
+        this.items = res.data.data || []
+        this.categories = res.data.categories || []
       } catch (e) {
         console.error('获取表单列表失败:', e)
       } finally {
@@ -162,10 +157,6 @@ export default {
     },
     handleSearch() {
       this.fetchForms()
-    },
-    handleDownload(item) {
-      // 使用 window.open 触发下载
-      window.open(getPublicDownloadUrl(item.id), '_blank')
     },
     getFileExt(fileName) {
       if (!fileName) return ''
@@ -371,10 +362,10 @@ export default {
   border-top: 1px solid #F1F5F9;
 }
 
-.download-btn {
+.download-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-size: 13px;
   font-weight: 500;
   color: #409EFF;
@@ -386,7 +377,7 @@ export default {
   cursor: pointer;
 }
 
-.download-btn:hover {
+.download-link:hover {
   background: #DBEAFE;
   color: #2563EB;
 }

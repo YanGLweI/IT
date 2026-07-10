@@ -50,18 +50,14 @@ export function getCrossModuleFiles(moduleKey) {
   return request.get(`/form-vault/cross-module-sources/${moduleKey}/files`)
 }
 
+// 获取动态生成器的参数定义
+export function getGeneratorParams(generatorName) {
+  return request.get(`/form-vault/cross-module/generators/${generatorName}/params`)
+}
+
 // 创建跨模块引用
 export function createCrossModuleRef(data, dualToken) {
   const config = { headers: { 'Content-Type': 'multipart/form-data' } }
   if (dualToken) config.headers['X-Dual-Control-Token'] = dualToken
   return request.post('/form-vault/cross-module', data, config)
-}
-
-// 预览/下载 URL
-export function getFormVaultPreviewUrl(id) {
-  return `/api/form-vault/${id}/preview`
-}
-
-export function getFormVaultDownloadUrl(id) {
-  return `/api/form-vault/${id}/download`
 }
