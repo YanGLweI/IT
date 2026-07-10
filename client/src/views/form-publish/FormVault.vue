@@ -324,6 +324,60 @@ export default {
     this.fetchCrossSources()
   },
   methods: {
+    // 统一的文件下载函数，所有下载都使用此方法
+    async downloadFile(itemId, fallbackFileName = null) {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(`/api/form-vault/${itemId}/download`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        
+        // 尝试从 Content-Disposition header 获取文件名
+        let fileName = null
+        const contentDisposition = response.headers.get('content-disposition')
+        
+        if (contentDisposition) {
+          // 优先解析 filename*=UTF-8''xxx 格式（RFC 5987）
+          const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/)
+          if (utf8Match && utf8Match[1]) {
+            try {
+              fileName = decodeURIComponent(utf8Match[1])
+            } catch (e) {
+              console.error('UTF-8 decode failed:', e)
+            }
+          }
+          
+          // 如果 UTF-8 解析失败，尝试解析 filename="xxx" 格式
+          if (!fileName) {
+            const asciiMatch = contentDisposition.match(/filename="([^"]+)"/)
+            if (asciiMatch && asciiMatch[1]) {
+              fileName = asciiMatch[1]
+            }
+          }
+        }
+        
+        // 如果无法从 header 获取，使用 fallbackFileName
+        if (!fileName && fallbackFileName) {
+          fileName = fallbackFileName
+        }
+        
+        const blob = await response.blob()
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        if (fileName) {
+          link.download = fileName
+        }
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
+    },
+
     async fetchItems() {
       this.loading = true
       try {
@@ -534,44 +588,12 @@ export default {
     },
     async downloadFromPreview() {
       if (!this.previewRowId) return
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(`/api/form-vault/${this.previewRowId}/download`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        if (!response.ok) throw new Error('下载失败')
-        const blob = await response.blob()
-        const link = document.createElement('a')
-        link.href = URL.createObjectURL(blob)
-        link.download = this.previewFileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(link.href)
-      } catch (e) {
-        console.error('下载失败:', e)
-        this.$message.error('下载失败')
-      }
+      // 使用统一的下载函数，传入预览时的文件名作为 fallback
+      await this.downloadFile(this.previewRowId, this.previewFileName)
     },
     async handleDownload(row) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(`/api/form-vault/${row.id}/download`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        if (!response.ok) throw new Error('下载失败')
-        const blob = await response.blob()
-        const link = document.createElement('a')
-        link.href = URL.createObjectURL(blob)
-        link.download = row.file_name || 'download'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(link.href)
-      } catch (e) {
-        console.error('下载失败:', e)
-        this.$message.error('下载失败')
-      }
+      // 使用统一的下载函数
+      await this.downloadFile(row.id, row.file_name)
     },
 
     // ---- 跨模块引用 ----

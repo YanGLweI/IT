@@ -381,21 +381,17 @@ func ExportDepartmentConfirmation(c *gin.Context) {
 	}
 
 	// 输出Excel文件
-	// 优先使用保管区中定义的文件名（通过 context 传递）
+	// 始终使用动态生成的包含部门和年月的文件名，忽略保管区设置的标题
 	fileName := fmt.Sprintf("用户确认表(%s)-%s.xlsx", yearMonth, dept.Name)
-	if preferredName, exists := c.Get("preferred_filename"); exists {
-		if nameStr, ok := preferredName.(string); ok && nameStr != "" {
-			fileName = nameStr
-		}
-	}
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	// 同时设置 filename（ASCII 回退）和 filename*（UTF-8）以兼容不同浏览器
 	asciiName := toASCIIFallback(fileName)
-	c.Header("Content-Disposition", fmt.Sprintf(
+	contentDisposition := fmt.Sprintf(
 		"attachment; filename=\"%s\"; filename*=UTF-8''%s",
 		asciiName,
 		url.PathEscape(fileName),
-	))
+	)
+	c.Header("Content-Disposition", contentDisposition)
 	c.Header("Access-Control-Expose-Headers", "Content-Disposition")
 
 	if err := f.Write(c.Writer); err != nil {

@@ -319,8 +319,7 @@ func serveFormFile(c *gin.Context, item *models.FormVaultItem) {
 				c.Request.URL.RawQuery = queryStr
 			}
 		}
-		// 动态生成器需要知道期望的文件名，通过 context 传递
-		c.Set("preferred_filename", item.FileName)
+		// 动态生成器自行决定文件名，不传递 preferred_filename
 		info.Handler(c)
 
 	default:
@@ -362,8 +361,7 @@ func serveFormFileInline(c *gin.Context, item *models.FormVaultItem) {
 				c.Request.URL.RawQuery = queryStr
 			}
 		}
-		// 动态生成器需要知道期望的文件名，通过 context 传递
-		c.Set("preferred_filename", item.FileName)
+		// 动态生成器自行决定文件名，不传递 preferred_filename
 		info.Handler(c)
 
 	default:

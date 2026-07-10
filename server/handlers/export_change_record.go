@@ -539,13 +539,8 @@ func ExportChangeRecord(c *gin.Context) {
 	}
 
 	// 输出Excel文件
-	// 优先使用保管区中定义的文件名（通过 context 传递）
+	// 始终使用固定文件名，不再依赖保管区传递的文件名
 	fileName := "用户变更记录表.xlsx"
-	if preferredName, exists := c.Get("preferred_filename"); exists {
-		if nameStr, ok := preferredName.(string); ok && nameStr != "" {
-			fileName = nameStr
-		}
-	}
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	// 同时设置 filename（ASCII 回退）和 filename*（UTF-8）以兼容不同浏览器
 	asciiName := toASCIIFallback(fileName)
