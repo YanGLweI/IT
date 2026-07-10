@@ -44,7 +44,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="文件" width="160" show-overflow-tooltip>
+        <el-table-column label="文件" width="250" show-overflow-tooltip>
           <template slot-scope="scope">
             <span v-if="scope.row.source_type !== 'dynamic'">{{ scope.row.file_name || '-' }}</span>
             <span v-else style="color: #94A3B8; font-size: 12px;">动态生成</span>
