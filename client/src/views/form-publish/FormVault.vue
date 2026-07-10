@@ -104,11 +104,12 @@
             :on-remove="handleFileRemove"
             :file-list="uploadFileList"
             :limit="1"
+            accept=".docx,.pdf,.xlsx"
             drag
           >
             <i class="el-icon-upload"></i>
             <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
-            <div class="el-upload__tip" slot="tip">支持 DOCX、PDF、XLSX、XLS、DOC 格式</div>
+            <div class="el-upload__tip" slot="tip">支持 DOCX、PDF、XLSX 格式</div>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -229,6 +230,9 @@
       <div v-else-if="previewType === 'docx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px;">
         <div ref="docxContainer" class="docx-preview-container"></div>
       </div>
+      <div v-else-if="previewType === 'xlsx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 10px;">
+        <div v-html="xlsxHtml" class="xlsx-preview-container"></div>
+      </div>
       <div v-else style="text-align: center; padding: 40px;">
         <p>该文件格式不支持在线预览</p>
         <el-button type="primary" @click="downloadFromPreview">下载文件</el-button>
@@ -255,6 +259,7 @@ import {
 } from '@/api/form_vault'
 import { getDepartments } from '@/api/department'
 import { renderAsync } from 'docx-preview'
+import * as XLSX from 'xlsx'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -311,7 +316,8 @@ export default {
       previewType: '',
       previewFileName: '',
       previewRowId: null,
-      previewBlob: null
+      previewBlob: null,
+      xlsxHtml: ''
     }
   },
   computed: {
@@ -422,6 +428,14 @@ export default {
       this.uploadVisible = true
     },
     handleFileChange(file) {
+      const name = (file.name || '').toLowerCase()
+      const allowed = ['.docx', '.pdf', '.xlsx']
+      if (!allowed.some(ext => name.endsWith(ext))) {
+        this.$message.warning('不支持的文件格式，请上传 DOCX、PDF 或 XLSX 文件')
+        this.uploadFileList = []
+        this.uploadFile = null
+        return
+      }
       this.uploadFile = file.raw
       this.uploadFileList = [file]
     },
@@ -532,6 +546,7 @@ export default {
       const fileName = (row.file_name || '').toLowerCase()
       this.previewFileName = row.file_name || '文件'
       this.previewRowId = row.id
+      this.xlsxHtml = ''
       // 检测文件类型
       if (fileName.endsWith('.pdf')) {
         this.previewType = 'pdf'
@@ -539,6 +554,8 @@ export default {
         this.previewType = 'image'
       } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
         this.previewType = 'docx'
+      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        this.previewType = 'xlsx'
       } else {
         this.previewType = 'other'
       }
@@ -557,6 +574,8 @@ export default {
           this.$nextTick(() => {
             this.renderDocxFromBlob(blob)
           })
+        } else if (this.previewType === 'xlsx') {
+          await this.renderXlsxFromBlob(blob)
         }
       } catch (e) {
         console.error('预览失败:', e)
@@ -576,6 +595,17 @@ export default {
         this.$message.error('文件预览失败，请尝试下载后查看')
       }
     },
+    async renderXlsxFromBlob(blob) {
+      try {
+        const arrayBuffer = await blob.arrayBuffer()
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+        this.xlsxHtml = XLSX.utils.sheet_to_html(firstSheet, { editable: false })
+      } catch (e) {
+        console.error('xlsx渲染失败:', e)
+        this.$message.error('文件预览失败，请尝试下载后查看')
+      }
+    },
     clearDocxPreview() {
       if (this.$refs.docxContainer) {
         this.$refs.docxContainer.innerHTML = ''
@@ -585,6 +615,7 @@ export default {
         this.previewUrl = ''
       }
       this.previewBlob = null
+      this.xlsxHtml = ''
     },
     async downloadFromPreview() {
       if (!this.previewRowId) return
@@ -819,5 +850,34 @@ export default {
   overflow-wrap: break-word;
   white-space: normal !important;
   min-width: 40px;
+}
+
+/* XLSX 预览 */
+.xlsx-preview-container {
+  font-size: 13px;
+}
+.xlsx-preview-container >>> table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.xlsx-preview-container >>> table td,
+.xlsx-preview-container >>> table th {
+  border: 1px solid #E2E8F0;
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+  min-width: 60px;
+}
+.xlsx-preview-container >>> table th {
+  background: #F8FAFC;
+  font-weight: 600;
+  color: #334155;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.xlsx-preview-container >>> table tr:hover td {
+  background: #F1F5F9;
 }
 </style>

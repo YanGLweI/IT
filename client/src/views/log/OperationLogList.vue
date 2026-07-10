@@ -28,6 +28,8 @@
             <el-option label="删除" value="删除" />
             <el-option label="上传" value="上传" />
             <el-option label="替换" value="替换" />
+            <el-option label="发布" value="发布" />
+            <el-option label="取消发布" value="取消发布" />
             <el-option label="管理" value="管理" />
             <el-option label="排序" value="排序" />
           </el-select>
@@ -175,7 +177,8 @@ export default {
         'patch_update': '补丁更新',
         'backup': '备份记录',
         'backup_recovery': '恢复还原记录',
-        'backup_template': '备份模板'
+        'backup_template': '备份模板',
+        'form_vault': '表单发布'
       }
     }
   },

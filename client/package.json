@@ -15,7 +15,8 @@
     "element-ui": "^2.15.14",
     "node-forge": "^1.4.0",
     "vue": "^2.7.16",
-    "vue-router": "^3.6.5"
+    "vue-router": "^3.6.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vue/cli-service": "^5.0.8",

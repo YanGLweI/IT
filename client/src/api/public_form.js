@@ -15,3 +15,10 @@ export function getPublicForms(params) {
 export function getPublicPreviewUrl(id) {
   return `/api/public/forms/${id}/preview`
 }
+
+// 公开预览 — 获取文件 blob（无认证）
+export function getPublicPreviewBlob(id) {
+  return publicRequest.get(`/public/forms/${id}/preview`, {
+    responseType: 'blob'
+  })
+}

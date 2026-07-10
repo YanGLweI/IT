@@ -160,7 +160,7 @@ func UpdateFormVaultItem(c *gin.Context) {
 	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("form_vault")
 	details := services.DiffStructs(oldItem, item, fieldLabels)
-	services.LogOperation(username, displayName, "编辑表单", "form_vault", item.ID, item.Title, approver, c.ClientIP(), details)
+	services.LogOperation(username, displayName, "更新表单", "form_vault", item.ID, item.Title, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": item})
 }
