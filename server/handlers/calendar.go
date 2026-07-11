@@ -200,11 +200,11 @@ func CreateCalendar(c *gin.Context) {
 			return fmt.Errorf("创建日程失败: %v", err)
 		}
 
-		// 批量插入参与者
+		// 批量插入参与者（使用短用户名确保可见性查询匹配）
 		for _, p := range req.Participants {
 			participant := models.CalendarParticipant{
 				CalendarID:  calendar.ID,
-				UserDN:      p.UserDN,
+				UserDN:      extractShortUsername(p.UserDN),
 				DisplayName: p.DisplayName,
 			}
 			if err := tx.Create(&participant).Error; err != nil {
@@ -312,11 +312,11 @@ func UpdateCalendar(c *gin.Context) {
 			return fmt.Errorf("删除旧参与者失败: %v", err)
 		}
 
-		// 插入新参与者
+		// 插入新参与者（使用短用户名）
 		for _, p := range req.Participants {
 			participant := models.CalendarParticipant{
 				CalendarID:  calendar.ID,
-				UserDN:      p.UserDN,
+				UserDN:      extractShortUsername(p.UserDN),
 				DisplayName: p.DisplayName,
 			}
 			if err := tx.Create(&participant).Error; err != nil {
@@ -437,18 +437,14 @@ func DeleteCalendar(c *gin.Context) {
 	})
 }
 
-// GetTodayNotifications 获取当前用户今日日程通知
+// GetTodayNotifications 获取当前用户所有未读通知（含即时通知和当天通知）
 func GetTodayNotifications(c *gin.Context) {
 	username, _, _ := services.GetUserContext(c)
 	db := database.GetDB()
 
-	now := time.Now()
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	todayEnd := todayStart.AddDate(0, 0, 1)
-
 	var notifications []models.CalendarNotification
-	db.Where("user_dn = ? AND notify_time >= ? AND notify_time < ?",
-		username, todayStart, todayEnd).
+	db.Where("user_dn = ? AND read_at IS NULL",
+		username).
 		Order("notify_time ASC").
 		Find(&notifications)
 
@@ -518,11 +514,11 @@ func GetPendingNotifications(c *gin.Context) {
 	db := database.GetDB()
 
 	now := time.Now()
-	next24h := now.Add(24 * time.Hour)
+	past24h := now.Add(-24 * time.Hour)
 
 	var notifications []models.CalendarNotification
-	db.Where("user_dn = ? AND notify_time >= ? AND notify_time <= ? AND popup_shown = false",
-		username, now, next24h).
+	db.Where("user_dn = ? AND notify_time <= ? AND notify_time >= ? AND popup_shown = false AND read_at IS NULL",
+		username, now, past24h).
 		Order("notify_time ASC").
 		Find(&notifications)
 
@@ -638,38 +634,45 @@ func CheckConflict(c *gin.Context) {
 	})
 }
 
+// extractShortUsername 从LDAP DN中提取短用户名（CN值）
+// 例如: "CN=zbj,OU=IT,DC=example,DC=com" -> "zbj"
+func extractShortUsername(dn string) string {
+	dn = strings.TrimSpace(dn)
+	upper := strings.ToUpper(dn)
+	if idx := strings.Index(upper, "CN="); idx >= 0 {
+		rest := dn[idx+3:]
+		if commaIdx := strings.Index(rest, ","); commaIdx >= 0 {
+			return rest[:commaIdx]
+		}
+		return rest
+	}
+	return dn
+}
+
 // generateNotificationRecords 为日程生成通知记录
 func generateNotificationRecords(tx *gorm.DB, calendar *models.Calendar, participants []CreateCalendarParticipantReq) {
 	now := time.Now()
 
-	// 为每个参与者生成通知
+	// 收集所有需要通知的用户（去重）
+	userSet := make(map[string]string) // shortUsername -> displayName
 	for _, p := range participants {
-		notification := models.CalendarNotification{
-			CalendarID: calendar.ID,
-			UserDN:     p.UserDN,
-			NotifyType: "login",
-			NotifyTime: calendar.StartTime,
-			SentAt:     now,
-		}
-		tx.Create(&notification)
+		shortName := extractShortUsername(p.UserDN)
+		userSet[shortName] = p.DisplayName
+	}
+	// 创建者也加入通知列表
+	if _, exists := userSet[calendar.CreatedBy]; !exists {
+		userSet[calendar.CreatedBy] = ""
 	}
 
-	// 也为创建者生成通知（如果创建者不在参与者列表中）
-	isCreatorInParticipants := false
-	for _, p := range participants {
-		if p.UserDN == calendar.CreatedBy {
-			isCreatorInParticipants = true
-			break
-		}
-	}
-	if !isCreatorInParticipants {
-		notification := models.CalendarNotification{
+	for shortName := range userSet {
+		// 仅在日程时间到达时通知（创建时不弹框，到达日程时间才弹框提醒）
+		dayNotif := models.CalendarNotification{
 			CalendarID: calendar.ID,
-			UserDN:     calendar.CreatedBy,
+			UserDN:     shortName,
 			NotifyType: "login",
 			NotifyTime: calendar.StartTime,
 			SentAt:     now,
 		}
-		tx.Create(&notification)
+		tx.Create(&dayNotif)
 	}
 }

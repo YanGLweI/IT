@@ -103,16 +103,10 @@ export default {
         const res = await getPendingNotifications()
         if (res && res.code === 200) {
           const pending = res.data || []
-          const now = new Date()
           for (const n of pending) {
-            if (!this.shownNotificationIds.has(n.id)) {
-              const notifyTime = new Date(n.notify_time)
-              if (notifyTime <= now) {
-                this.showPopupNotification(n)
-                this.shownNotificationIds.add(n.id)
-                markNotificationPopupShown(n.id).catch(() => {})
-              }
-            }
+            // 后端已过滤 notify_time <= now，直接弹框
+            this.showPopupNotification(n)
+            markNotificationPopupShown(n.id).catch(() => {})
           }
         }
       } catch (err) {
@@ -125,7 +119,7 @@ export default {
         title: '日程提醒',
         message: `${n.calendar_title} - ${timeStr}`,
         type: 'info',
-        duration: 4500,
+        duration: 0,
         position: 'bottom-right',
         onClick: () => {
           markNotificationRead(n.id).catch(() => {})
@@ -137,30 +131,33 @@ export default {
       if (!n.read_at) {
         try {
           await markNotificationRead(n.id)
-          n.read_at = new Date().toISOString()
+          // 从列表中移除已读通知
+          this.notifications = this.notifications.filter(item => item.id !== n.id)
           this.unreadCount = Math.max(0, this.unreadCount - 1)
         } catch (err) {
           // ignore
         }
       }
-      this.popoverVisible = false
     },
     async markAllRead() {
       try {
         for (const n of this.notifications) {
           if (!n.read_at) {
             await markNotificationRead(n.id)
-            n.read_at = new Date().toISOString()
           }
         }
+        // 清空列表和未读数
+        this.notifications = []
         this.unreadCount = 0
       } catch (err) {
         // ignore
       }
     },
     togglePopover() {
-      if (this.popoverVisible) {
+      if (!this.popoverVisible) {
+        // 打开时实时请求最新通知
         this.fetchTodayNotifications()
+        this.fetchUnreadCount()
       }
     },
     formatTime(timeStr) {

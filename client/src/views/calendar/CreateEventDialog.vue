@@ -16,7 +16,7 @@
         <el-input v-model="form.description" type="textarea" :rows="3" placeholder="日程描述（可选）" />
       </el-form-item>
 
-      <el-form-item label="联系人">
+      <el-form-item label="参与人">
         <el-select
           v-model="form.participants"
           multiple
@@ -27,9 +27,9 @@
         >
           <el-option
             v-for="user in ldapUsers"
-            :key="user.dn"
+            :key="user.sAMAccountName"
             :label="user.display_name"
-            :value="user.dn"
+            :value="user.sAMAccountName"
           />
         </el-select>
       </el-form-item>
@@ -303,11 +303,11 @@ export default {
       }
 
       // 冲突检测
-      const participants = this.form.participants.map(dn => {
-        const user = this.ldapUsers.find(u => u.dn === dn)
+      const participants = this.form.participants.map(username => {
+        const user = this.ldapUsers.find(u => u.sAMAccountName === username)
         return {
-          user_dn: dn,
-          display_name: user ? user.display_name : dn
+          user_dn: username,
+          display_name: user ? user.display_name : username
         }
       })
 
