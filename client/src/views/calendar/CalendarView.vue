@@ -1,0 +1,452 @@
+<template>
+  <div class="calendar-page">
+    <div class="calendar-card">
+      <!-- 工具栏 -->
+      <div class="calendar-toolbar">
+        <div class="toolbar-left">
+          <button class="nav-btn today-btn" @click="goToday">今天</button>
+          <div class="nav-arrows">
+            <button class="nav-btn arrow-btn" @click="navigate(-1)">
+              <i class="el-icon-arrow-left"></i>
+            </button>
+            <button class="nav-btn arrow-btn" @click="navigate(1)">
+              <i class="el-icon-arrow-right"></i>
+            </button>
+          </div>
+          <span class="current-date-label">{{ dateLabel }}</span>
+          <div class="view-switch">
+            <button
+              v-for="v in views"
+              :key="v.key"
+              class="view-btn"
+              :class="{ active: currentView === v.key }"
+              @click="currentView = v.key"
+            >{{ v.label }}</button>
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <div class="search-box">
+            <i class="el-icon-search search-icon"></i>
+            <input
+              v-model="searchKeyword"
+              class="search-input"
+              placeholder="搜索日程..."
+              @input="handleSearch"
+            />
+            <i v-if="searchKeyword" class="el-icon-close clear-icon" @click="searchKeyword = ''"></i>
+          </div>
+          <button class="nav-btn create-btn" @click="openCreateDialog">
+            <i class="el-icon-plus"></i>
+            <span>新建日程</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 日历内容 -->
+      <div class="calendar-content">
+        <week-view
+          v-if="currentView === 'week'"
+          :current-date="currentDate"
+          :events="filteredEvents"
+          @event-click="handleEventClick"
+          @event-dblclick="handleEventDblClick"
+        />
+        <day-view
+          v-if="currentView === 'day'"
+          :current-date="currentDate"
+          :events="filteredEvents"
+          @event-click="handleEventClick"
+          @event-dblclick="handleEventDblClick"
+        />
+        <month-view
+          v-if="currentView === 'month'"
+          :current-date="currentDate"
+          :events="filteredEvents"
+          @event-click="handleEventClick"
+          @event-dblclick="handleEventDblClick"
+        />
+      </div>
+    </div>
+
+    <create-event-dialog
+      :visible="createDialogVisible"
+      :mode="createDialogMode"
+      :event="editingEvent"
+      @close="createDialogVisible = false"
+      @saved="handleEventSaved"
+    />
+
+    <event-detail-dialog
+      :visible="detailDialogVisible"
+      :event="selectedEvent"
+      @close="detailDialogVisible = false"
+      @edit="handleEditFromDetail"
+      @deleted="handleEventDeleted"
+    />
+  </div>
+</template>
+
+<script>
+import { getCalendars } from '@/api/calendar'
+import WeekView from './WeekView.vue'
+import DayView from './DayView.vue'
+import MonthView from './MonthView.vue'
+import CreateEventDialog from './CreateEventDialog.vue'
+import EventDetailDialog from './EventDetailDialog.vue'
+
+export default {
+  name: 'CalendarView',
+  components: { WeekView, DayView, MonthView, CreateEventDialog, EventDetailDialog },
+  data() {
+    return {
+      currentView: 'week',
+      currentDate: new Date(),
+      events: [],
+      searchKeyword: '',
+      createDialogVisible: false,
+      createDialogMode: 'create',
+      editingEvent: null,
+      detailDialogVisible: false,
+      selectedEvent: null,
+      searchTimer: null,
+      views: [
+        { key: 'day', label: '日' },
+        { key: 'week', label: '周' },
+        { key: 'month', label: '月' }
+      ]
+    }
+  },
+  computed: {
+    dateLabel() {
+      const d = this.currentDate
+      const year = d.getFullYear()
+      const month = d.getMonth() + 1
+      if (this.currentView === 'day') {
+        return `${year}年${month}月${d.getDate()}日`
+      } else if (this.currentView === 'week') {
+        const weekStart = this.getWeekStart(d)
+        const weekEnd = new Date(weekStart)
+        weekEnd.setDate(weekEnd.getDate() + 6)
+        const sm = weekStart.getMonth() + 1
+        const em = weekEnd.getMonth() + 1
+        if (sm === em) {
+          return `${year}年${sm}月${weekStart.getDate()}日 - ${weekEnd.getDate()}日`
+        }
+        return `${year}年${sm}月${weekStart.getDate()}日 - ${em}月${weekEnd.getDate()}日`
+      } else {
+        return `${year}年${month}月`
+      }
+    },
+    filteredEvents() {
+      if (!this.searchKeyword) return this.events
+      const kw = this.searchKeyword.toLowerCase()
+      return this.events.filter(e =>
+        e.title.toLowerCase().includes(kw) ||
+        (e.participants && e.participants.some(p => p.display_name && p.display_name.toLowerCase().includes(kw)))
+      )
+    }
+  },
+  watch: {
+    currentDate() {
+      this.fetchEvents()
+    },
+    currentView() {
+      this.fetchEvents()
+    }
+  },
+  created() {
+    this.fetchEvents()
+  },
+  methods: {
+    getWeekStart(date) {
+      const d = new Date(date)
+      const day = d.getDay()
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+      d.setDate(diff)
+      d.setHours(0, 0, 0, 0)
+      return d
+    },
+    getDateRange() {
+      if (this.currentView === 'day') {
+        const start = new Date(this.currentDate)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(start)
+        end.setDate(end.getDate() + 1)
+        return { start, end }
+      } else if (this.currentView === 'week') {
+        const start = this.getWeekStart(this.currentDate)
+        const end = new Date(start)
+        end.setDate(end.getDate() + 7)
+        return { start, end }
+      } else {
+        const start = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1)
+        const day = start.getDay()
+        start.setDate(start.getDate() - (day === 0 ? 6 : day - 1))
+        const end = new Date(start)
+        end.setDate(end.getDate() + 42)
+        return { start, end }
+      }
+    },
+    async fetchEvents() {
+      try {
+        const { start, end } = this.getDateRange()
+        const params = {
+          start_date: this.formatDate(start),
+          end_date: this.formatDate(end)
+        }
+        const res = await getCalendars(params)
+        if (res && res.code === 200) {
+          this.events = res.data || []
+        }
+      } catch (err) {
+        console.error('获取日程失败:', err)
+      }
+    },
+    formatDate(date) {
+      const y = date.getFullYear()
+      const m = String(date.getMonth() + 1).padStart(2, '0')
+      const d = String(date.getDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    },
+    goToday() {
+      this.currentDate = new Date()
+    },
+    navigate(direction) {
+      const d = new Date(this.currentDate)
+      if (this.currentView === 'day') {
+        d.setDate(d.getDate() + direction)
+      } else if (this.currentView === 'week') {
+        d.setDate(d.getDate() + direction * 7)
+      } else {
+        d.setMonth(d.getMonth() + direction)
+      }
+      this.currentDate = d
+    },
+    handleSearch() {
+      clearTimeout(this.searchTimer)
+      this.searchTimer = setTimeout(() => {}, 300)
+    },
+    openCreateDialog() {
+      this.createDialogMode = 'create'
+      this.editingEvent = null
+      this.createDialogVisible = true
+    },
+    handleEventClick(event) {
+      this.selectedEvent = event
+      this.detailDialogVisible = true
+    },
+    handleEventDblClick(event) {
+      this.editingEvent = event
+      this.createDialogMode = 'edit'
+      this.createDialogVisible = true
+    },
+    handleEditFromDetail(event) {
+      this.detailDialogVisible = false
+      this.editingEvent = event
+      this.createDialogMode = 'edit'
+      this.createDialogVisible = true
+    },
+    handleEventSaved() {
+      this.createDialogVisible = false
+      this.fetchEvents()
+    },
+    handleEventDeleted() {
+      this.detailDialogVisible = false
+      this.fetchEvents()
+    }
+  }
+}
+</script>
+
+<style scoped>
+.calendar-page {
+  padding: 16px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.calendar-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+/* 工具栏 */
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 按钮 */
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  gap: 4px;
+}
+
+.nav-btn:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.arrow-btn {
+  width: 34px;
+  padding: 0;
+  font-size: 14px;
+}
+
+.today-btn {
+  background: #eff6ff;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.today-btn:hover {
+  background: #dbeafe;
+}
+
+.create-btn {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.create-btn:hover {
+  background: #2563eb;
+}
+
+.nav-arrows {
+  display: flex;
+  gap: 4px;
+}
+
+/* 日期标签 */
+.current-date-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+  min-width: 180px;
+}
+
+/* 视图切换 */
+.view-switch {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 3px;
+  margin-left: 6px;
+}
+
+.view-btn {
+  height: 28px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-btn:hover {
+  color: #334155;
+}
+
+.view-btn.active {
+  background: #ffffff;
+  color: #1e293b;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* 搜索框 */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.search-input {
+  height: 34px;
+  width: 180px;
+  padding: 0 30px 0 30px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-input:focus {
+  border-color: #93c5fd;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+.clear-icon {
+  position: absolute;
+  right: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.clear-icon:hover {
+  color: #64748b;
+}
+
+/* 内容区 */
+.calendar-content {
+  flex: 1;
+  overflow: hidden;
+  background: #fafbfc;
+}
+</style>

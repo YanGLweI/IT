@@ -167,6 +167,7 @@ export default {
             localStorage.setItem('token', data.token)
             localStorage.setItem('username', data.username)
             localStorage.setItem('display_name', data.display_name)
+            localStorage.setItem('show_login_notifications', 'true')
             this.$message.success('登录成功')
             this.$router.push('/')
           } else {

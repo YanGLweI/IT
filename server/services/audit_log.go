@@ -427,6 +427,15 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"IsPublished":  "发布状态",
 			"RefModule":    "引用模块",
 		}
+	case "calendar":
+		return map[string]string{
+			"Title":          "标题",
+			"Description":    "描述",
+			"StartTime":      "开始时间",
+			"EndTime":        "结束时间",
+			"IsAllDay":       "全天",
+			"RepeatRuleJSON": "重复规则",
+		}
 	default:
 		return make(map[string]string)
 	}

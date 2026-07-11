@@ -59,7 +59,8 @@ const routes = [
       { path: 'monthly-check-history', name: 'MonthlyCheckHistory', component: () => import('../views/permission/MonthlyCheckHistory.vue'), meta: { title: '月度检查历史', enTitle: 'Monthly Check History' } },
       { path: 'quarterly-check-history', name: 'QuarterlyCheckHistory', component: () => import('../views/approved-software/QuarterlyCheckHistory.vue'), meta: { title: '季度检查历史', enTitle: 'Quarterly Check History' } },
       { path: 'user-change-history', name: 'UserChangeHistory', component: () => import('../views/permission/UserChangeHistory.vue'), meta: { title: '用户变更记录', enTitle: 'User Change History' } },
-      { path: 'form-publish', name: 'FormPublish', component: () => import('../views/form-publish/FormVault.vue'), meta: { title: '表单发布', enTitle: 'Form Publishing' } }
+      { path: 'form-publish', name: 'FormPublish', component: () => import('../views/form-publish/FormVault.vue'), meta: { title: '表单发布', enTitle: 'Form Publishing' } },
+      { path: 'calendar', name: 'Calendar', component: () => import('../views/calendar/CalendarView.vue'), meta: { title: '日程管理', enTitle: 'Calendar Management' } }
     ]
   }
 ]

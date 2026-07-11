@@ -59,6 +59,9 @@ func InitDB() {
 		&models.BackupRecovery{},
 		&models.BackupTemplate{},
 		&models.FormVaultItem{},
+		&models.Calendar{},
+		&models.CalendarParticipant{},
+		&models.CalendarNotification{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

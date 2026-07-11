@@ -178,6 +178,24 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/form-vault/:id/preview", handlers.PreviewFormVaultItem)
 			protected.GET("/form-vault/:id/download", handlers.DownloadFormVaultItem)
 
+			// 日历日程 - 读操作（不需要双控）
+			protected.GET("/calendars", handlers.ListCalendars)
+			protected.GET("/calendars/:id", handlers.GetCalendar)
+			protected.GET("/calendars/today-notifications", handlers.GetTodayNotifications)
+			protected.GET("/calendars/unread-count", handlers.GetUnreadCount)
+			protected.GET("/calendars/pending-notifications", handlers.GetPendingNotifications)
+			protected.PUT("/calendars/notifications/:id/read", handlers.MarkNotificationRead)
+			protected.PUT("/calendars/notifications/:id/popup-shown", handlers.MarkNotificationPopupShown)
+			protected.POST("/calendars/check-conflict", handlers.CheckConflict)
+
+				// LDAP用户获取（不需要双控）
+			protected.GET("/ldap/users", handlers.GetLDAPUsers)
+
+			// 日历日程 - 写操作（不需要双控，仅需JWT）
+			protected.POST("/calendars", handlers.CreateCalendar)
+			protected.PUT("/calendars/:id", handlers.UpdateCalendar)
+			protected.DELETE("/calendars/:id", handlers.DeleteCalendar)
+
 			// ============ 双控保护接口（需要JWT + 双控验证）============
 			dual := protected.Group("")
 			dual.Use(middleware.DualControl())

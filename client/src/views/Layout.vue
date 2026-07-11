@@ -152,6 +152,10 @@
           <svg-icon name="upload-cloud" />
           <span>表单发布</span>
         </el-menu-item>
+        <el-menu-item index="/calendar">
+          <svg-icon name="calendar" />
+          <span>日程管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -165,6 +169,7 @@
           <p ref="subtitleText" :key="$route.path" class="header-subtitle">{{ $route.meta.enTitle }}</p>
         </div>
         <div class="header-right">
+          <notification-bell ref="notificationBell" />
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <i class="el-icon-user-solid"></i>
@@ -190,10 +195,11 @@
 import { logout } from '@/api/audit_log'
 import { animate, scrambleText } from 'animejs'
 import SvgIcon from '@/components/SvgIcon.vue'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 export default {
   name: 'Layout',
-  components: { SvgIcon },
+  components: { SvgIcon, NotificationBell },
   data() {
     return {
       displayName: localStorage.getItem('display_name') || '用户',
@@ -218,6 +224,15 @@ export default {
     this.$nextTick(() => {
       this.startSubtitleAnimation()
       this.startTitleTypingAnimation()
+      // 检查是否需要弹出登录通知
+      if (localStorage.getItem('show_login_notifications') === 'true') {
+        localStorage.removeItem('show_login_notifications')
+        this.$nextTick(() => {
+          if (this.$refs.notificationBell) {
+            this.$refs.notificationBell.showLoginNotifications()
+          }
+        })
+      }
     })
   },
   beforeDestroy() {
@@ -321,8 +336,8 @@ export default {
 </style>
 
 <style>
-/* 非看板页面恢复默认内边距 */
-.el-main > *:not(.dashboard) {
+/* 非看板、非日历页面恢复默认内边距 */
+.el-main > *:not(.dashboard):not(.calendar-page) {
   padding: 20px;
 }
 </style>
