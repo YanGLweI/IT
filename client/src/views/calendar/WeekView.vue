@@ -38,6 +38,7 @@
           @dblclick.stop="$emit('event-dblclick', event)"
         >
           <div class="event-title">{{ event.title }}</div>
+          <div class="event-all-day-tag" v-if="event.is_all_day">全天</div>
           <div class="event-time" v-if="!event.is_all_day">
             {{ formatTime(event.start_time) }} - {{ formatTime(event.end_time) }}
           </div>
@@ -334,6 +335,12 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
+}
+
+.event-all-day-tag {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 1px;
 }
 
 .event-time {

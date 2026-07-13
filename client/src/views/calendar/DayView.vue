@@ -17,6 +17,7 @@
         @dblclick.stop="$emit('event-dblclick', event)"
       >
         <div class="event-title">{{ event.title }}</div>
+        <div class="event-all-day-tag">全天</div>
         <div class="event-description" v-if="event.description">{{ event.description }}</div>
         <div class="event-participants" v-if="event.participants && event.participants.length > 0">
           <span v-for="(p, i) in event.participants.slice(0, 5)" :key="i" class="participant-avatar">
@@ -302,6 +303,12 @@ export default {
   font-weight: 600;
   font-size: 13px;
   line-height: 1.3;
+}
+
+.event-all-day-tag {
+  font-size: 11px;
+  color: #475569;
+  margin-top: 2px;
 }
 
 .event-time {

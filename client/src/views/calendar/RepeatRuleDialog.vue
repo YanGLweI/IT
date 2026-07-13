@@ -26,6 +26,7 @@
       <el-form-item v-if="form.unit === 'weeks'" label="重复日期">
         <div class="weekday-buttons">
           <button
+            type="button"
             v-for="(name, idx) in weekdayNames"
             :key="idx"
             class="weekday-btn"
