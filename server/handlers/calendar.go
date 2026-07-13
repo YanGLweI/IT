@@ -247,7 +247,7 @@ func CreateCalendar(c *gin.Context) {
 	if len(participantNames) > 0 {
 		details = append(details, services.LogDetail{FieldName: "participants", FieldLabel: "参与者", OldValue: "", NewValue: strings.Join(participantNames, ", ")})
 	}
-	services.LogOperation(username, displayName, "create", "calendar", calendar.ID, req.Title, "", c.ClientIP(), details)
+	services.LogOperation(username, displayName, "创建日程", "calendar", calendar.ID, req.Title, "", c.ClientIP(), details)
 
 	// 重新查询带参与者的日程
 	db.Preload("Participants").First(&calendar, calendar.ID)
@@ -361,7 +361,7 @@ func UpdateCalendar(c *gin.Context) {
 		})
 	}
 	if len(details) > 0 {
-		services.LogOperation(username, displayName, "update", "calendar", calendar.ID, req.Title, "", c.ClientIP(), details)
+		services.LogOperation(username, displayName, "更新日程", "calendar", calendar.ID, req.Title, "", c.ClientIP(), details)
 	}
 
 	db.Preload("Participants").First(&calendar, calendar.ID)
@@ -437,7 +437,7 @@ func DeleteCalendar(c *gin.Context) {
 			OldValue: strings.Join(participantNames, ", "), NewValue: "",
 		})
 	}
-	services.LogOperation(username, displayName, "delete", "calendar", calendar.ID, calendar.Title, "", c.ClientIP(), delDetails)
+	services.LogOperation(username, displayName, "删除日程", "calendar", calendar.ID, calendar.Title, "", c.ClientIP(), delDetails)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,

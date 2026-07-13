@@ -1,5 +1,20 @@
 <template>
   <div class="calendar-page">
+    <!-- 左侧边栏 -->
+    <div class="calendar-sidebar">
+      <mini-calendar :current-date="currentDate" @date-change="handleSidebarDateChange" @month-change="handleSidebarMonthChange" />
+      <div class="sidebar-search">
+        <i class="el-icon-search search-icon"></i>
+        <input
+          v-model="searchKeyword"
+          class="search-input"
+          placeholder="搜索日程..."
+          @input="handleSearch"
+        />
+        <i v-if="searchKeyword" class="el-icon-close clear-icon" @click="searchKeyword = ''"></i>
+      </div>
+    </div>
+
     <div class="calendar-card">
       <!-- 工具栏 -->
       <div class="calendar-toolbar">
@@ -25,16 +40,6 @@
           </div>
         </div>
         <div class="toolbar-right">
-          <div class="search-box">
-            <i class="el-icon-search search-icon"></i>
-            <input
-              v-model="searchKeyword"
-              class="search-input"
-              placeholder="搜索日程..."
-              @input="handleSearch"
-            />
-            <i v-if="searchKeyword" class="el-icon-close clear-icon" @click="searchKeyword = ''"></i>
-          </div>
           <button class="nav-btn create-btn" @click="openCreateDialog">
             <i class="el-icon-plus"></i>
             <span>新建日程</span>
@@ -91,12 +96,13 @@ import { getCalendars } from '@/api/calendar'
 import WeekView from './WeekView.vue'
 import DayView from './DayView.vue'
 import MonthView from './MonthView.vue'
+import MiniCalendar from './MiniCalendar.vue'
 import CreateEventDialog from './CreateEventDialog.vue'
 import EventDetailDialog from './EventDetailDialog.vue'
 
 export default {
   name: 'CalendarView',
-  components: { WeekView, DayView, MonthView, CreateEventDialog, EventDetailDialog },
+  components: { WeekView, DayView, MonthView, MiniCalendar, CreateEventDialog, EventDetailDialog },
   data() {
     return {
       currentView: 'week',
@@ -400,6 +406,15 @@ export default {
     goToday() {
       this.currentDate = new Date()
     },
+    handleSidebarDateChange(date) {
+      this.currentDate = date
+    },
+    handleSidebarMonthChange(date) {
+      const d = new Date(this.currentDate)
+      d.setFullYear(date.getFullYear())
+      d.setMonth(date.getMonth())
+      this.currentDate = d
+    },
     navigate(direction) {
       const d = new Date(this.currentDate)
       if (this.currentView === 'day') {
@@ -480,9 +495,73 @@ export default {
   padding: 20px;
   height: 100%;
   box-sizing: border-box;
+  display: flex;
+  gap: 16px;
+}
+
+.calendar-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #f8fafc;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.sidebar-search {
+  margin-top: 16px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-search .search-icon {
+  position: absolute;
+  left: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.sidebar-search .search-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 30px 0 30px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.sidebar-search .search-input::placeholder {
+  color: #94a3b8;
+}
+
+.sidebar-search .search-input:focus {
+  border-color: #93c5fd;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+.sidebar-search .clear-icon {
+  position: absolute;
+  right: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sidebar-search .clear-icon:hover {
+  color: #64748b;
 }
 
 .calendar-card {
+  flex: 1;
+  min-width: 0;
   height: 100%;
   display: flex;
   flex-direction: column;

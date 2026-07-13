@@ -38,20 +38,30 @@
         <div v-for="hour in 24" :key="hour" class="hour-slot"></div>
 
         <div
-          v-for="event in timedEvents"
-          :key="event.id"
+          v-for="item in timedLayoutEvents"
+          :key="item.event.id + '-' + item.groupIndex"
           class="event-card"
-          :style="getEventStyle(event)"
-          @click.stop="$emit('event-click', event)"
-          @dblclick.stop="$emit('event-dblclick', event)"
+          :class="{ 'overlap-active': item.groupSize <= 1 || getActiveIdx(item.groupKey, item.groupSize) === item.groupIndex, 'overlap-hidden': item.groupSize > 1 && getActiveIdx(item.groupKey, item.groupSize) !== item.groupIndex }"
+          :style="item.style"
+          @click.stop="$emit('event-click', item.event)"
+          @dblclick.stop="$emit('event-dblclick', item.event)"
         >
-          <div class="event-title">{{ event.title }}</div>
-          <div class="event-time" v-if="!event.is_all_day">
-            {{ formatTime(event.start_time) }} - {{ formatTime(event.end_time) }}
+          <div class="overlap-nav" v-if="item.groupSize > 1" @click.stop>
+            <button class="overlap-btn" @click="navigateOverlap(item.groupKey, -1)">
+              <i class="el-icon-arrow-left"></i>
+            </button>
+            <span class="overlap-count">{{ getActiveIdx(item.groupKey, item.groupSize) + 1 }}/{{ item.groupSize }}</span>
+            <button class="overlap-btn" @click="navigateOverlap(item.groupKey, 1)">
+              <i class="el-icon-arrow-right"></i>
+            </button>
           </div>
-          <div class="event-description" v-if="event.description">{{ event.description }}</div>
-          <div class="event-participants" v-if="event.participants && event.participants.length > 0">
-            <span v-for="(p, i) in event.participants.slice(0, 5)" :key="i" class="participant-avatar">
+          <div class="event-title">{{ item.event.title }}</div>
+          <div class="event-time" v-if="!item.event.is_all_day">
+            {{ formatTime(item.event.start_time) }} - {{ formatTime(item.event.end_time) }}
+          </div>
+          <div class="event-description" v-if="item.event.description">{{ item.event.description }}</div>
+          <div class="event-participants" v-if="item.event.participants && item.event.participants.length > 0">
+            <span v-for="(p, i) in item.event.participants.slice(0, 5)" :key="i" class="participant-avatar">
               {{ p.display_name ? p.display_name[0] : '?' }}
             </span>
           </div>
@@ -76,7 +86,8 @@ export default {
     return {
       currentTime: new Date(),
       timeTimer: null,
-      HOUR_HEIGHT
+      HOUR_HEIGHT,
+      overlapActive: {}
     }
   },
   computed: {
@@ -107,6 +118,66 @@ export default {
     timedEvents() {
       return this.dayEvents.filter(e => !e.is_all_day)
     },
+    timedLayoutEvents() {
+      const events = this.timedEvents
+      if (!events.length) return []
+      const dayStart = new Date(this.currentDate)
+      dayStart.setHours(0, 0, 0, 0)
+
+      const processed = events.map(event => {
+        const start = new Date(event.start_time)
+        const end = new Date(event.end_time)
+        const startMin = Math.max(0, (start - dayStart) / 60000)
+        const endMin = Math.min(1440, (end - dayStart) / 60000)
+        return { event, startMin, endMin: Math.max(startMin + 30, endMin) }
+      }).sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin)
+
+      // Find overlap groups using sweep-line
+      const groups = []
+      const used = new Set()
+      for (let i = 0; i < processed.length; i++) {
+        if (used.has(i)) continue
+        const group = [i]
+        used.add(i)
+        let groupEnd = processed[i].endMin
+        for (let j = i + 1; j < processed.length; j++) {
+          if (used.has(j)) continue
+          if (processed[j].startMin < groupEnd) {
+            group.push(j)
+            used.add(j)
+            groupEnd = Math.max(groupEnd, processed[j].endMin)
+          }
+        }
+        groups.push(group)
+      }
+
+      // Build layout items - all full width, stacked
+      const result = []
+      for (const group of groups) {
+        const groupKey = group.map(i => processed[i].event.id).sort().join('_')
+        group.forEach((idx, col) => {
+          const p = processed[idx]
+          const duration = Math.max(30, p.endMin - p.startMin)
+          const top = (p.startMin / 60) * HOUR_HEIGHT
+          const height = (duration / 60) * HOUR_HEIGHT
+          result.push({
+            event: p.event,
+            groupKey,
+            groupSize: group.length,
+            groupIndex: col,
+            style: {
+              top: `${top}px`,
+              height: `${height}px`,
+              backgroundColor: this.getEventColor(p.event),
+              left: '6px',
+              right: '6px',
+              position: 'absolute'
+            }
+          })
+        })
+      }
+      return result
+    },
     currentTimeStyle() {
       const now = this.currentTime
       const minutes = now.getHours() * 60 + now.getMinutes()
@@ -124,28 +195,6 @@ export default {
     if (this.timeTimer) clearInterval(this.timeTimer)
   },
   methods: {
-    getEventStyle(event) {
-      const start = new Date(event.start_time)
-      const end = new Date(event.end_time)
-      const dayStart = new Date(this.currentDate)
-      dayStart.setHours(0, 0, 0, 0)
-
-      const startMinutes = Math.max(0, (start - dayStart) / 60000)
-      const endMinutes = Math.min(1440, (end - dayStart) / 60000)
-      const duration = Math.max(30, endMinutes - startMinutes)
-
-      const top = (startMinutes / 60) * HOUR_HEIGHT
-      const height = (duration / 60) * HOUR_HEIGHT
-
-      return {
-        top: `${top}px`,
-        height: `${height}px`,
-        backgroundColor: this.getEventColor(event),
-        left: '6px',
-        right: '6px',
-        position: 'absolute'
-      }
-    },
     getEventColor(event) {
       const colors = ['#93c5fd', '#6ee7b7', '#fcd34d', '#fca5a5', '#c4b5fd', '#f9a8d4']
       return colors[parseInt(event.id || 0) % colors.length]
@@ -153,6 +202,16 @@ export default {
     formatTime(timeStr) {
       const d = new Date(timeStr)
       return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+    },
+    navigateOverlap(groupKey, dir) {
+      const groupSize = this.timedLayoutEvents.find(i => i.groupKey === groupKey)?.groupSize || 1
+      const current = this.overlapActive[groupKey] || 0
+      const next = (current + dir + groupSize) % groupSize
+      this.$set(this.overlapActive, groupKey, next)
+    },
+    getActiveIdx(groupKey, groupSize) {
+      const idx = this.overlapActive[groupKey] || 0
+      return idx < groupSize ? idx : 0
     },
     scrollToCurrentTime() {
       this.$nextTick(() => {
@@ -278,16 +337,65 @@ export default {
   font-size: 13px;
   cursor: pointer;
   overflow: hidden;
-  z-index: 10;
   box-sizing: border-box;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: opacity 0.25s ease, transform 0.2s ease, box-shadow 0.2s ease, z-index 0s;
 }
 
-.event-card:hover {
+.event-card.overlap-active {
+  z-index: 15;
+  opacity: 1;
+}
+
+.event-card.overlap-hidden {
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.event-card.overlap-active:hover {
   transform: scale(1.01);
   z-index: 20;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.overlap-nav {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 5;
+}
+
+.overlap-btn {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.overlap-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+}
+
+.overlap-count {
+  font-size: 9px;
+  font-weight: 600;
+  color: #475569;
+  min-width: 20px;
+  text-align: center;
 }
 
 .event-title {
