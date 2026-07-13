@@ -178,6 +178,12 @@ func CreateCalendar(c *gin.Context) {
 	username, displayName, _ := services.GetUserContext(c)
 	db := database.GetDB()
 
+	// 校验开始时间不能是过去时间
+	if req.StartTime.Before(time.Now()) {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不能创建过去时间的日程"})
+		return
+	}
+
 	// 处理空repeat_rule_json（MySQL JSON列不接受空字符串）
 	repeatRule := req.RepeatRuleJSON
 	if repeatRule == "" {

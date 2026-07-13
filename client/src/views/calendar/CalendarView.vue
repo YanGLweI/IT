@@ -196,11 +196,168 @@ export default {
         }
         const res = await getCalendars(params)
         if (res && res.code === 200) {
-          this.events = res.data || []
+          const rawEvents = res.data || []
+          this.events = this.expandRecurringEvents(rawEvents, start, end)
         }
       } catch (err) {
         console.error('获取日程失败:', err)
       }
+    },
+    expandRecurringEvents(events, rangeStart, rangeEnd) {
+      const result = []
+      for (const event of events) {
+        const rule = this.parseRepeatRule(event.repeat_rule_json)
+        if (!rule) {
+          result.push(event)
+          continue
+        }
+        const origStart = new Date(event.start_time)
+        const origEnd = new Date(event.end_time)
+        const duration = origEnd.getTime() - origStart.getTime()
+        const instances = this.generateInstances(rule, origStart, rangeStart, rangeEnd)
+        for (const inst of instances) {
+          result.push({
+            ...event,
+            start_time: inst.toISOString(),
+            end_time: new Date(inst.getTime() + duration).toISOString()
+          })
+        }
+      }
+      return result
+    },
+    parseRepeatRule(json) {
+      if (!json || json === '' || json === 'null') return null
+      try {
+        const rule = JSON.parse(json)
+        if (!rule.type || rule.type === 'none') return null
+        return rule
+      } catch { return null }
+    },
+    generateInstances(rule, startDate, rangeStart, rangeEnd) {
+      const instances = []
+      const interval = Math.max(rule.interval || 1, 1)
+      const maxOcc = rule.occurrences || 1000
+      let count = 0
+      const endDate = rule.endDate ? new Date(rule.endDate + 'T00:00:00') : null
+
+      switch (rule.type) {
+        case 'daily': {
+          let cur = new Date(startDate)
+          while (cur <= rangeEnd && count < maxOcc) {
+            if (cur >= rangeStart) instances.push(new Date(cur))
+            count++
+            if (endDate && cur > endDate) break
+            cur = new Date(cur.getTime() + interval * 86400000)
+          }
+          break
+        }
+        case 'weekly': {
+          let cur = new Date(startDate)
+          while (cur <= rangeEnd && count < maxOcc) {
+            if (cur >= rangeStart && cur.getDay() === rule.weekday) instances.push(new Date(cur))
+            count++
+            if (endDate && cur > endDate) break
+            cur = new Date(cur.getTime() + interval * 7 * 86400000)
+          }
+          break
+        }
+        case 'monthly_day': {
+          let year = startDate.getFullYear()
+          let month = startDate.getMonth() + 1
+          while (count < maxOcc) {
+            const candidate = new Date(year, month - 1, rule.monthDay, startDate.getHours(), startDate.getMinutes(), startDate.getSeconds())
+            if (candidate > rangeEnd) break
+            if (candidate >= rangeStart && candidate >= startDate && candidate.getDate() === rule.monthDay) {
+              instances.push(candidate)
+            }
+            count++
+            if (endDate && candidate > endDate) break
+            month += interval
+            while (month > 12) { month -= 12; year++ }
+          }
+          break
+        }
+        case 'monthly_week': {
+          let year = startDate.getFullYear()
+          let month = startDate.getMonth() + 1
+          while (count < maxOcc) {
+            const candidate = this.getNthWeekdayOfMonth(year, month, rule.weekOfMonth, rule.weekday, startDate)
+            // 该月不存在第N个周X，跳过
+            if (candidate) {
+              if (candidate > rangeEnd) break
+              if (candidate >= rangeStart && candidate >= startDate) instances.push(candidate)
+            }
+            count++
+            if (endDate && candidate && candidate > endDate) break
+            month += interval
+            while (month > 12) { month -= 12; year++ }
+          }
+          break
+        }
+        case 'yearly': {
+          let year = startDate.getFullYear()
+          while (count < maxOcc) {
+            const candidate = new Date(year, rule.monthOfYear - 1, rule.monthDay, startDate.getHours(), startDate.getMinutes(), startDate.getSeconds())
+            if (candidate > rangeEnd) break
+            if (candidate >= rangeStart && candidate >= startDate && candidate.getMonth() === rule.monthOfYear - 1 && candidate.getDate() === rule.monthDay) {
+              instances.push(candidate)
+            }
+            count++
+            if (endDate && candidate > endDate) break
+            year += interval
+          }
+          break
+        }
+        case 'workday': {
+          let cur = new Date(startDate)
+          while (cur <= rangeEnd && count < maxOcc) {
+            const dow = cur.getDay()
+            if (cur >= rangeStart && dow !== 0 && dow !== 6) instances.push(new Date(cur))
+            count++
+            if (endDate && cur > endDate) break
+            cur = new Date(cur.getTime() + 86400000)
+          }
+          break
+        }
+        case 'custom': {
+          let cur = new Date(startDate)
+          while (cur <= rangeEnd && count < maxOcc) {
+            if (cur >= rangeStart) instances.push(new Date(cur))
+            count++
+            if (endDate && cur > endDate) break
+            switch (rule.unit) {
+              case 'days': cur = new Date(cur.getTime() + interval * 86400000); break
+              case 'weeks': cur = new Date(cur.getTime() + interval * 7 * 86400000); break
+              case 'months': {
+                const d = new Date(cur)
+                const origDay = startDate.getDate()
+                d.setDate(1)
+                d.setMonth(d.getMonth() + interval)
+                d.setDate(Math.min(origDay, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()))
+                cur = d
+                break
+              }
+              case 'years': { const d = new Date(cur); d.setFullYear(d.getFullYear() + interval); cur = d; break }
+              default: cur = new Date(cur.getTime() + interval * 86400000)
+            }
+          }
+          break
+        }
+      }
+      return instances
+    },
+    getNthWeekdayOfMonth(year, month, weekOfMonth, weekday, baseDate) {
+      const firstDay = new Date(year, month - 1, 1, baseDate.getHours(), baseDate.getMinutes(), baseDate.getSeconds())
+      const firstWeekday = firstDay.getDay()
+      let diff = weekday - firstWeekday
+      if (diff < 0) diff += 7
+      const firstTarget = new Date(firstDay.getTime() + diff * 86400000)
+      const target = new Date(firstTarget.getTime() + (weekOfMonth - 1) * 7 * 86400000)
+      // 第N个周X超出本月范围，返回null表示该月不存在
+      if (target.getMonth() !== month - 1) {
+        return null
+      }
+      return target
     },
     formatDate(date) {
       const y = date.getFullYear()
@@ -236,15 +393,43 @@ export default {
       this.detailDialogVisible = true
     },
     handleEventDblClick(event) {
-      this.editingEvent = event
-      this.createDialogMode = 'edit'
-      this.createDialogVisible = true
+      // 重复日程编辑时提示用户将修改整个系列
+      const rule = this.parseRepeatRule(event.repeat_rule_json)
+      if (rule) {
+        this.$confirm('编辑重复日程将修改整个系列，是否继续？', '提示', {
+          confirmButtonText: '继续编辑',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.editingEvent = event
+          this.createDialogMode = 'edit'
+          this.createDialogVisible = true
+        }).catch(() => {})
+      } else {
+        this.editingEvent = event
+        this.createDialogMode = 'edit'
+        this.createDialogVisible = true
+      }
     },
     handleEditFromDetail(event) {
-      this.detailDialogVisible = false
-      this.editingEvent = event
-      this.createDialogMode = 'edit'
-      this.createDialogVisible = true
+      const rule = this.parseRepeatRule(event.repeat_rule_json)
+      if (rule) {
+        this.$confirm('编辑重复日程将修改整个系列，是否继续？', '提示', {
+          confirmButtonText: '继续编辑',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.detailDialogVisible = false
+          this.editingEvent = event
+          this.createDialogMode = 'edit'
+          this.createDialogVisible = true
+        }).catch(() => {})
+      } else {
+        this.detailDialogVisible = false
+        this.editingEvent = event
+        this.createDialogMode = 'edit'
+        this.createDialogVisible = true
+      }
     },
     handleEventSaved() {
       this.createDialogVisible = false

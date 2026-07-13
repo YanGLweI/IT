@@ -44,6 +44,7 @@
           type="datetime"
           placeholder="选择开始时间"
           value-format="yyyy-MM-dd HH:mm:ss"
+          :picker-options="startTimePickerOptions"
           style="width: 100%"
         />
       </el-form-item>
@@ -54,6 +55,7 @@
           type="datetime"
           placeholder="选择结束时间"
           value-format="yyyy-MM-dd HH:mm:ss"
+          :picker-options="pickerOptions"
           style="width: 100%"
         />
       </el-form-item>
@@ -64,6 +66,7 @@
           type="date"
           placeholder="选择开始日期"
           value-format="yyyy-MM-dd"
+          :picker-options="pickerOptions"
           style="width: 100%"
         />
       </el-form-item>
@@ -74,6 +77,7 @@
           type="date"
           placeholder="选择结束日期"
           value-format="yyyy-MM-dd"
+          :picker-options="pickerOptions"
           style="width: 100%"
         />
       </el-form-item>
@@ -147,6 +151,25 @@ export default {
     dialogVisible: {
       get() { return this.visible },
       set(val) { this.$emit('close') }
+    },
+    // 禁用过去时间的选择器配置（仅新建模式生效）
+    pickerOptions() {
+      if (this.mode === 'edit') return {}
+      const now = Date.now()
+      return {
+        disabledDate(time) {
+          return time.getTime() < now - 86400000 // 允许今天，禁用昨天及以前
+        }
+      }
+    },
+    startTimePickerOptions() {
+      if (this.mode === 'edit') return {}
+      const now = Date.now()
+      return {
+        disabledDate(time) {
+          return time.getTime() < now - 86400000
+        }
+      }
     }
   },
   watch: {
@@ -246,10 +269,19 @@ export default {
       ]
     },
     getWeekOfMonth(date) {
+      // 计算该日期是本月第几个周X（如第4个周一）
+      const day = date.getDate()
+      const weekday = date.getDay() // 0=周日, 1=周一, ...
+      // 找到本月第一个该星期几的日期
       const firstDay = new Date(date.getFullYear(), date.getMonth(), 1)
-      const firstDayOfWeek = firstDay.getDay()
-      const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
-      return Math.ceil((date.getDate() + offset) / 7)
+      const firstDayWeekday = firstDay.getDay()
+      let firstOccurrence
+      if (firstDayWeekday <= weekday) {
+        firstOccurrence = 1 + (weekday - firstDayWeekday)
+      } else {
+        firstOccurrence = 1 + (7 - firstDayWeekday + weekday)
+      }
+      return Math.floor((day - firstOccurrence) / 7) + 1
     },
     handleRepeatChange(val) {
       if (val === 'custom') {
@@ -299,6 +331,12 @@ export default {
 
       if (new Date(endTime) <= new Date(startTime)) {
         this.$message.warning('结束时间必须大于开始时间')
+        return
+      }
+
+      // 校验不能创建过去时间的日程（仅新建时校验）
+      if (this.mode === 'create' && new Date(startTime) < new Date()) {
+        this.$message.warning('不能创建过去时间的日程')
         return
       }
 

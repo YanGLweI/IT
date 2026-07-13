@@ -25,7 +25,7 @@
             <div class="notif-content">
               <div class="notif-title">{{ n.calendar_title }}</div>
               <div class="notif-time">
-                {{ n.is_all_day ? '全天' : formatTime(n.start_time) }}
+                {{ n.is_all_day ? '全天 ' + formatDate(n.start_time) : formatTime(n.start_time) }}
                 <span v-if="!n.read_at" class="unread-dot"></span>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default {
       }
     },
     showPopupNotification(n) {
-      const timeStr = n.is_all_day ? '全天' : this.formatTime(n.start_time)
+      const timeStr = n.is_all_day ? '全天 ' + this.formatDate(n.start_time) : this.formatTime(n.start_time)
       this.$notify({
         title: '日程提醒',
         message: `${n.calendar_title} - ${timeStr}`,
@@ -163,7 +163,18 @@ export default {
     formatTime(timeStr) {
       if (!timeStr) return ''
       const d = new Date(timeStr)
-      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      const hh = String(d.getHours()).padStart(2, '0')
+      const mi = String(d.getMinutes()).padStart(2, '0')
+      return `${mm}-${dd} ${hh}:${mi}`
+    },
+    formatDate(timeStr) {
+      if (!timeStr) return ''
+      const d = new Date(timeStr)
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      return `${mm}-${dd}`
     },
     // 供Login.vue调用：登录时弹出通知
     async showLoginNotifications() {
