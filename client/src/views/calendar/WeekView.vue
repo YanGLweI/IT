@@ -1,6 +1,6 @@
 <template>
   <div class="week-view">
-    <div class="week-grid" ref="weekBody">
+    <div class="week-grid" ref="weekBody" :style="gridStyle">
       <!-- 表头行 -->
       <div class="time-gutter-header"></div>
       <div
@@ -36,7 +36,7 @@
       </template>
 
       <!-- 时间标签列 -->
-      <div class="time-gutter">
+      <div class="time-gutter" :style="{ gridRow: timeRowStart + ' / span 24' }">
         <div v-for="hour in 23" :key="'time-' + hour" class="time-label" :style="{ top: hour * HOUR_HEIGHT + 'px' }">
           {{ String(hour).padStart(2, '0') }}:00
         </div>
@@ -48,6 +48,7 @@
         :key="'column-' + dayIndex"
         class="day-column"
         :class="{ 'is-today': isToday(day) }"
+        :style="{ gridRow: timeRowStart + ' / span 24' }"
       >
         <div v-for="hour in 24" :key="'slot-' + hour" class="hour-slot" @click="handleSlotClick(day, hour - 1)"></div>
 
@@ -158,6 +159,22 @@ export default {
     },
     hasAnyAllDayEvents() {
       return Object.values(this.allDayEventsByDay).some(arr => arr.length > 0)
+    },
+    maxAllDayCount() {
+      return Math.max(1, ...Object.values(this.allDayEventsByDay).map(arr => arr.length))
+    },
+    allDayRowHeight() {
+      // padding(4+4) + cards(45px each) + gaps(3px between)
+      return 8 + this.maxAllDayCount * 45 + (this.maxAllDayCount - 1) * 3
+    },
+    gridStyle() {
+      const rows = this.hasAnyAllDayEvents
+        ? `55px ${this.allDayRowHeight}px repeat(24, 56px)`
+        : '55px repeat(24, 56px)'
+      return { gridTemplateRows: rows }
+    },
+    timeRowStart() {
+      return this.hasAnyAllDayEvents ? 3 : 2
     }
   },
   mounted() {
@@ -358,7 +375,6 @@ export default {
   overflow-y: auto;
   display: grid;
   grid-template-columns: 56px repeat(7, 1fr);
-  grid-template-rows: 55px 53px repeat(24, 56px);
   position: relative;
 }
 
@@ -421,7 +437,6 @@ export default {
 
 .time-gutter {
   grid-column: 1;
-  grid-row: 3 / span 24;
   width: 56px;
   border-right: 1px solid #f1f5f9;
   box-sizing: border-box;
@@ -445,7 +460,6 @@ export default {
 }
 
 .day-column {
-  grid-row: 3 / span 24;
   position: relative;
   border-right: 1px solid #f1f5f9;
   box-sizing: border-box;
