@@ -7,6 +7,25 @@
       </div>
     </div>
 
+    <div class="all-day-section" v-if="allDayEvents.length > 0">
+      <div
+        v-for="event in allDayEvents"
+        :key="'allday-' + event.id"
+        class="all-day-event"
+        :style="{ backgroundColor: getEventColor(event) }"
+        @click.stop="$emit('event-click', event)"
+        @dblclick.stop="$emit('event-dblclick', event)"
+      >
+        <div class="event-title">{{ event.title }}</div>
+        <div class="event-description" v-if="event.description">{{ event.description }}</div>
+        <div class="event-participants" v-if="event.participants && event.participants.length > 0">
+          <span v-for="(p, i) in event.participants.slice(0, 5)" :key="i" class="participant-avatar">
+            {{ p.display_name ? p.display_name[0] : '?' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <div class="day-body" ref="dayBody">
       <div class="time-gutter">
         <div v-for="hour in 23" :key="hour" class="time-label" :style="{ top: hour * HOUR_HEIGHT + 'px' }">
@@ -18,7 +37,7 @@
         <div v-for="hour in 24" :key="hour" class="hour-slot"></div>
 
         <div
-          v-for="event in dayEvents"
+          v-for="event in timedEvents"
           :key="event.id"
           class="event-card"
           :style="getEventStyle(event)"
@@ -80,6 +99,12 @@ export default {
         dayEnd.setHours(23, 59, 59, 999)
         return start <= dayEnd && end >= dayStart
       })
+    },
+    allDayEvents() {
+      return this.dayEvents.filter(e => e.is_all_day)
+    },
+    timedEvents() {
+      return this.dayEvents.filter(e => !e.is_all_day)
     },
     currentTimeStyle() {
       const now = this.currentTime
@@ -185,6 +210,27 @@ export default {
   font-size: 14px;
   color: #94a3b8;
   font-weight: 500;
+}
+
+.all-day-section {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #ffffff;
+}
+
+.all-day-event {
+  position: relative;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #1e293b;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0.85;
+  box-sizing: border-box;
 }
 
 .day-body {

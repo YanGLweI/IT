@@ -83,7 +83,7 @@
       </el-form-item>
 
       <el-form-item label="重复">
-        <el-select v-model="selectedRepeatOption" placeholder="选择重复规则" style="width: 100%" @change="handleRepeatChange">
+        <el-select v-model="selectedRepeatOption" placeholder="选择重复规则" style="width: 100%" @change="handleRepeatChange" @visible-change="handleSelectVisibleChange">
           <el-option
             v-for="opt in repeatOptions"
             :key="opt.value"
@@ -105,6 +105,7 @@
     <repeat-rule-dialog
       :visible="customDialogVisible"
       :rule="customRule"
+      :start-date="getStartDate()"
       @close="customDialogVisible = false"
       @confirm="handleCustomRuleConfirm"
     />
@@ -196,7 +197,16 @@ export default {
         this.form.end_time = this.formatDateTime(this.event.end_time)
         this.form.participants = (this.event.participants || []).map(p => p.user_dn)
         this.customRule = this.event.repeat_rule_json ? JSON.parse(this.event.repeat_rule_json) : null
-        this.selectedRepeatOption = this.customRule ? this.customRule.type : 'none'
+        if (this.customRule) {
+          this.selectedRepeatOption = this.customRule.type
+          // interval 不为 1 时，预设选项无法表示，应显示为"自定义"
+          const interval = this.customRule.interval ?? 1
+          if (interval !== 1) {
+            this.selectedRepeatOption = 'custom'
+          }
+        } else {
+          this.selectedRepeatOption = 'none'
+        }
       } else {
         this.form = {
           title: '',
@@ -283,12 +293,28 @@ export default {
       }
       return Math.floor((day - firstOccurrence) / 7) + 1
     },
+    getStartDate() {
+      if (this.form.start_time) {
+        return new Date(this.form.start_time)
+      }
+      if (this.form.start_date) {
+        return new Date(this.form.start_date)
+      }
+      return new Date()
+    },
     handleRepeatChange(val) {
       if (val === 'custom') {
         this.customDialogVisible = true
       } else {
         const opt = this.repeatOptions.find(o => o.value === val)
         this.customRule = opt ? opt.data : null
+      }
+    },
+    handleSelectVisibleChange(visible) {
+      if (!visible && this.selectedRepeatOption === 'custom') {
+        this.$nextTick(() => {
+          this.customDialogVisible = true
+        })
       }
     },
     handleCustomRuleConfirm(rule) {

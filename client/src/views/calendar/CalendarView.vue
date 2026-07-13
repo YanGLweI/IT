@@ -320,25 +320,52 @@ export default {
           break
         }
         case 'custom': {
-          let cur = new Date(startDate)
-          while (cur <= rangeEnd && count < maxOcc) {
-            if (cur >= rangeStart) instances.push(new Date(cur))
-            count++
-            if (endDate && cur > endDate) break
-            switch (rule.unit) {
-              case 'days': cur = new Date(cur.getTime() + interval * 86400000); break
-              case 'weeks': cur = new Date(cur.getTime() + interval * 7 * 86400000); break
-              case 'months': {
-                const d = new Date(cur)
-                const origDay = startDate.getDate()
-                d.setDate(1)
-                d.setMonth(d.getMonth() + interval)
-                d.setDate(Math.min(origDay, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()))
-                cur = d
-                break
+          if (rule.unit === 'weeks' && rule.weekdays && rule.weekdays.length > 0) {
+            // 周频率+多选周几：逐日遍历，对齐到startDate所在周的周一
+            const weekdaySet = new Set(rule.weekdays)
+            const sdWeekday = startDate.getDay() // 0=周日
+            const mondayOffset = sdWeekday === 0 ? 6 : sdWeekday - 1
+            let cur = new Date(startDate)
+            cur.setDate(cur.getDate() - mondayOffset)
+            let weekCounter = 0
+            while (cur <= rangeEnd && count < maxOcc) {
+              if (weekCounter % interval === 0 && weekdaySet.has(cur.getDay())) {
+                const inst = new Date(cur)
+                inst.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds())
+                if (inst >= startDate && inst >= rangeStart) {
+                  instances.push(new Date(inst))
+                  count++
+                }
               }
-              case 'years': { const d = new Date(cur); d.setFullYear(d.getFullYear() + interval); cur = d; break }
-              default: cur = new Date(cur.getTime() + interval * 86400000)
+              if (endDate && cur > endDate) break
+              const next = new Date(cur)
+              next.setDate(next.getDate() + 1)
+              // next是周一时递增周计数器（说明本周结束）
+              if (next.getDay() === 1) {
+                weekCounter++
+              }
+              cur = next
+            }
+          } else {
+            let cur = new Date(startDate)
+            while (cur <= rangeEnd && count < maxOcc) {
+              if (cur >= rangeStart) instances.push(new Date(cur))
+              count++
+              if (endDate && cur > endDate) break
+              switch (rule.unit) {
+                case 'days': cur = new Date(cur.getTime() + interval * 86400000); break
+                case 'months': {
+                  const d = new Date(cur)
+                  const origDay = startDate.getDate()
+                  d.setDate(1)
+                  d.setMonth(d.getMonth() + interval)
+                  d.setDate(Math.min(origDay, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()))
+                  cur = d
+                  break
+                }
+                case 'years': { const d = new Date(cur); d.setFullYear(d.getFullYear() + interval); cur = d; break }
+                default: cur = new Date(cur.getTime() + interval * 86400000)
+              }
             }
           }
           break

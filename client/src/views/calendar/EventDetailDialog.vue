@@ -103,11 +103,17 @@ export default {
         switch (rule.type) {
           case 'daily': return rule.interval === 1 ? '每天' : `每${rule.interval}天`
           case 'weekly': return rule.interval === 1 ? `每周${weekdayNames[rule.weekday]}` : `每${rule.interval}周周${weekdayNames[rule.weekday]}`
-          case 'monthly_week': return `每月第${ordinals[rule.weekOfMonth - 1]}个周${weekdayNames[rule.weekday]}`
+          case 'monthly_week': return (rule.interval === 1 ? '每月' : `每${rule.interval}个月`) + `第${ordinals[rule.weekOfMonth - 1]}个周${weekdayNames[rule.weekday]}`
           case 'monthly_day': return rule.interval === 1 ? `每月${rule.monthDay}日` : `每${rule.interval}个月${rule.monthDay}日`
           case 'yearly': return `每年${rule.monthOfYear}月${rule.monthDay}日`
           case 'workday': return '每个工作日（周一至周五）'
-          case 'custom': return `每${rule.interval}${this.getUnitName(rule.unit)}`
+          case 'custom': {
+            if (rule.unit === 'weeks' && rule.weekdays && rule.weekdays.length > 0) {
+              const names = rule.weekdays.map(d => '周' + weekdayNames[d]).join('、')
+              return `每${rule.interval}周（${names}）`
+            }
+            return `每${rule.interval}${this.getUnitName(rule.unit)}`
+          }
           default: return ''
         }
       } catch {

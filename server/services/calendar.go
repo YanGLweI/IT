@@ -14,6 +14,7 @@ type CalendarRepeatRule struct {
 	MonthDay    int     `json:"monthDay,omitempty"`     // 1-31，仅monthly_day/yearly用
 	WeekOfMonth int     `json:"weekOfMonth,omitempty"`  // 1-5，仅monthly_week用（第几个星期X）
 	MonthOfYear int     `json:"monthOfYear,omitempty"`  // 1-12，仅yearly用
+	Weekdays    []int   `json:"weekdays,omitempty"`     // 0-6数组，仅custom+weeks用
 	EndDate     string  `json:"endDate,omitempty"`      // 可选，结束日期 YYYY-MM-DD
 	Occurrences *int    `json:"occurrences,omitempty"`  // 可选，重复次数
 }
@@ -195,29 +196,70 @@ func ExpandRecurringEvents(rule *CalendarRepeatRule, startDate, rangeStart, rang
 		}
 
 	case "custom":
-		// 自定义：每N天/周/月/年
-		for !current.After(rangeEnd) {
-			if !current.Before(rangeStart) {
-				instances = append(instances, current)
+		if rule.Unit == "weeks" && len(rule.Weekdays) > 0 {
+			// 周频率+多选周几：逐日遍历，对齐到startDate所在周的周一
+			weekdaySet := make(map[int]bool)
+			for _, wd := range rule.Weekdays {
+				weekdaySet[wd] = true
 			}
-			occurrenceCount++
-			if occurrenceCount >= maxOccurrences {
-				break
+			// 对齐到startDate所在周的周一
+			sdWeekday := int(startDate.Weekday()) // 0=周日
+			mondayOffset := sdWeekday             // 从startDate回到周一需要减去的天数（周日=0时特殊处理）
+			if sdWeekday == 0 {
+				mondayOffset = 6 // 周日回退6天到周一
+			} else {
+				mondayOffset = sdWeekday - 1 // 其他回退到周一
 			}
-			if !endDate.IsZero() && current.After(endDate) {
-				break
+			current = startDate.AddDate(0, 0, -mondayOffset)
+			weekCounter := 0
+			for !current.After(rangeEnd) {
+				if weekCounter%interval == 0 && weekdaySet[int(current.Weekday())] {
+					if !current.Before(rangeStart) {
+						// 保持原始时间部分
+						inst := time.Date(current.Year(), current.Month(), current.Day(),
+							startDate.Hour(), startDate.Minute(), startDate.Second(), 0, startDate.Location())
+						if !inst.Before(startDate) {
+							instances = append(instances, inst)
+							occurrenceCount++
+							if occurrenceCount >= maxOccurrences {
+								break
+							}
+						}
+					}
+				}
+				if !endDate.IsZero() && current.After(endDate) {
+					break
+				}
+				// 检查是否到了下一周（next是周一说明本周结束）
+				next := current.AddDate(0, 0, 1)
+				if next.Weekday() == time.Monday {
+					weekCounter++
+				}
+				current = next
 			}
-			switch rule.Unit {
-			case "days":
-				current = current.AddDate(0, 0, interval)
-			case "weeks":
-				current = current.AddDate(0, 0, interval*7)
-			case "months":
-				current = current.AddDate(0, interval, 0)
-			case "years":
-				current = current.AddDate(interval, 0, 0)
-			default:
-				current = current.AddDate(0, 0, interval)
+		} else {
+			// 自定义：每N天/月/年
+			for !current.After(rangeEnd) {
+				if !current.Before(rangeStart) {
+					instances = append(instances, current)
+				}
+				occurrenceCount++
+				if occurrenceCount >= maxOccurrences {
+					break
+				}
+				if !endDate.IsZero() && current.After(endDate) {
+					break
+				}
+				switch rule.Unit {
+				case "days":
+					current = current.AddDate(0, 0, interval)
+				case "months":
+					current = current.AddDate(0, interval, 0)
+				case "years":
+					current = current.AddDate(interval, 0, 0)
+				default:
+					current = current.AddDate(0, 0, interval)
+				}
 			}
 		}
 	}

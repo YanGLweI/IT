@@ -209,7 +209,7 @@ export default {
   background: #ffffff;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 25;
 }
 
 .day-header {
@@ -222,7 +222,7 @@ export default {
   background: #ffffff;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 25;
 }
 
 .day-header:last-child {
@@ -373,7 +373,7 @@ export default {
   right: 0;
   height: 2px;
   background: #ef4444;
-  z-index: 30;
+  z-index: 15;
   pointer-events: none;
 }
 
