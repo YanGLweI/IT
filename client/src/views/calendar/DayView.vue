@@ -125,16 +125,6 @@ export default {
   },
   methods: {
     getEventStyle(event) {
-      if (event.is_all_day) {
-        return {
-          top: '0px',
-          height: `${24 * HOUR_HEIGHT}px`,
-          backgroundColor: this.getEventColor(event),
-          left: '6px',
-          right: '6px',
-          opacity: 1
-        }
-      }
       const start = new Date(event.start_time)
       const end = new Date(event.end_time)
       const dayStart = new Date(this.currentDate)
@@ -152,12 +142,13 @@ export default {
         height: `${height}px`,
         backgroundColor: this.getEventColor(event),
         left: '6px',
-        right: '6px'
+        right: '6px',
+        position: 'absolute'
       }
     },
     getEventColor(event) {
       const colors = ['#93c5fd', '#6ee7b7', '#fcd34d', '#fca5a5', '#c4b5fd', '#f9a8d4']
-      return colors[(event.id || 0) % colors.length]
+      return colors[parseInt(event.id || 0) % colors.length]
     },
     formatTime(timeStr) {
       const d = new Date(timeStr)

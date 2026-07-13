@@ -30,7 +30,7 @@
         <div v-for="hour in 24" :key="'slot-' + hour" class="hour-slot" @click="handleSlotClick(day, hour - 1)"></div>
 
         <div
-          v-for="event in getEventsForDay(day)"
+          v-for="event in eventsByDay[day.toISOString().split('T')[0]]"
           :key="event.id"
           class="event-card"
           :style="getEventStyle(event, day)"
@@ -88,6 +88,22 @@ export default {
       const minutes = now.getHours() * 60 + now.getMinutes()
       const top = (minutes / 60) * HOUR_HEIGHT
       return { top: `${top}px` }
+    },
+    eventsByDay() {
+      const map = {}
+      for (const day of this.weekDays) {
+        const key = day.toISOString().split('T')[0]
+        const dayStart = new Date(day)
+        dayStart.setHours(0, 0, 0, 0)
+        const dayEnd = new Date(day)
+        dayEnd.setHours(23, 59, 59, 999)
+        map[key] = this.events.filter(event => {
+          const start = new Date(event.start_time)
+          const end = new Date(event.end_time)
+          return start <= dayEnd && end >= dayStart
+        })
+      }
+      return map
     }
   },
   mounted() {
@@ -118,17 +134,6 @@ export default {
         date.getMonth() === today.getMonth() &&
         date.getDate() === today.getDate()
     },
-    getEventsForDay(day) {
-      return this.events.filter(event => {
-        const start = new Date(event.start_time)
-        const end = new Date(event.end_time)
-        const dayStart = new Date(day)
-        dayStart.setHours(0, 0, 0, 0)
-        const dayEnd = new Date(day)
-        dayEnd.setHours(23, 59, 59, 999)
-        return start <= dayEnd && end >= dayStart
-      })
-    },
     getEventStyle(event, day) {
       if (event.is_all_day) {
         return {
@@ -157,12 +162,13 @@ export default {
         height: `${height}px`,
         backgroundColor: this.getEventColor(event),
         left: '4px',
-        right: '4px'
+        right: '4px',
+        position: 'absolute'
       }
     },
     getEventColor(event) {
       const colors = ['#93c5fd', '#6ee7b7', '#fcd34d', '#fca5a5', '#c4b5fd', '#f9a8d4']
-      return colors[(event.id || 0) % colors.length]
+      return colors[parseInt(event.id || 0) % colors.length]
     },
     formatTime(timeStr) {
       const d = new Date(timeStr)
