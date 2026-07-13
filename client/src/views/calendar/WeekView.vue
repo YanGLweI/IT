@@ -207,6 +207,8 @@ export default {
   border-bottom: 1px solid #f1f5f9;
   box-sizing: border-box;
   background: #ffffff;
+  position: sticky;
+  top: 0;
   z-index: 10;
 }
 
@@ -218,6 +220,8 @@ export default {
   border-bottom: 1px solid #f1f5f9;
   box-sizing: border-box;
   background: #ffffff;
+  position: sticky;
+  top: 0;
   z-index: 10;
 }
 
@@ -245,8 +249,12 @@ export default {
   color: #3b82f6;
 }
 
-.is-today {
+.is-today.day-header {
   background: #eff6ff;
+}
+
+.is-today.day-column {
+  background: rgba(239, 246, 255, 0.45);
 }
 
 .time-gutter {

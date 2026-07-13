@@ -445,7 +445,7 @@ export default {
 
 <style scoped>
 .calendar-page {
-  padding: 16px;
+  padding: 20px;
   height: 100%;
   box-sizing: border-box;
 }
