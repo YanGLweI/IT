@@ -332,7 +332,12 @@ export default {
               if (weekCounter % interval === 0 && weekdaySet.has(cur.getDay())) {
                 const inst = new Date(cur)
                 inst.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds())
-                if (inst >= startDate && inst >= rangeStart) {
+                // 使用本地时间的日期字符串进行比较，避免时区问题
+                const instDateStr = inst.getFullYear() + '-' + String(inst.getMonth() + 1).padStart(2, '0') + '-' + String(inst.getDate()).padStart(2, '0')
+                const startDateStr = startDate.getFullYear() + '-' + String(startDate.getMonth() + 1).padStart(2, '0') + '-' + String(startDate.getDate()).padStart(2, '0')
+                const rangeStartStr = rangeStart.getFullYear() + '-' + String(rangeStart.getMonth() + 1).padStart(2, '0') + '-' + String(rangeStart.getDate()).padStart(2, '0')
+                
+                if (instDateStr >= startDateStr && instDateStr >= rangeStartStr) {
                   instances.push(new Date(inst))
                   count++
                 }

@@ -68,8 +68,9 @@ func ListCalendars(c *gin.Context) {
 
 	// 日期范围筛选
 	if startDate != "" && endDate != "" {
-		rangeStart, err1 := time.Parse("2006-01-02", startDate)
-		rangeEnd, err2 := time.Parse("2006-01-02", endDate)
+		loc := time.Now().Location()
+		rangeStart, err1 := time.ParseInLocation("2006-01-02", startDate, loc)
+		rangeEnd, err2 := time.ParseInLocation("2006-01-02", endDate, loc)
 		if err1 == nil && err2 == nil {
 			// 查询与范围有交集的日程（含重复日程展开）
 			// 先查基础日程
@@ -93,8 +94,9 @@ func ListCalendars(c *gin.Context) {
 
 	// 如果有日期范围，对重复日程进行展开过滤
 	if startDate != "" && endDate != "" {
-		rangeStart, _ := time.Parse("2006-01-02", startDate)
-		rangeEndTmp, _ := time.Parse("2006-01-02", endDate)
+		loc := time.Now().Location()
+		rangeStart, _ := time.ParseInLocation("2006-01-02", startDate, loc)
+		rangeEndTmp, _ := time.ParseInLocation("2006-01-02", endDate, loc)
 		rangeEnd := rangeEndTmp.AddDate(0, 0, 1) // endDate的23:59:59
 
 		var filtered []models.Calendar

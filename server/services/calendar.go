@@ -51,7 +51,7 @@ func ExpandRecurringEvents(rule *CalendarRepeatRule, startDate, rangeStart, rang
 	var instances []time.Time
 	var endDate time.Time
 	if rule.EndDate != "" {
-		endDate, _ = time.Parse("2006-01-02", rule.EndDate)
+		endDate, _ = time.ParseInLocation("2006-01-02", rule.EndDate, time.Now().Location())
 	}
 
 	interval := rule.Interval
