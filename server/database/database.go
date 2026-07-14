@@ -65,6 +65,7 @@ func InitDB() {
 		&models.PasswordCategory{},
 		&models.PasswordEntry{},
 		&models.PasswordEntryViewer{},
+		&models.PasswordEntryStar{},
 		&models.PasswordViewLog{},
 	)
 	if err != nil {

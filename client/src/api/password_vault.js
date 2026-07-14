@@ -28,6 +28,13 @@ export function deletePasswordCategory(id, dualToken) {
   return request.delete(`/password-categories/${id}`, config)
 }
 
+// 调整分类排序
+export function sortPasswordCategory(id, direction, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/password-categories/${id}/sort`, { direction }, config)
+}
+
 // ============ 密码条目管理 ============
 
 // 获取密码条目列表

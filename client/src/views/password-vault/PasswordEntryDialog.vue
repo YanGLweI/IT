@@ -48,7 +48,7 @@
             <el-input v-model="form.notes" type="textarea" :rows="2" placeholder="备注信息" />
           </el-form-item>
           <el-form-item label="可查看用户">
-            <el-select v-model="form.viewers" multiple filterable remote reserve-keyword :remote-method="searchUsers" placeholder="搜索 LDAP 用户" style="width: 100%">
+            <el-select v-model="form.viewers" multiple filterable remote reserve-keyword :remote-method="searchUsers" placeholder="搜索 LDAP 用户" style="width: 100%" :disabled="!isCreator">
               <el-option v-for="u in ldapUsers" :key="u.sAMAccountName" :label="u.display_name + ' (' + u.sAMAccountName + ')'" :value="u.sAMAccountName" />
             </el-select>
           </el-form-item>
@@ -87,6 +87,7 @@ export default {
       loading: false,
       showPassword: false,
       showGenerator: false,
+      isCreator: true,
       ldapUsers: [],
       form: {
         icon: 'server',
@@ -115,6 +116,7 @@ export default {
       if (entry) {
         this.isEdit = true
         this.editId = entry.id
+        this.isCreator = entry.is_creator !== false
         this.form = {
           icon: entry.icon || 'server',
           name: entry.name,
@@ -131,6 +133,7 @@ export default {
       } else {
         this.isEdit = false
         this.editId = null
+        this.isCreator = true
         this.form = { icon: 'server', name: '', username: '', password: '', category_id: null, url: '', port: null, notes: '', viewers: [] }
         this.rules.password = [{ required: true, message: '请输入密码', trigger: 'blur' }]
       }

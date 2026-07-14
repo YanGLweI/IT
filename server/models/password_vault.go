@@ -35,13 +35,14 @@ type PasswordEntry struct {
 	URL               string `gorm:"type:varchar(500)" json:"url"`
 	Port              int    `gorm:"type:int" json:"port"`
 	Notes             string `gorm:"type:text" json:"notes"`
-	IsStarred         bool   `gorm:"type:tinyint(1);default:0" json:"is_starred"`
 	CreatedBy         string `gorm:"type:varchar(100);not null" json:"created_by"`
 	UpdatedBy         string `gorm:"type:varchar(100);not null" json:"updated_by"`
 
 	// 关联字段
 	CategoryName string   `gorm:"-" json:"category_name"`
 	Viewers      []string `gorm:"-" json:"viewers"`
+	IsStarred    bool     `gorm:"-" json:"is_starred"`  // 非持久化，由查询时填充
+	IsCreator    bool     `gorm:"-" json:"is_creator"`
 }
 
 func (PasswordEntry) TableName() string {
@@ -70,4 +71,15 @@ type PasswordViewLog struct {
 
 func (PasswordViewLog) TableName() string {
 	return "password_view_logs"
+}
+
+// PasswordEntryStar 密码条目收藏（per-user）
+type PasswordEntryStar struct {
+	ID       uint   `gorm:"primaryKey" json:"id"`
+	EntryID  uint   `gorm:"type:int unsigned;not null;uniqueIndex:idx_entry_user" json:"entry_id"`
+	Username string `gorm:"type:varchar(100);not null;uniqueIndex:idx_entry_user" json:"username"`
+}
+
+func (PasswordEntryStar) TableName() string {
+	return "password_entry_stars"
 }

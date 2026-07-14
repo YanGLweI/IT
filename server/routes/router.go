@@ -349,6 +349,7 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/password-categories", handlers.CreatePasswordCategory)
 				dual.PUT("/password-categories/:id", handlers.UpdatePasswordCategory)
 				dual.DELETE("/password-categories/:id", handlers.DeletePasswordCategory)
+				dual.PUT("/password-categories/:id/sort", handlers.SortPasswordCategory)
 				dual.POST("/password-entries", handlers.CreatePasswordEntry)
 				dual.PUT("/password-entries/:id", handlers.UpdatePasswordEntry)
 				dual.DELETE("/password-entries/:id", handlers.DeletePasswordEntry)

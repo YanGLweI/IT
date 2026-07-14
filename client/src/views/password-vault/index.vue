@@ -19,9 +19,15 @@
         <div class="nav-item" v-for="cat in filteredCategories" :key="cat.id"
           :class="{ active: selectedCategory === cat.id && !showStarred }"
           @click="selectCategory(cat.id, false)">
-          <i class="el-icon-folder" />
-          <span>{{ cat.name }}</span>
+          <svg-icon :name="cat.icon || 'server'" :size="16" />
+          <span class="nav-cat-name">{{ cat.name }}</span>
           <span class="badge">{{ cat.entry_count }}</span>
+          <span class="nav-cat-actions">
+            <i v-if="!cat.is_preset" class="el-icon-arrow-up" @click.stop="handleSortCategory(cat, 'up')" title="上移" />
+            <i v-if="!cat.is_preset" class="el-icon-arrow-down" @click.stop="handleSortCategory(cat, 'down')" title="下移" />
+            <i v-if="!cat.is_preset" class="el-icon-edit" @click.stop="openCategoryDialog(cat)" title="编辑" />
+            <i v-if="!cat.is_preset" class="el-icon-delete" @click.stop="handleDeleteCategory(cat)" title="删除" style="color: #cf222e" />
+          </span>
         </div>
       </div>
       <div class="sidebar-footer">
@@ -45,7 +51,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="username" label="账号" width="140" show-overflow-tooltip>
+        <el-table-column prop="username" label="账号" min-width="140" show-overflow-tooltip>
           <template slot-scope="{ row }">
             <span>{{ maskUsername(row.username) }}</span>
             <el-button type="text" size="mini" icon="el-icon-document-copy" @click="copyText(row.username)" style="margin-left: 4px" />
@@ -54,6 +60,13 @@
         <el-table-column prop="category_name" label="分类" width="110">
           <template slot-scope="{ row }">
             <el-tag size="mini" type="info">{{ row.category_name }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_by" label="创建人" width="100" show-overflow-tooltip />
+        <el-table-column prop="updated_by" label="更新人" width="100" show-overflow-tooltip />
+        <el-table-column label="更新时间" width="160">
+          <template slot-scope="{ row }">
+            <span>{{ formatDate(row.updated_at) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="URL/端口" width="220" show-overflow-tooltip>
@@ -67,11 +80,11 @@
             <i :class="row.is_starred ? 'el-icon-star-on starred' : 'el-icon-star-off'" style="cursor: pointer; font-size: 16px;" @click="handleToggleStar(row)" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140" align="center">
+        <el-table-column label="操作" width="200" align="center" fixed="right">
           <template slot-scope="{ row }">
-            <el-button type="text" size="mini" icon="el-icon-lock" @click="openUnlockDialog(row)" title="查看密码" />
-            <el-button type="text" size="mini" icon="el-icon-edit" @click="openEntryDialog(row)" title="编辑" />
-            <el-button type="text" size="mini" icon="el-icon-delete" style="color: #cf222e" @click="handleDelete(row)" title="删除" />
+            <el-button type="text" size="medium" icon="el-icon-lock" @click="openUnlockDialog(row)" title="查看密码" />
+            <el-button type="text" size="medium" icon="el-icon-edit" @click="openEntryDialog(row)" title="编辑" />
+            <el-button type="text" size="medium" icon="el-icon-delete" style="color: #cf222e" @click="handleDelete(row)" title="删除" />
           </template>
         </el-table-column>
       </el-table>
@@ -96,7 +109,7 @@ import DualControlDialog from '@/components/DualControlDialog.vue'
 import UnlockDialog from './UnlockDialog.vue'
 import CategoryDialog from './CategoryDialog.vue'
 import PasswordEntryDialog from './PasswordEntryDialog.vue'
-import { getPasswordCategories, getPasswordEntries, deletePasswordEntry, togglePasswordEntryStar } from '@/api/password_vault'
+import { getPasswordCategories, getPasswordEntries, deletePasswordEntry, togglePasswordEntryStar, deletePasswordCategory, sortPasswordCategory } from '@/api/password_vault'
 
 export default {
   name: 'PasswordVault',
@@ -195,6 +208,36 @@ export default {
         }
       }
     },
+    async handleDeleteCategory(cat) {
+      try {
+        await this.$confirm(`确定删除分类「${cat.name}」吗？`, '确认删除', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deletePasswordCategory(cat.id, dualToken)
+        this.$message.success('删除成功')
+        if (this.selectedCategory === cat.id) {
+          this.selectedCategory = null
+          this.loadEntries()
+        }
+        this.loadCategories()
+      } catch (e) {
+        if (e.message !== 'canceled') {
+          this.$message.error(e.response?.data?.message || '删除失败')
+        }
+      }
+    },
+    async handleSortCategory(cat, direction) {
+      try {
+        const dualToken = await this.$refs.dualControl.open()
+        const res = await sortPasswordCategory(cat.id, direction, dualToken)
+        if (res && res.code === 200) {
+          this.loadCategories()
+        }
+      } catch (e) {
+        if (e.message !== 'canceled') {
+          this.$message.error(e.response?.data?.message || '操作失败')
+        }
+      }
+    },
     handleSortChange() {
       this.loadEntries()
     },
@@ -227,6 +270,12 @@ export default {
         this.$message.error('复制失败，请手动复制')
       }
       document.body.removeChild(ta)
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '-'
+      const d = new Date(dateStr)
+      const pad = n => String(n).padStart(2, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
     }
   }
 }
@@ -297,9 +346,40 @@ export default {
   border-radius: 12px;
   font-weight: 500;
 }
+.nav-item .nav-cat-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-item .nav-cat-actions {
+  display: none;
+  gap: 4px;
+  margin-left: 4px;
+}
+.nav-item .nav-cat-actions i {
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.nav-item .nav-cat-actions i:hover {
+  opacity: 1;
+}
+.nav-item:hover .nav-cat-actions {
+  display: flex;
+}
+.nav-item:hover .badge {
+  display: none;
+}
+.nav-item.active .nav-cat-actions {
+  display: flex;
+}
 .nav-item.active .badge {
-  background: rgba(37, 99, 235, 0.15);
-  color: #2563eb;
+  display: none;
+}
+.nav-item.active:hover .badge {
+  display: none;
 }
 .nav-divider {
   height: 1px;

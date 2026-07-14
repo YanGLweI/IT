@@ -98,17 +98,38 @@ func aesDecrypt(encrypted string) (string, error) {
 func ListPasswordCategories(c *gin.Context) {
 	db := database.GetDB()
 
+	// 获取当前用户
+	currentUsername, ok := c.Get("username")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未获取到用户信息"})
+		return
+	}
+	usernameStr := currentUsername.(string)
+
 	var categories []models.PasswordCategory
 	if err := db.Order("sort_order ASC, name ASC").Find(&categories).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询分类失败"})
 		return
 	}
 
-	// 查询每个分类的条目数量
+	// 一次性查询所有分类的条目数量（优化 N+1）
+	type catCount struct {
+		CategoryID uint
+		Count      int64
+	}
+	var counts []catCount
+	db.Model(&models.PasswordEntry{}).
+		Select("category_id, COUNT(*) as count").
+		Where("id IN (SELECT entry_id FROM password_entry_viewers WHERE username = ?)", usernameStr).
+		Group("category_id").
+		Scan(&counts)
+
+	countMap := make(map[uint]int64)
+	for _, cc := range counts {
+		countMap[cc.CategoryID] = cc.Count
+	}
 	for i := range categories {
-		var count int64
-		db.Model(&models.PasswordEntry{}).Where("category_id = ?", categories[i].ID).Count(&count)
-		categories[i].EntryCount = count
+		categories[i].EntryCount = countMap[categories[i].ID]
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": categories})
@@ -225,19 +246,93 @@ func DeletePasswordCategory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
 
+// SortPasswordCategory 调整分类排序（上移/下移）
+func SortPasswordCategory(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	db := database.GetDB()
+
+	var category models.PasswordCategory
+	if err := db.First(&category, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "分类不存在"})
+		return
+	}
+
+	var req struct {
+		Direction string `json:"direction" binding:"required"` // "up" or "down"
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数无效"})
+		return
+	}
+
+	// 获取所有分类按 sort_order 排序
+	var categories []models.PasswordCategory
+	db.Order("sort_order ASC, id ASC").Find(&categories)
+
+	// 找到当前分类的索引
+	idx := -1
+	for i, cat := range categories {
+		if cat.ID == uint(id) {
+			idx = i
+			break
+		}
+	}
+	if idx == -1 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "分类位置异常"})
+		return
+	}
+
+	if req.Direction == "up" {
+		if idx == 0 {
+			c.JSON(http.StatusOK, gin.H{"code": 200, "message": "已在最顶部"})
+			return
+		}
+		// 与上一个交换 sort_order
+		categories[idx].SortOrder, categories[idx-1].SortOrder = categories[idx-1].SortOrder, categories[idx].SortOrder
+		db.Save(&categories[idx])
+		db.Save(&categories[idx-1])
+	} else if req.Direction == "down" {
+		if idx == len(categories)-1 {
+			c.JSON(http.StatusOK, gin.H{"code": 200, "message": "已在最底部"})
+			return
+		}
+		// 与下一个交换 sort_order
+		categories[idx].SortOrder, categories[idx+1].SortOrder = categories[idx+1].SortOrder, categories[idx].SortOrder
+		db.Save(&categories[idx])
+		db.Save(&categories[idx+1])
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "direction 必须为 up 或 down"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "排序成功"})
+}
+
 // ============ 密码条目管理 ============
 
 // ListPasswordEntries 获取密码条目列表
 func ListPasswordEntries(c *gin.Context) {
 	db := database.GetDB()
 
+	// 获取当前用户
+	currentUsername, ok := c.Get("username")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未获取到用户信息"})
+		return
+	}
+	usernameStr := currentUsername.(string)
+
 	query := db.Model(&models.PasswordEntry{})
+
+	// 只返回当前用户被授权的条目
+	query = query.Where("id IN (SELECT entry_id FROM password_entry_viewers WHERE username = ?)", usernameStr)
 
 	if categoryID := c.Query("category_id"); categoryID != "" {
 		query = query.Where("category_id = ?", categoryID)
 	}
 	if isStarred := c.Query("is_starred"); isStarred == "true" {
-		query = query.Where("is_starred = ?", true)
+		// 收藏筛选：只返回当前用户收藏的条目
+		query = query.Where("id IN (SELECT entry_id FROM password_entry_stars WHERE username = ?)", usernameStr)
 	}
 	if keyword := c.Query("keyword"); keyword != "" {
 		query = query.Where("name LIKE ? OR username LIKE ? OR url LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
@@ -256,7 +351,7 @@ func ListPasswordEntries(c *gin.Context) {
 	query.Count(&total)
 
 	var entries []models.PasswordEntry
-	if err := query.Order("is_starred DESC, created_at DESC").
+	if err := query.Order("created_at DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&entries).Error; err != nil {
@@ -264,7 +359,7 @@ func ListPasswordEntries(c *gin.Context) {
 		return
 	}
 
-	// 填充分类名称和查看用户列表
+	// 填充分类名称、查看用户列表、收藏状态、是否创建人
 	for i := range entries {
 		var cat models.PasswordCategory
 		if db.First(&cat, entries[i].CategoryID).Error == nil {
@@ -275,6 +370,12 @@ func ListPasswordEntries(c *gin.Context) {
 		for _, v := range viewers {
 			entries[i].Viewers = append(entries[i].Viewers, v.Username)
 		}
+		// 当前用户是否收藏
+		var starCount int64
+		db.Model(&models.PasswordEntryStar{}).Where("entry_id = ? AND username = ?", entries[i].ID, usernameStr).Count(&starCount)
+		entries[i].IsStarred = starCount > 0
+		// 当前用户是否为创建人
+		entries[i].IsCreator = entries[i].CreatedBy == usernameStr
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": entries, "total": total, "page_size": pageSize})
@@ -333,7 +434,17 @@ func CreatePasswordEntry(c *gin.Context) {
 		return
 	}
 
-	// 保存查看授权用户
+	// 保存查看授权用户（确保创建者在列表中）
+	hasCreator := false
+	for _, v := range req.Viewers {
+		if v == username {
+			hasCreator = true
+			break
+		}
+	}
+	if !hasCreator {
+		req.Viewers = append(req.Viewers, username)
+	}
 	for _, viewer := range req.Viewers {
 		db.Create(&models.PasswordEntryViewer{
 			EntryID:  entry.ID,
@@ -410,13 +521,15 @@ func UpdatePasswordEntry(c *gin.Context) {
 		return
 	}
 
-	// 更新查看授权用户
-	db.Where("entry_id = ?", id).Delete(&models.PasswordEntryViewer{})
-	for _, viewer := range req.Viewers {
-		db.Create(&models.PasswordEntryViewer{
-			EntryID:  entry.ID,
-			Username: viewer,
-		})
+	// 更新查看授权用户（仅创建人可修改）
+	if entry.CreatedBy == username {
+		db.Where("entry_id = ?", id).Delete(&models.PasswordEntryViewer{})
+		for _, viewer := range req.Viewers {
+			db.Create(&models.PasswordEntryViewer{
+				EntryID:  entry.ID,
+				Username: viewer,
+			})
+		}
 	}
 
 	fieldLabels := services.GetFieldLabels("password_entry")
@@ -436,9 +549,10 @@ func DeletePasswordEntry(c *gin.Context) {
 	}
 
 	db := database.GetDB()
-	// 删除关联的查看授权和查看日志
+	// 删除关联的查看授权、收藏和查看日志
 	db.Where("entry_id = ?", id).Delete(&models.PasswordEntryViewer{})
 	db.Where("entry_id = ?", id).Delete(&models.PasswordViewLog{})
+	db.Where("entry_id = ?", id).Delete(&models.PasswordEntryStar{})
 
 	if err := db.Delete(&entry).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除密码条目失败"})
@@ -523,7 +637,7 @@ func UnlockPasswordEntry(c *gin.Context) {
 
 // ============ 收藏管理 ============
 
-// TogglePasswordEntryStar 切换收藏状态
+// TogglePasswordEntryStar 切换收藏状态（per-user）
 func TogglePasswordEntryStar(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var entry models.PasswordEntry
@@ -531,6 +645,14 @@ func TogglePasswordEntryStar(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "密码条目不存在"})
 		return
 	}
+
+	// 获取当前用户
+	currentUsername, ok := c.Get("username")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未获取到用户信息"})
+		return
+	}
+	usernameStr := currentUsername.(string)
 
 	var req struct {
 		IsStarred bool `json:"is_starred"`
@@ -540,9 +662,16 @@ func TogglePasswordEntryStar(c *gin.Context) {
 		return
 	}
 
-	if err := database.GetDB().Model(&entry).Update("is_starred", req.IsStarred).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "操作失败"})
-		return
+	db := database.GetDB()
+	if req.IsStarred {
+		// 收藏：插入记录（忽略重复）
+		db.FirstOrCreate(&models.PasswordEntryStar{}, map[string]interface{}{
+			"entry_id":  uint(id),
+			"username": usernameStr,
+		})
+	} else {
+		// 取消收藏：删除记录
+		db.Where("entry_id = ? AND username = ?", id, usernameStr).Delete(&models.PasswordEntryStar{})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "操作成功"})
