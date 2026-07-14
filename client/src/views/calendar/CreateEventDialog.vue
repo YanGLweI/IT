@@ -193,9 +193,20 @@ export default {
         this.form.title = this.event.title
         this.form.description = this.event.description || ''
         this.form.is_all_day = this.event.is_all_day
-        this.form.start_time = this.formatDateTime(this.event.start_time)
-        this.form.end_time = this.formatDateTime(this.event.end_time)
         this.form.participants = (this.event.participants || []).map(p => p.user_dn)
+
+        if (this.form.is_all_day) {
+          this.form.start_date = this.formatDate(this.event.start_time)
+          this.form.end_date = this.formatDate(this.event.end_time)
+          this.form.start_time = ''
+          this.form.end_time = ''
+        } else {
+          this.form.start_time = this.formatDateTime(this.event.start_time)
+          this.form.end_time = this.formatDateTime(this.event.end_time)
+          this.form.start_date = ''
+          this.form.end_date = ''
+        }
+
         this.customRule = this.event.repeat_rule_json ? JSON.parse(this.event.repeat_rule_json) : null
         if (this.customRule) {
           this.selectedRepeatOption = this.customRule.type
@@ -222,6 +233,14 @@ export default {
         this.customRule = null
       }
       this.generateRepeatOptions()
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return ''
+      const d = new Date(dateStr)
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
     },
     formatDateTime(dateStr) {
       if (!dateStr) return ''
