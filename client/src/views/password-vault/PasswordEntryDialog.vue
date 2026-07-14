@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :visible.sync="visible" :title="isEdit ? '编辑密码条目' : '新增密码条目'" width="820px" :close-on-click-modal="false" custom-class="password-entry-dialog">
+  <el-dialog :visible.sync="visible" :title="isEdit ? '编辑密码条目' : '新增密码条目'" width="880px" :close-on-click-modal="false" custom-class="password-entry-dialog">
     <div class="dialog-body">
       <!-- 左列：图标选择器 -->
       <div class="left-panel">
@@ -8,7 +8,7 @@
       </div>
       <!-- 右列：表单 -->
       <div class="right-panel">
-        <el-form :model="form" :rules="rules" ref="form" label-width="90px" size="small">
+        <el-form :model="form" :rules="rules" ref="form" label-width="80px" size="small">
           <el-form-item label="名称" prop="name">
             <el-input v-model="form.name" placeholder="如：生产数据库主库" />
           </el-form-item>
@@ -196,9 +196,9 @@ export default {
   gap: 24px;
 }
 .left-panel {
-  width: 180px;
+  width: 260px;
   flex-shrink: 0;
-  padding-right: 20px;
+  padding-right: 5px;
   border-right: 1px solid #f0f2f5;
 }
 .panel-title {

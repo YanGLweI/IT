@@ -3,7 +3,7 @@
     <div class="generator-options">
       <div class="option-row">
         <label>密码长度</label>
-        <el-slider v-model="length" :min="8" :max="64" show-input :step="1" />
+        <el-slider v-model="length" :min="8" :max="20" show-input :step="1" />
       </div>
       <div class="option-row checkbox-row">
         <el-checkbox v-model="useUppercase">大写字母 (A-Z)</el-checkbox>

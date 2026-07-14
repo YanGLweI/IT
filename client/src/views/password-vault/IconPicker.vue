@@ -80,7 +80,7 @@ export default {
 
 <style scoped>
 .icon-picker {
-  max-height: 280px;
+  max-height: 350px;
   overflow-y: auto;
 }
 .icon-group {
