@@ -87,9 +87,32 @@ export default {
       }, 1000)
     },
     copyPassword() {
-      navigator.clipboard.writeText(this.password)
-      this.$message.success('已复制')
-      this.handleClose()
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(this.password).then(() => {
+          this.$message.success('已复制')
+          this.handleClose()
+        }).catch(() => {
+          this.fallbackCopy(this.password)
+        })
+      } else {
+        this.fallbackCopy(this.password)
+      }
+    },
+    fallbackCopy(text) {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        this.$message.success('已复制')
+        this.handleClose()
+      } catch (e) {
+        this.$message.error('复制失败，请手动复制')
+      }
+      document.body.removeChild(ta)
     },
     handleClose() {
       if (this.timer) clearInterval(this.timer)

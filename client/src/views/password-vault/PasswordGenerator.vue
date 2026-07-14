@@ -88,8 +88,30 @@ export default {
       this.generatedPassword = password
     },
     copyGenerated() {
-      navigator.clipboard.writeText(this.generatedPassword)
-      this.$message.success('已复制')
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(this.generatedPassword).then(() => {
+          this.$message.success('已复制')
+        }).catch(() => {
+          this.fallbackCopy(this.generatedPassword)
+        })
+      } else {
+        this.fallbackCopy(this.generatedPassword)
+      }
+    },
+    fallbackCopy(text) {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        this.$message.success('已复制')
+      } catch (e) {
+        this.$message.error('复制失败，请手动复制')
+      }
+      document.body.removeChild(ta)
     },
     applyAndClose() {
       this.$emit('apply', this.generatedPassword)

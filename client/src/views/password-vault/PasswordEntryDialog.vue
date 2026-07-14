@@ -59,19 +59,23 @@
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" :loading="loading" @click="handleSave">保存</el-button>
     </span>
+
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </el-dialog>
 </template>
 
 <script>
 import IconPicker from './IconPicker.vue'
 import PasswordGenerator from './PasswordGenerator.vue'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 import { createPasswordEntry, updatePasswordEntry } from '@/api/password_vault'
 import { encryptPassword } from '@/utils/rsa'
 import request from '@/api/request'
 
 export default {
   name: 'PasswordEntryDialog',
-  components: { IconPicker, PasswordGenerator },
+  components: { IconPicker, PasswordGenerator, DualControlDialog },
   props: {
     categories: { type: Array, default: () => [] }
   },
@@ -158,11 +162,13 @@ export default {
       this.form.password = password
       this.showGenerator = false
     },
-    handleSave() {
+    async handleSave() {
       this.$refs.form.validate(async (valid) => {
         if (!valid) return
         this.loading = true
         try {
+          const dualToken = await this.$refs.dualControl.open()
+
           const data = { ...this.form }
           // RSA 加密密码
           if (data.password) {
@@ -171,16 +177,18 @@ export default {
           delete data.password
 
           if (this.isEdit) {
-            await updatePasswordEntry(this.editId, data)
+            await updatePasswordEntry(this.editId, data, dualToken)
             this.$message.success('更新成功')
           } else {
-            await createPasswordEntry(data)
+            await createPasswordEntry(data, dualToken)
             this.$message.success('创建成功')
           }
           this.visible = false
           this.$emit('saved')
         } catch (err) {
-          this.$message.error(err.response?.data?.message || '操作失败')
+          if (err.message !== 'canceled') {
+            this.$message.error(err.response?.data?.message || '操作失败')
+          }
         } finally {
           this.loading = false
         }

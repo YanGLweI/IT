@@ -83,6 +83,7 @@
     </div>
 
     <!-- 对话框 -->
+    <DualControlDialog ref="dualControl" />
     <UnlockDialog ref="unlockDialog" />
     <CategoryDialog ref="categoryDialog" :categories="categories" @saved="loadCategories" />
     <PasswordEntryDialog ref="entryDialog" :categories="categories" @saved="loadEntries" />
@@ -91,6 +92,7 @@
 
 <script>
 import SvgIcon from '@/components/SvgIcon.vue'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 import UnlockDialog from './UnlockDialog.vue'
 import CategoryDialog from './CategoryDialog.vue'
 import PasswordEntryDialog from './PasswordEntryDialog.vue'
@@ -98,7 +100,7 @@ import { getPasswordCategories, getPasswordEntries, deletePasswordEntry, toggleP
 
 export default {
   name: 'PasswordVault',
-  components: { SvgIcon, UnlockDialog, CategoryDialog, PasswordEntryDialog },
+  components: { SvgIcon, DualControlDialog, UnlockDialog, CategoryDialog, PasswordEntryDialog },
   data() {
     return {
       categories: [],
@@ -172,23 +174,26 @@ export default {
     },
     async handleToggleStar(row) {
       try {
-        await togglePasswordEntryStar(row.id, !row.is_starred)
+        const dualToken = await this.$refs.dualControl.open()
+        await togglePasswordEntryStar(row.id, !row.is_starred, dualToken)
         row.is_starred = !row.is_starred
       } catch (e) {
-        this.$message.error('操作失败')
+        if (e.message !== 'canceled') this.$message.error('操作失败')
       }
     },
-    handleDelete(row) {
-      this.$confirm(`确定删除「${row.name}」吗？`, '确认删除', { type: 'warning' }).then(async () => {
-        try {
-          await deletePasswordEntry(row.id)
-          this.$message.success('删除成功')
-          this.loadEntries()
-          this.loadCategories()
-        } catch (e) {
+    async handleDelete(row) {
+      try {
+        await this.$confirm(`确定删除「${row.name}」吗？`, '确认删除', { type: 'warning' })
+        const dualToken = await this.$refs.dualControl.open()
+        await deletePasswordEntry(row.id, dualToken)
+        this.$message.success('删除成功')
+        this.loadEntries()
+        this.loadCategories()
+      } catch (e) {
+        if (e.message !== 'canceled') {
           this.$message.error(e.response?.data?.message || '删除失败')
         }
-      }).catch(() => {})
+      }
     },
     handleSortChange() {
       this.loadEntries()
@@ -198,8 +203,30 @@ export default {
       return username[0] + '***' + username[username.length - 1]
     },
     copyText(text) {
-      navigator.clipboard.writeText(text)
-      this.$message.success('已复制')
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          this.$message.success('已复制')
+        }).catch(() => {
+          this.fallbackCopy(text)
+        })
+      } else {
+        this.fallbackCopy(text)
+      }
+    },
+    fallbackCopy(text) {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        this.$message.success('已复制')
+      } catch (e) {
+        this.$message.error('复制失败，请手动复制')
+      }
+      document.body.removeChild(ta)
     }
   }
 }

@@ -12,16 +12,20 @@
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" :loading="loading" @click="handleSave">保存</el-button>
     </span>
+
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
   </el-dialog>
 </template>
 
 <script>
 import IconPicker from './IconPicker.vue'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 import { createPasswordCategory, updatePasswordCategory } from '@/api/password_vault'
 
 export default {
   name: 'CategoryDialog',
-  components: { IconPicker },
+  components: { IconPicker, DualControlDialog },
   props: {
     categories: { type: Array, default: () => [] }
   },
@@ -52,22 +56,25 @@ export default {
       this.visible = true
       this.$nextTick(() => this.$refs.form?.clearValidate())
     },
-    handleSave() {
+    async handleSave() {
       this.$refs.form.validate(async (valid) => {
         if (!valid) return
         this.loading = true
         try {
+          const dualToken = await this.$refs.dualControl.open()
           if (this.isEdit) {
-            await updatePasswordCategory(this.editId, this.form)
+            await updatePasswordCategory(this.editId, this.form, dualToken)
             this.$message.success('更新成功')
           } else {
-            await createPasswordCategory(this.form)
+            await createPasswordCategory(this.form, dualToken)
             this.$message.success('创建成功')
           }
           this.visible = false
           this.$emit('saved')
         } catch (err) {
-          this.$message.error(err.response?.data?.message || '操作失败')
+          if (err.message !== 'canceled') {
+            this.$message.error(err.response?.data?.message || '操作失败')
+          }
         } finally {
           this.loading = false
         }

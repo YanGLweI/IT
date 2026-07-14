@@ -57,8 +57,10 @@ export function deletePasswordEntry(id, dualToken) {
 }
 
 // 切换收藏状态
-export function togglePasswordEntryStar(id, isStarred) {
-  return request.put(`/password-entries/${id}/star`, { is_starred: isStarred })
+export function togglePasswordEntryStar(id, isStarred, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/password-entries/${id}/star`, { is_starred: isStarred }, config)
 }
 
 // ============ 密码查看 ============
