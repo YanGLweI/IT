@@ -2,7 +2,7 @@
   <el-dialog :visible.sync="visible" :title="entryName" width="420px" :close-on-click-modal="false" @close="handleClose">
     <div v-if="!unlocked" class="unlock-verify">
       <p class="unlock-hint">请输入您的 LDAP 密码以验证身份</p>
-      <el-input v-model="ldapPassword" type="password" placeholder="LDAP 密码" show-password @keyup.enter.native="handleUnlock" />
+      <el-input ref="ldapInput" v-model="ldapPassword" type="password" placeholder="LDAP 密码" show-password @keyup.enter.native="handleUnlock" />
       <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
     </div>
     <div v-else class="unlock-result">
@@ -53,6 +53,9 @@ export default {
       this.countdown = 30
       if (this.timer) clearInterval(this.timer)
       this.visible = true
+      this.$nextTick(() => {
+        this.$refs.ldapInput && this.$refs.ldapInput.focus()
+      })
     },
     async handleUnlock() {
       if (!this.ldapPassword) {
