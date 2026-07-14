@@ -194,6 +194,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/password-view-logs", handlers.ListPasswordViewLogs)
 			protected.POST("/password-entries/:id/unlock", handlers.UnlockPasswordEntry)
 			protected.PUT("/password-entries/:id/star", handlers.TogglePasswordEntryStar)
+			protected.PUT("/password-categories/:id/sort", handlers.SortPasswordCategory)
 
 			// LDAP用户获取（不需要双控）
 			protected.GET("/ldap/users", handlers.GetLDAPUsers)
@@ -349,7 +350,6 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/password-categories", handlers.CreatePasswordCategory)
 				dual.PUT("/password-categories/:id", handlers.UpdatePasswordCategory)
 				dual.DELETE("/password-categories/:id", handlers.DeletePasswordCategory)
-				dual.PUT("/password-categories/:id/sort", handlers.SortPasswordCategory)
 				dual.POST("/password-entries", handlers.CreatePasswordEntry)
 				dual.PUT("/password-entries/:id", handlers.UpdatePasswordEntry)
 				dual.DELETE("/password-entries/:id", handlers.DeletePasswordEntry)

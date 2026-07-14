@@ -18,18 +18,35 @@
         <div class="nav-divider" />
         <div class="nav-item" v-for="cat in filteredCategories" :key="cat.id"
           :class="{ active: selectedCategory === cat.id && !showStarred }"
-          @click="selectCategory(cat.id, false)">
+          @click="selectCategory(cat.id, false)"
+          @contextmenu.prevent="showContextMenu($event, cat)">
           <svg-icon :name="cat.icon || 'server'" :size="16" />
           <span class="nav-cat-name">{{ cat.name }}</span>
           <span class="badge">{{ cat.entry_count }}</span>
-          <span class="nav-cat-actions">
-            <i v-if="!cat.is_preset" class="el-icon-arrow-up" @click.stop="handleSortCategory(cat, 'up')" title="上移" />
-            <i v-if="!cat.is_preset" class="el-icon-arrow-down" @click.stop="handleSortCategory(cat, 'down')" title="下移" />
-            <i v-if="!cat.is_preset" class="el-icon-edit" @click.stop="openCategoryDialog(cat)" title="编辑" />
-            <i v-if="!cat.is_preset" class="el-icon-delete" @click.stop="handleDeleteCategory(cat)" title="删除" style="color: #cf222e" />
-          </span>
         </div>
       </div>
+
+      <!-- 右键上下文菜单 -->
+      <div v-show="contextMenuVisible" class="context-menu" :style="{ left: contextMenuX + 'px', top: contextMenuY + 'px' }">
+        <div class="context-menu-item" @click="handleSortCategory(contextMenuCat, 'up'); hideContextMenu()">
+          <i class="el-icon-arrow-up" />
+          <span>上移</span>
+        </div>
+        <div class="context-menu-item" @click="handleSortCategory(contextMenuCat, 'down'); hideContextMenu()">
+          <i class="el-icon-arrow-down" />
+          <span>下移</span>
+        </div>
+        <div class="context-menu-divider" v-if="!contextMenuCat || !contextMenuCat.is_preset" />
+        <div v-if="contextMenuCat && !contextMenuCat.is_preset" class="context-menu-item" @click="openCategoryDialog(contextMenuCat); hideContextMenu()">
+          <i class="el-icon-edit" />
+          <span>编辑</span>
+        </div>
+        <div v-if="contextMenuCat && !contextMenuCat.is_preset" class="context-menu-item danger" @click="handleDeleteCategory(contextMenuCat); hideContextMenu()">
+          <i class="el-icon-delete" />
+          <span>删除</span>
+        </div>
+      </div>
+
       <div class="sidebar-footer">
         <el-button type="text" icon="el-icon-plus" @click="openCategoryDialog(null)">添加分类</el-button>
       </div>
@@ -62,17 +79,25 @@
             <el-tag size="mini" type="info">{{ row.category_name }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_by" label="创建人" width="100" show-overflow-tooltip />
-        <el-table-column prop="updated_by" label="更新人" width="100" show-overflow-tooltip />
-        <el-table-column label="更新时间" width="160">
-          <template slot-scope="{ row }">
-            <span>{{ formatDate(row.updated_at) }}</span>
-          </template>
-        </el-table-column>
         <el-table-column label="URL/端口" width="220" show-overflow-tooltip>
           <template slot-scope="{ row }">
             <span v-if="row.url">{{ row.url }}<span v-if="row.port">:{{ row.port }}</span></span>
             <span v-else class="text-muted">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_by" label="创建人" width="100">
+          <template slot-scope="{ row }">
+            <el-tag size="mini">{{ row.created_by }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="updated_by" label="更新人" width="100">
+          <template slot-scope="{ row }">
+            <el-tag size="mini">{{ row.updated_by }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="更新时间" width="160">
+          <template slot-scope="{ row }">
+            <span>{{ formatDate(row.updated_at) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="收藏" width="50" align="center">
@@ -126,7 +151,11 @@ export default {
       totalCount: 0,
       currentPage: 1,
       pageSize: 20,
-      tableLoading: false
+      tableLoading: false,
+      contextMenuVisible: false,
+      contextMenuX: 0,
+      contextMenuY: 0,
+      contextMenuCat: null
     }
   },
   computed: {
@@ -139,6 +168,12 @@ export default {
   created() {
     this.loadCategories()
     this.loadEntries()
+    document.addEventListener('click', this.hideContextMenu)
+    document.addEventListener('keydown', this.handleKeydown)
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this.hideContextMenu)
+    document.removeEventListener('keydown', this.handleKeydown)
   },
   methods: {
     async loadCategories() {
@@ -186,12 +221,13 @@ export default {
       this.$refs.unlockDialog.open(entry)
     },
     async handleToggleStar(row) {
+      const original = row.is_starred
+      row.is_starred = !row.is_starred
       try {
-        const dualToken = await this.$refs.dualControl.open()
-        await togglePasswordEntryStar(row.id, !row.is_starred, dualToken)
-        row.is_starred = !row.is_starred
+        await togglePasswordEntryStar(row.id, row.is_starred)
       } catch (e) {
-        if (e.message !== 'canceled') this.$message.error('操作失败')
+        row.is_starred = original
+        this.$message.error('操作失败')
       }
     },
     async handleDelete(row) {
@@ -203,7 +239,7 @@ export default {
         this.loadEntries()
         this.loadCategories()
       } catch (e) {
-        if (e.message !== 'canceled') {
+        if (e.message !== 'canceled' && e !== 'cancel' && e.message !== 'cancel') {
           this.$message.error(e.response?.data?.message || '删除失败')
         }
       }
@@ -220,22 +256,20 @@ export default {
         }
         this.loadCategories()
       } catch (e) {
-        if (e.message !== 'canceled') {
+        if (e.message !== 'canceled' && e !== 'cancel' && e.message !== 'cancel') {
           this.$message.error(e.response?.data?.message || '删除失败')
         }
       }
     },
     async handleSortCategory(cat, direction) {
       try {
-        const dualToken = await this.$refs.dualControl.open()
-        const res = await sortPasswordCategory(cat.id, direction, dualToken)
-        if (res && res.code === 200) {
-          this.loadCategories()
+        const res = await sortPasswordCategory(cat.id, direction)
+        if (res && res.code === 200 && res.message) {
+          this.$message.info(res.message)
         }
+        this.loadCategories()
       } catch (e) {
-        if (e.message !== 'canceled') {
-          this.$message.error(e.response?.data?.message || '操作失败')
-        }
+        this.$message.error(e.response?.data?.message || '操作失败')
       }
     },
     handleSortChange() {
@@ -276,6 +310,30 @@ export default {
       const d = new Date(dateStr)
       const pad = n => String(n).padStart(2, '0')
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+    },
+    showContextMenu(e, cat) {
+      this.contextMenuCat = cat
+      this.contextMenuX = e.clientX
+      this.contextMenuY = e.clientY
+      this.contextMenuVisible = true
+      this.$nextTick(() => {
+        const menu = this.$el.querySelector('.context-menu')
+        if (menu) {
+          const rect = menu.getBoundingClientRect()
+          if (rect.right > window.innerWidth) {
+            this.contextMenuX = window.innerWidth - rect.width - 8
+          }
+          if (rect.bottom > window.innerHeight) {
+            this.contextMenuY = window.innerHeight - rect.height - 8
+          }
+        }
+      })
+    },
+    hideContextMenu() {
+      this.contextMenuVisible = false
+    },
+    handleKeydown(e) {
+      if (e.key === 'Escape') this.hideContextMenu()
     }
   }
 }
@@ -351,35 +409,6 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.nav-item .nav-cat-actions {
-  display: none;
-  gap: 4px;
-  margin-left: 4px;
-}
-.nav-item .nav-cat-actions i {
-  font-size: 14px;
-  cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-.nav-item .nav-cat-actions i:hover {
-  opacity: 1;
-}
-.nav-item:hover .nav-cat-actions {
-  display: flex;
-}
-.nav-item:hover .badge {
-  display: none;
-}
-.nav-item.active .nav-cat-actions {
-  display: flex;
-}
-.nav-item.active .badge {
-  display: none;
-}
-.nav-item.active:hover .badge {
-  display: none;
 }
 .nav-divider {
   height: 1px;
@@ -457,8 +486,52 @@ export default {
 .password-vault-page ::v-deep .el-tag {
   border-radius: 6px;
   border: none;
+  font-size: 12px;
+}
+.password-vault-page ::v-deep .el-tag--info {
   background: #e2e8f0;
   color: #475569;
-  font-size: 12px;
+}
+
+/* 右键上下文菜单 */
+.context-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 140px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 6px 0;
+  border: 1px solid #e2e8f0;
+}
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.context-menu-item:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.context-menu-item.danger {
+  color: #cf222e;
+}
+.context-menu-item.danger:hover {
+  background: #fef2f2;
+}
+.context-menu-item i {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+.context-menu-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
 }
 </style>

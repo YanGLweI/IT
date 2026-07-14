@@ -359,23 +359,53 @@ func ListPasswordEntries(c *gin.Context) {
 		return
 	}
 
-	// 填充分类名称、查看用户列表、收藏状态、是否创建人
-	for i := range entries {
-		var cat models.PasswordCategory
-		if db.First(&cat, entries[i].CategoryID).Error == nil {
-			entries[i].CategoryName = cat.Name
+	// 批量填充分类名称、查看用户列表、收藏状态、是否创建人
+	if len(entries) > 0 {
+		// 收集所有 categoryID 和 entryID
+		categoryIDs := make(map[uint]bool)
+		entryIDs := make([]uint, 0, len(entries))
+		for _, e := range entries {
+			categoryIDs[e.CategoryID] = true
+			entryIDs = append(entryIDs, e.ID)
 		}
+
+		// 批量查询分类
+		catMap := make(map[uint]string)
+		var cats []models.PasswordCategory
+		db.Where("id IN ?", func() []uint {
+			ids := make([]uint, 0, len(categoryIDs))
+			for id := range categoryIDs {
+				ids = append(ids, id)
+			}
+			return ids
+		}()).Find(&cats)
+		for _, c := range cats {
+			catMap[c.ID] = c.Name
+		}
+
+		// 批量查询 viewers
+		viewerMap := make(map[uint][]string)
 		var viewers []models.PasswordEntryViewer
-		db.Where("entry_id = ?", entries[i].ID).Find(&viewers)
+		db.Where("entry_id IN ?", entryIDs).Find(&viewers)
 		for _, v := range viewers {
-			entries[i].Viewers = append(entries[i].Viewers, v.Username)
+			viewerMap[v.EntryID] = append(viewerMap[v.EntryID], v.Username)
 		}
-		// 当前用户是否收藏
-		var starCount int64
-		db.Model(&models.PasswordEntryStar{}).Where("entry_id = ? AND username = ?", entries[i].ID, usernameStr).Count(&starCount)
-		entries[i].IsStarred = starCount > 0
-		// 当前用户是否为创建人
-		entries[i].IsCreator = entries[i].CreatedBy == usernameStr
+
+		// 批量查询收藏状态
+		starSet := make(map[uint]bool)
+		var stars []models.PasswordEntryStar
+		db.Where("entry_id IN ? AND username = ?", entryIDs, usernameStr).Find(&stars)
+		for _, s := range stars {
+			starSet[s.EntryID] = true
+		}
+
+		// 填充数据
+		for i := range entries {
+			entries[i].CategoryName = catMap[entries[i].CategoryID]
+			entries[i].Viewers = viewerMap[entries[i].ID]
+			entries[i].IsStarred = starSet[entries[i].ID]
+			entries[i].IsCreator = entries[i].CreatedBy == usernameStr
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": entries, "total": total, "page_size": pageSize})
