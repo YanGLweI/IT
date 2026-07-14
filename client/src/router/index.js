@@ -24,6 +24,18 @@ const routes = [
         name: 'PublicForms',
         component: () => import('../views/public/FormDownload.vue'),
         meta: { title: '表单下载', public: true }
+      },
+      {
+        path: 'it-guides',
+        name: 'PublicITGuides',
+        component: () => import('../views/public/ITGuideList.vue'),
+        meta: { title: 'IT指南', public: true }
+      },
+      {
+        path: 'it-guides/:id',
+        name: 'PublicITGuideDetail',
+        component: () => import('../views/public/ITGuideDetail.vue'),
+        meta: { title: '指南详情', public: true }
       }
     ]
   },
@@ -60,6 +72,7 @@ const routes = [
       { path: 'quarterly-check-history', name: 'QuarterlyCheckHistory', component: () => import('../views/approved-software/QuarterlyCheckHistory.vue'), meta: { title: '季度检查历史', enTitle: 'Quarterly Check History' } },
       { path: 'user-change-history', name: 'UserChangeHistory', component: () => import('../views/permission/UserChangeHistory.vue'), meta: { title: '用户变更记录', enTitle: 'User Change History' } },
       { path: 'form-publish', name: 'FormPublish', component: () => import('../views/form-publish/FormVault.vue'), meta: { title: '表单发布', enTitle: 'Form Publishing' } },
+      { path: 'it-guide', name: 'ITGuide', component: () => import('../views/it-guide/ITGuideList.vue'), meta: { title: 'IT指南', enTitle: 'IT Guide' } },
       { path: 'calendar', name: 'Calendar', component: () => import('../views/calendar/CalendarView.vue'), meta: { title: '日程管理', enTitle: 'Calendar Management' } },
       { path: 'password-vault', name: 'PasswordVault', component: () => import('../views/password-vault/index.vue'), meta: { title: '密码本', enTitle: 'Password Vault' } }
     ]

@@ -179,7 +179,9 @@ export default {
         'backup_recovery': '恢复还原记录',
         'backup_template': '备份模板',
         'form_vault': '表单发布',
-        'calendar': '日历日程'
+        'calendar': '日历日程',
+        'password_category': '密码分类',
+        'password_entry': '密码条目'
       }
     }
   },

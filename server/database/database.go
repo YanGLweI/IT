@@ -67,6 +67,9 @@ func InitDB() {
 		&models.PasswordEntryViewer{},
 		&models.PasswordEntryStar{},
 		&models.PasswordViewLog{},
+		&models.ITGuide{},
+		&models.ITGuideStep{},
+		&models.ITGuideMedia{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

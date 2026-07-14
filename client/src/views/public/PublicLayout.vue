@@ -14,6 +14,10 @@
           </div>
           <span class="header-title">IT管理平台 <span class="header-subtitle-tag">· 公共服务</span></span>
         </div>
+        <nav class="header-tabs">
+          <router-link to="/public/forms" class="tab-item" active-class="tab-active" exact>表单中心</router-link>
+          <router-link to="/public/it-guides" class="tab-item" active-class="tab-active">IT指南</router-link>
+        </nav>
         <div class="header-right">
           <router-link to="/login" class="back-login-btn">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -99,6 +103,33 @@ export default {
   font-size: 13px;
   font-weight: 400;
   color: #64748B;
+}
+
+.header-tabs {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.tab-item {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748B;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.25s ease;
+  border-radius: 6px 6px 0 0;
+}
+
+.tab-item:hover {
+  color: #409EFF;
+  background: #EFF6FF;
+}
+
+.tab-active {
+  color: #409EFF;
+  border-bottom-color: #409EFF;
 }
 
 .back-login-btn {

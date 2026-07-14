@@ -22,3 +22,15 @@ export function getPublicPreviewBlob(id) {
     responseType: 'blob'
   })
 }
+
+// ============ IT指南公开接口 ============
+
+// 获取已发布IT指南列表
+export function getPublicITGuides(params) {
+  return publicRequest.get('/public/it-guides', { params })
+}
+
+// 获取单个已发布IT指南详情
+export function getPublicITGuideDetail(id) {
+  return publicRequest.get(`/public/it-guides/${id}`)
+}

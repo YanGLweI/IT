@@ -31,6 +31,10 @@ func SetupRouter() *gin.Engine {
 			public.GET("/public/forms", handlers.ListPublicForms)
 			public.GET("/public/forms/:id/download", handlers.PublicDownloadForm)
 			public.GET("/public/forms/:id/preview", handlers.PublicPreviewForm)
+
+			// IT指南公开接口
+			public.GET("/public/it-guides", handlers.ListPublicITGuides)
+			public.GET("/public/it-guides/:id", handlers.GetPublicITGuide)
 		}
 
 		// 受保护接口（需要JWT认证）
@@ -177,6 +181,11 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/form-vault/cross-module/generators/:name/params", handlers.GetGeneratorParams)
 			protected.GET("/form-vault/:id/preview", handlers.PreviewFormVaultItem)
 			protected.GET("/form-vault/:id/download", handlers.DownloadFormVaultItem)
+
+			// IT指南 - 读操作（不需要双控）
+			protected.GET("/it-guides", handlers.ListITGuides)
+			protected.GET("/it-guides/:id", handlers.GetITGuide)
+			protected.GET("/it-guides/:id/steps", handlers.ListITGuideSteps)
 
 			// 日历日程 - 读操作（不需要双控）
 			protected.GET("/calendars", handlers.ListCalendars)
@@ -345,6 +354,19 @@ func SetupRouter() *gin.Engine {
 				dual.PUT("/form-vault/:id/publish", handlers.PublishFormVaultItem)
 				dual.PUT("/form-vault/:id/unpublish", handlers.UnpublishFormVaultItem)
 				dual.POST("/form-vault/cross-module", handlers.CreateCrossModuleRef)
+
+				// IT指南 - 写操作（需要双控）
+				dual.POST("/it-guides", handlers.CreateITGuide)
+				dual.PUT("/it-guides/:id", handlers.UpdateITGuide)
+				dual.DELETE("/it-guides/:id", handlers.DeleteITGuide)
+				dual.PUT("/it-guides/:id/publish", handlers.PublishITGuide)
+				dual.PUT("/it-guides/:id/unpublish", handlers.UnpublishITGuide)
+				dual.POST("/it-guides/:id/steps", handlers.CreateITGuideStep)
+				dual.PUT("/it-guides/:id/steps/:stepId", handlers.UpdateITGuideStep)
+				dual.DELETE("/it-guides/:id/steps/:stepId", handlers.DeleteITGuideStep)
+				dual.POST("/it-guides/:id/steps/reorder", handlers.ReorderITGuideSteps)
+				dual.POST("/it-guides/:id/media", handlers.UploadITGuideMedia)
+				dual.DELETE("/it-guides/:id/media/:mediaId", handlers.DeleteITGuideMedia)
 
 				// 密码本 - 写操作（需要双控）
 				dual.POST("/password-categories", handlers.CreatePasswordCategory)

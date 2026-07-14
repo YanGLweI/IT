@@ -148,10 +148,20 @@
             <span>操作日志</span>
           </el-menu-item>
         </el-submenu>
-        <el-menu-item index="/form-publish">
-          <svg-icon name="upload-cloud" />
-          <span>表单发布</span>
-        </el-menu-item>
+        <el-submenu index="public-service">
+          <template slot="title">
+            <svg-icon name="globe" />
+            <span>公共服务</span>
+          </template>
+          <el-menu-item index="/form-publish">
+            <svg-icon name="upload-cloud" />
+            <span>表单发布</span>
+          </el-menu-item>
+          <el-menu-item index="/it-guide">
+            <svg-icon name="book-open" />
+            <span>IT指南</span>
+          </el-menu-item>
+        </el-submenu>
         <el-menu-item index="/calendar">
           <svg-icon name="calendar" />
           <span>日程管理</span>

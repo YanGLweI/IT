@@ -78,6 +78,7 @@ type UploadConfig struct {
 	BackupTemplatePath           string `yaml:"backup_template_path"`
 	FormVaultPath                string `yaml:"form_vault_path"`
 	FormVaultSnapshotPath        string `yaml:"form_vault_snapshot_path"`
+	ITGuideMediaPath             string `yaml:"it_guide_media_path"`
 }
 
 // LDAPConfig LDAP配置
@@ -182,6 +183,9 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.FormVaultSnapshotPath == "" {
 		Cfg.Upload.FormVaultSnapshotPath = "./uploads/form_vault/snapshots"
+	}
+	if Cfg.Upload.ITGuideMediaPath == "" {
+		Cfg.Upload.ITGuideMediaPath = "./uploads/it_guide_media"
 	}
 	if Cfg.RSA.PrivateKeyPath == "" {
 		Cfg.RSA.PrivateKeyPath = "./certificate/rsa_private.pem"
