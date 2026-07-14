@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :visible.sync="visible" :title="isEdit ? '编辑分类' : '添加分类'" width="400px" :close-on-click-modal="false">
+  <el-dialog :visible.sync="visible" :title="isEdit ? '编辑分类' : '添加分类'" width="500px" :close-on-click-modal="false">
     <el-form :model="form" :rules="rules" ref="form" label-width="80px">
       <el-form-item label="分类名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入分类名称" maxlength="50" />

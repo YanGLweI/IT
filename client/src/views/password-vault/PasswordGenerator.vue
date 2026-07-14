@@ -108,9 +108,9 @@ export default {
 .option-row label {
   display: block;
   font-size: 13px;
-  color: #64748b;
+  color: #475569;
   margin-bottom: 8px;
-  font-weight: 500;
+  font-weight: 600;
 }
 .checkbox-row {
   display: flex;
@@ -125,7 +125,7 @@ export default {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #f8fafc;
+  background: #f1f5f9;
   border-radius: 10px;
   margin-top: 12px;
   border: 1px solid #e2e8f0;

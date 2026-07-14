@@ -104,7 +104,7 @@ export default {
 <style scoped>
 .unlock-hint {
   font-size: 14px;
-  color: #64748b;
+  color: #475569;
   margin-bottom: 16px;
 }
 .error-msg {
@@ -117,8 +117,8 @@ export default {
 }
 .password-display {
   padding: 16px 20px;
-  background: #f8fafc;
-  border-radius: 12px;
+  background: #f1f5f9;
+  border-radius: 10px;
   margin-bottom: 16px;
   border: 1px solid #e2e8f0;
 }
@@ -139,7 +139,7 @@ export default {
 }
 .countdown {
   font-size: 13px;
-  color: #94a3b8;
+  color: #64748b;
 }
 .countdown.warning {
   color: #ef4444;

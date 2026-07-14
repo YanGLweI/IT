@@ -209,8 +209,8 @@ export default {
 .password-vault-page {
   display: flex;
   height: calc(100vh - 100px);
-  background: #fafbfc;
-  border-radius: 16px;
+  background: #f0f2f5;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -221,7 +221,9 @@ export default {
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border-right: 1px solid #f0f2f5;
+  margin-right: 5px;
+  border-radius: 12px;
+  border-right: 1px solid #e2e8f0;
 }
 .sidebar-search {
   padding: 20px 16px 12px;
@@ -244,12 +246,12 @@ export default {
   margin-bottom: 2px;
 }
 .nav-item:hover {
-  background: #f7f8fa;
-  color: #2d3748;
+  background: #e8ecf1;
+  color: #1e293b;
 }
 .nav-item.active {
-  background: linear-gradient(135deg, #e8f4fd 0%, #f0f7ff 100%);
-  color: #3b82f6;
+  background: linear-gradient(135deg, #dbeafe 0%, #e8f0fe 100%);
+  color: #2563eb;
   font-weight: 500;
 }
 .nav-item i {
@@ -262,31 +264,31 @@ export default {
 .nav-item .badge {
   margin-left: auto;
   font-size: 12px;
-  color: #94a3b8;
-  background: #f1f5f9;
+  color: #64748b;
+  background: #e2e8f0;
   padding: 2px 8px;
   border-radius: 12px;
   font-weight: 500;
 }
 .nav-item.active .badge {
-  background: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
+  background: rgba(37, 99, 235, 0.15);
+  color: #2563eb;
 }
 .nav-divider {
   height: 1px;
-  background: #f0f2f5;
+  background: #e2e8f0;
   margin: 8px 12px;
 }
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid #f0f2f5;
+  border-top: 1px solid #e2e8f0;
 }
 .sidebar-footer .el-button {
-  color: #64748b;
+  color: #475569;
   font-size: 13px;
 }
 .sidebar-footer .el-button:hover {
-  color: #3b82f6;
+  color: #2563eb;
 }
 
 /* 右侧主区域 */
@@ -295,7 +297,10 @@ export default {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 24px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 .toolbar {
   display: flex;
@@ -328,25 +333,25 @@ export default {
   overflow: hidden;
 }
 .password-vault-page ::v-deep .el-table th {
-  background: #f8fafc;
-  color: #64748b;
-  font-weight: 500;
-  font-size: 13px;
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+  font-size: 12px;
 }
 .password-vault-page ::v-deep .el-table td {
-  color: #334155;
+  color: #1e293b;
 }
 .password-vault-page ::v-deep .el-table--striped .el-table__body tr.el-table__row--striped td {
-  background: #fafbfc;
+  background: #f8fafc;
 }
 .password-vault-page ::v-deep .el-table--striped .el-table__body tr:hover > td {
-  background: #f7f8fa !important;
+  background: #f1f5f9 !important;
 }
 .password-vault-page ::v-deep .el-tag {
   border-radius: 6px;
   border: none;
-  background: #f1f5f9;
-  color: #64748b;
+  background: #e2e8f0;
+  color: #475569;
   font-size: 12px;
 }
 </style>

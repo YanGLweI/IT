@@ -199,12 +199,12 @@ export default {
   width: 260px;
   flex-shrink: 0;
   padding-right: 5px;
-  border-right: 1px solid #f0f2f5;
+  border-right: 1px solid #e2e8f0;
 }
 .panel-title {
   font-size: 13px;
-  font-weight: 500;
-  color: #64748b;
+  font-weight: 600;
+  color: #475569;
   margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -222,16 +222,16 @@ export default {
   flex: 1;
 }
 .password-input-group .el-button {
-  color: #64748b;
+  color: #475569;
 }
 .password-input-group .el-button:hover {
-  color: #3b82f6;
+  color: #2563eb;
 }
 .generator-wrapper {
   margin-top: 12px;
   padding: 16px;
-  background: #f8fafc;
-  border-radius: 12px;
+  background: #f1f5f9;
+  border-radius: 10px;
   border: 1px solid #e2e8f0;
 }
 </style>

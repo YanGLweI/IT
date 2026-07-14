@@ -82,13 +82,14 @@ export default {
 .icon-picker {
   max-height: 350px;
   overflow-y: auto;
+  padding-right: 15px;
 }
 .icon-group {
   margin-bottom: 16px;
 }
 .icon-group-label {
   font-size: 11px;
-  color: #94a3b8;
+  color: #64748b;
   margin-bottom: 8px;
   font-weight: 600;
   text-transform: uppercase;
@@ -108,16 +109,16 @@ export default {
   cursor: pointer;
   border: 1px solid transparent;
   transition: all 0.2s ease;
-  color: #64748b;
+  color: #475569;
 }
 .icon-item:hover {
-  background: #f7f8fa;
-  color: #3b82f6;
+  background: #e8ecf1;
+  color: #2563eb;
 }
 .icon-item.active {
-  background: linear-gradient(135deg, #e8f4fd 0%, #f0f7ff 100%);
-  border-color: #3b82f6;
-  color: #3b82f6;
+  background: linear-gradient(135deg, #dbeafe 0%, #e8f0fe 100%);
+  border-color: #2563eb;
+  color: #2563eb;
 }
 .icon-label {
   font-size: 11px;
