@@ -122,7 +122,8 @@ export default {
         duration: 0,
         position: 'bottom-right',
         onClick: () => {
-          markNotificationRead(n.id).catch(() => {})
+          // 点击弹框仅标记已弹出，不标记已读（已读由铃铛面板操作控制）
+          markNotificationPopupShown(n.id).catch(() => {})
           this.fetchUnreadCount()
         }
       })
@@ -176,15 +177,17 @@ export default {
       const dd = String(d.getDate()).padStart(2, '0')
       return `${mm}-${dd}`
     },
-    // 供Login.vue调用：登录时弹出通知
+    // 供Login.vue调用：登录时弹出已到时间的通知
     async showLoginNotifications() {
       await this.fetchTodayNotifications()
-      const unread = this.notifications.filter(n => !n.read_at)
-      for (let i = 0; i < unread.length; i++) {
+      const now = new Date()
+      // 仅弹出 notify_time 已到达的通知，未到时间的由轮询机制处理
+      const due = this.notifications.filter(n => !n.read_at && new Date(n.notify_time) <= now)
+      for (let i = 0; i < due.length; i++) {
         setTimeout(() => {
-          this.showPopupNotification(unread[i])
-          this.shownNotificationIds.add(unread[i].id)
-          markNotificationPopupShown(unread[i].id).catch(() => {})
+          this.showPopupNotification(due[i])
+          this.shownNotificationIds.add(due[i].id)
+          markNotificationPopupShown(due[i].id).catch(() => {})
         }, i * 500)
       }
     }

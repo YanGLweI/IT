@@ -525,7 +525,7 @@ func GetPendingNotifications(c *gin.Context) {
 	past24h := now.Add(-24 * time.Hour)
 
 	var notifications []models.CalendarNotification
-	db.Where("user_dn = ? AND notify_time <= ? AND notify_time >= ? AND popup_shown = false AND read_at IS NULL",
+	db.Where("user_dn = ? AND notify_time <= ? AND notify_time >= ? AND popup_shown = false",
 		username, now, past24h).
 		Order("notify_time ASC").
 		Find(&notifications)
