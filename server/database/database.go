@@ -62,6 +62,10 @@ func InitDB() {
 		&models.Calendar{},
 		&models.CalendarParticipant{},
 		&models.CalendarNotification{},
+		&models.PasswordCategory{},
+		&models.PasswordEntry{},
+		&models.PasswordEntryViewer{},
+		&models.PasswordViewLog{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
@@ -70,6 +74,7 @@ func InitDB() {
 	// 初始化基础数据
 	SeedPermissionRules()
 	SeedChangeTypes()
+	SeedPasswordCategories()
 
 	fmt.Println("数据库初始化成功!")
 }

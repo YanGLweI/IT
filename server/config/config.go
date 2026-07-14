@@ -9,12 +9,18 @@ import (
 
 // Config 配置结构
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Database DatabaseConfig `yaml:"database"`
-	Upload   UploadConfig   `yaml:"upload"`
-	LDAP     LDAPConfig     `yaml:"ldap"`
-	Document DocumentConfig `yaml:"document"`
-	RSA      RSAConfig      `yaml:"rsa"`
+	Server        ServerConfig        `yaml:"server"`
+	Database      DatabaseConfig      `yaml:"database"`
+	Upload        UploadConfig        `yaml:"upload"`
+	LDAP          LDAPConfig          `yaml:"ldap"`
+	Document      DocumentConfig      `yaml:"document"`
+	RSA           RSAConfig           `yaml:"rsa"`
+	PasswordVault PasswordVaultConfig `yaml:"password_vault"`
+}
+
+// PasswordVaultConfig 密码本配置
+type PasswordVaultConfig struct {
+	AESKey string `yaml:"aes_key"`
 }
 
 // DocumentConfig 文档配置

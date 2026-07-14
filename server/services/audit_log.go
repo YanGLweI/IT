@@ -436,6 +436,24 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"IsAllDay":       "全天",
 			"RepeatRuleJSON": "重复规则",
 		}
+	case "password_category":
+		return map[string]string{
+			"Name":      "分类名称",
+			"Icon":      "图标",
+			"IsPreset":  "预设",
+			"SortOrder": "排序",
+		}
+	case "password_entry":
+		return map[string]string{
+			"Name":       "条目名称",
+			"Username":   "账号",
+			"CategoryID": "分类",
+			"Icon":       "图标",
+			"URL":        "URL",
+			"Port":       "端口",
+			"Notes":      "备注",
+			"IsStarred":  "收藏",
+		}
 	default:
 		return make(map[string]string)
 	}

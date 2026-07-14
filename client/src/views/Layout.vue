@@ -156,6 +156,10 @@
           <svg-icon name="calendar" />
           <span>日程管理</span>
         </el-menu-item>
+        <el-menu-item index="/password-vault">
+          <svg-icon name="lock" />
+          <span>密码本</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>

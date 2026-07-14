@@ -188,7 +188,14 @@ func SetupRouter() *gin.Engine {
 			protected.PUT("/calendars/notifications/:id/popup-shown", handlers.MarkNotificationPopupShown)
 			protected.POST("/calendars/check-conflict", handlers.CheckConflict)
 
-				// LDAP用户获取（不需要双控）
+			// 密码本 - 读操作（不需要双控）
+			protected.GET("/password-categories", handlers.ListPasswordCategories)
+			protected.GET("/password-entries", handlers.ListPasswordEntries)
+			protected.GET("/password-view-logs", handlers.ListPasswordViewLogs)
+			protected.POST("/password-entries/:id/unlock", handlers.UnlockPasswordEntry)
+			protected.PUT("/password-entries/:id/star", handlers.TogglePasswordEntryStar)
+
+			// LDAP用户获取（不需要双控）
 			protected.GET("/ldap/users", handlers.GetLDAPUsers)
 
 			// 日历日程 - 写操作（不需要双控，仅需JWT）
@@ -337,6 +344,14 @@ func SetupRouter() *gin.Engine {
 				dual.PUT("/form-vault/:id/publish", handlers.PublishFormVaultItem)
 				dual.PUT("/form-vault/:id/unpublish", handlers.UnpublishFormVaultItem)
 				dual.POST("/form-vault/cross-module", handlers.CreateCrossModuleRef)
+
+				// 密码本 - 写操作（需要双控）
+				dual.POST("/password-categories", handlers.CreatePasswordCategory)
+				dual.PUT("/password-categories/:id", handlers.UpdatePasswordCategory)
+				dual.DELETE("/password-categories/:id", handlers.DeletePasswordCategory)
+				dual.POST("/password-entries", handlers.CreatePasswordEntry)
+				dual.PUT("/password-entries/:id", handlers.UpdatePasswordEntry)
+				dual.DELETE("/password-entries/:id", handlers.DeletePasswordEntry)
 			}
 		}
 	}

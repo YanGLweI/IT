@@ -195,6 +195,78 @@ const icons = {
     { tag: 'path', d: 'M12 12v9' },
     { tag: 'path', d: 'M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3' },
     { tag: 'path', d: 'M16 16l-4-4-4 4' }
+  ],
+  'lock': [
+    { tag: 'rect', x: 3, y: 11, w: 18, h: 11, rx: 2 },
+    { tag: 'path', d: 'M7 11V7a5 5 0 0 1 10 0v4' }
+  ],
+  'server': [
+    { tag: 'rect', x: 2, y: 2, w: 20, h: 8, rx: 2 },
+    { tag: 'rect', x: 2, y: 14, w: 20, h: 8, rx: 2 },
+    { tag: 'line', x1: 6, y1: 6, x2: 6.01, y2: 6 },
+    { tag: 'line', x1: 6, y1: 18, x2: 6.01, y2: 18 }
+  ],
+  'router': [
+    { tag: 'rect', x: 2, y: 14, w: 20, h: 8, rx: 2 },
+    { tag: 'circle', cx: 6, cy: 18, r: 1 },
+    { tag: 'circle', cx: 10, cy: 18, r: 1 },
+    { tag: 'path', d: 'M16 18h2' },
+    { tag: 'path', d: 'M12 14V8' },
+    { tag: 'path', d: 'M8 14V4' },
+    { tag: 'path', d: 'M16 14v-4' }
+  ],
+  'switch': [
+    { tag: 'rect', x: 2, y: 8, w: 20, h: 8, rx: 2 },
+    { tag: 'line', x1: 6, y1: 12, x2: 6.01, y2: 12 },
+    { tag: 'line', x1: 10, y1: 12, x2: 10.01, y2: 12 },
+    { tag: 'line', x1: 14, y1: 12, x2: 14.01, y2: 12 },
+    { tag: 'line', x1: 18, y1: 12, x2: 18.01, y2: 12 }
+  ],
+  'firewall': [
+    { tag: 'rect', x: 3, y: 3, w: 18, h: 18, rx: 2 },
+    { tag: 'line', x1: 3, y1: 9, x2: 21, y2: 9 },
+    { tag: 'line', x1: 3, y1: 15, x2: 21, y2: 15 },
+    { tag: 'line', x1: 9, y1: 3, x2: 9, y2: 9 },
+    { tag: 'line', x1: 15, y1: 9, x2: 15, y2: 15 },
+    { tag: 'line', x1: 9, y1: 15, x2: 9, y2: 21 }
+  ],
+  'app': [
+    { tag: 'rect', x: 3, y: 3, w: 7, h: 7, rx: 1 },
+    { tag: 'rect', x: 14, y: 3, w: 7, h: 7, rx: 1 },
+    { tag: 'rect', x: 3, y: 14, w: 7, h: 7, rx: 1 },
+    { tag: 'rect', x: 14, y: 14, w: 7, h: 7, rx: 1 }
+  ],
+  'browser': [
+    { tag: 'rect', x: 2, y: 3, w: 20, h: 18, rx: 2 },
+    { tag: 'line', x1: 2, y1: 8, x2: 22, y2: 8 },
+    { tag: 'line', x1: 6, y1: 5.5, x2: 6.01, y2: 5.5 },
+    { tag: 'line', x1: 10, y1: 5.5, x2: 10.01, y2: 5.5 }
+  ],
+  'cloud': [
+    { tag: 'path', d: 'M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z' }
+  ],
+  'tool': [
+    { tag: 'path', d: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z' }
+  ],
+  'desktop': [
+    { tag: 'rect', x: 2, y: 3, w: 20, h: 14, rx: 2 },
+    { tag: 'line', x1: 8, y1: 21, x2: 16, y2: 21 },
+    { tag: 'line', x1: 12, y1: 17, x2: 12, y2: 21 }
+  ],
+  'laptop': [
+    { tag: 'rect', x: 3, y: 4, w: 18, h: 12, rx: 2 },
+    { tag: 'line', x1: 2, y1: 20, x2: 22, y2: 20 }
+  ],
+  'printer': [
+    { tag: 'polyline', points: '6 9 6 2 18 2 18 9' },
+    { tag: 'path', d: 'M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2' },
+    { tag: 'rect', x: 6, y: 14, w: 12, h: 8 }
+  ],
+  'wifi': [
+    { tag: 'path', d: 'M5 12.55a11 11 0 0 1 14.08 0' },
+    { tag: 'path', d: 'M1.42 9a16 16 0 0 1 21.16 0' },
+    { tag: 'path', d: 'M8.53 16.11a6 6 0 0 1 6.95 0' },
+    { tag: 'line', x1: 12, y1: 20, x2: 12.01, y2: 20 }
   ]
 }
 

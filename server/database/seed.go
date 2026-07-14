@@ -651,3 +651,29 @@ func SeedChangeTypes() {
 	}
 	fmt.Println("变更类型数据初始化完成")
 }
+
+// SeedPasswordCategories 初始化密码分类数据
+func SeedPasswordCategories() {
+	var count int64
+	DB.Model(&models.PasswordCategory{}).Count(&count)
+	if count > 0 {
+		fmt.Println("密码分类数据已存在，跳过初始化")
+		return
+	}
+
+	categories := []models.PasswordCategory{
+		{Name: "服务器", Icon: "server", IsPreset: true, SortOrder: 1},
+		{Name: "网络设备", Icon: "router", IsPreset: true, SortOrder: 2},
+		{Name: "应用系统", Icon: "app", IsPreset: true, SortOrder: 3},
+		{Name: "数据库", Icon: "database", IsPreset: true, SortOrder: 4},
+		{Name: "管理工具", Icon: "tool", IsPreset: true, SortOrder: 5},
+		{Name: "云服务", Icon: "cloud", IsPreset: true, SortOrder: 6},
+	}
+
+	for _, cat := range categories {
+		if err := DB.Create(&cat).Error; err != nil {
+			log.Printf("初始化密码分类失败 [%s]: %v", cat.Name, err)
+		}
+	}
+	fmt.Println("密码分类数据初始化完成")
+}

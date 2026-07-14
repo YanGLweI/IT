@@ -60,7 +60,8 @@ const routes = [
       { path: 'quarterly-check-history', name: 'QuarterlyCheckHistory', component: () => import('../views/approved-software/QuarterlyCheckHistory.vue'), meta: { title: '季度检查历史', enTitle: 'Quarterly Check History' } },
       { path: 'user-change-history', name: 'UserChangeHistory', component: () => import('../views/permission/UserChangeHistory.vue'), meta: { title: '用户变更记录', enTitle: 'User Change History' } },
       { path: 'form-publish', name: 'FormPublish', component: () => import('../views/form-publish/FormVault.vue'), meta: { title: '表单发布', enTitle: 'Form Publishing' } },
-      { path: 'calendar', name: 'Calendar', component: () => import('../views/calendar/CalendarView.vue'), meta: { title: '日程管理', enTitle: 'Calendar Management' } }
+      { path: 'calendar', name: 'Calendar', component: () => import('../views/calendar/CalendarView.vue'), meta: { title: '日程管理', enTitle: 'Calendar Management' } },
+      { path: 'password-vault', name: 'PasswordVault', component: () => import('../views/password-vault/index.vue'), meta: { title: '密码本', enTitle: 'Password Vault' } }
     ]
   }
 ]
