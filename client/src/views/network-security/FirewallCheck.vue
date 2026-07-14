@@ -289,11 +289,11 @@ export default {
     },
     async fetchAssets() {
       try {
-        // 先获取"网络设备清单"区域ID
+        // 先获取"Firewall"区域ID
         const regionsRes = await getRegions()
-        const networkRegion = (regionsRes.data || []).find(r => r.name === '网络设备清单')
+        const networkRegion = (regionsRes.data || []).find(r => r.name === 'Firewall')
         if (!networkRegion) {
-          this.$message.warning('未找到"网络设备清单"区域，请先创建区域')
+          this.$message.warning('未找到"Firewall"区域，请先创建区域')
           return
         }
         // 只获取该区域下的资产

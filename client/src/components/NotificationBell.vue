@@ -55,8 +55,7 @@ export default {
       unreadCount: 0,
       popoverVisible: false,
       pollTimer: null,
-      pendingTimer: null,
-      shownNotificationIds: new Set()
+      pendingTimer: null
     }
   },
   mounted() {
@@ -70,8 +69,8 @@ export default {
     this.pendingTimer = setInterval(() => {
       this.checkPendingNotifications()
     }, 60000)
-    // 首次检查
-    this.checkPendingNotifications()
+    // 首次检查跳过，由 showLoginNotifications 统一处理登录弹框，避免重复
+    // 后续由 60 秒轮询接管
   },
   beforeDestroy() {
     if (this.pollTimer) clearInterval(this.pollTimer)
@@ -106,7 +105,7 @@ export default {
           for (const n of pending) {
             // 后端已过滤 notify_time <= now，直接弹框
             this.showPopupNotification(n)
-            markNotificationPopupShown(n.id).catch(() => {})
+            await markNotificationPopupShown(n.id).catch(() => {})
           }
         }
       } catch (err) {
@@ -177,18 +176,23 @@ export default {
       const dd = String(d.getDate()).padStart(2, '0')
       return `${mm}-${dd}`
     },
-    // 供Login.vue调用：登录时弹出已到时间的通知
+    // 供Login.vue调用：登录时弹出已到时间的通知（与轮询路径使用相同接口）
     async showLoginNotifications() {
-      await this.fetchTodayNotifications()
-      const now = new Date()
-      // 仅弹出 notify_time 已到达的通知，未到时间的由轮询机制处理
-      const due = this.notifications.filter(n => !n.read_at && new Date(n.notify_time) <= now)
-      for (let i = 0; i < due.length; i++) {
-        setTimeout(() => {
-          this.showPopupNotification(due[i])
-          this.shownNotificationIds.add(due[i].id)
-          markNotificationPopupShown(due[i].id).catch(() => {})
-        }, i * 500)
+      try {
+        const res = await getPendingNotifications()
+        if (res && res.code === 200) {
+          const pending = res.data || []
+          // 先批量标记 popup_shown，防止 mounted 中的 checkPendingNotifications 重复弹出
+          await Promise.all(pending.map(n => markNotificationPopupShown(n.id).catch(() => {})))
+          // 再逐个延迟弹出视觉通知
+          for (let i = 0; i < pending.length; i++) {
+            setTimeout(() => {
+              this.showPopupNotification(pending[i])
+            }, i * 500)
+          }
+        }
+      } catch (err) {
+        // ignore
       }
     }
   }
