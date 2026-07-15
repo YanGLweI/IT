@@ -1,5 +1,6 @@
 <template>
   <div class="it-guide-page">
+    <div class="page-card">
     <!-- 页面标题 -->
     <div class="page-header">
       <h1 class="page-title">
@@ -133,7 +134,7 @@
               <!-- 图片上传 -->
               <div class="media-section">
                 <div class="media-label">图片指引</div>
-                <el-upload :file-list="step.images" list-type="picture-card" :on-change="(f, fl) => onImageChange(idx, fl)" :on-remove="(f, fl) => onImageRemove(idx, fl)" :before-upload="beforeImageUpload" accept="image/*" multiple>
+                <el-upload action="#" :http-request="noopUpload" :file-list="step.images" list-type="picture-card" :on-change="(f, fl) => onImageChange(idx, fl)" :on-remove="(f, fl) => onImageRemove(idx, fl)" :before-upload="beforeImageUpload" accept="image/*" multiple>
                   <i class="el-icon-plus"></i>
                 </el-upload>
               </div>
@@ -145,7 +146,7 @@
                   <video :src="step.videoUrl" controls style="width: 100%; max-height: 200px; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
                   <el-button type="text" class="remove-video-btn" @click="removeStepVideo(idx)">移除视频</el-button>
                 </div>
-                <el-upload v-else :show-file-list="false" :before-upload="(f) => beforeVideoUpload(f, idx)" accept="video/mp4,video/webm">
+                <el-upload v-else action="#" :http-request="noopUpload" :show-file-list="false" :before-upload="(f) => beforeVideoUpload(f, idx)" accept="video/mp4,video/webm">
                   <el-button size="small" icon="el-icon-video-camera">上传视频</el-button>
                 </el-upload>
               </div>
@@ -165,7 +166,7 @@
               <video :src="form.videoUrl" controls style="width: 100%; max-height: 360px; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
               <el-button type="text" class="remove-video-btn" @click="removeGuideVideo">移除视频</el-button>
             </div>
-            <el-upload v-else drag :show-file-list="false" :before-upload="beforeGuideVideoUpload" accept="video/mp4,video/webm" class="video-drag-upload">
+            <el-upload v-else drag action="#" :http-request="noopUpload" :show-file-list="false" :before-upload="beforeGuideVideoUpload" accept="video/mp4,video/webm" class="video-drag-upload">
               <i class="el-icon-upload2" style="font-size: 40px; color: #94A3B8;"></i>
               <div class="el-upload__text">将视频文件拖到此处，或<em>点击上传</em></div>
               <div slot="tip" class="el-upload__tip">仅支持 MP4/WebM 格式，最大 200MB</div>
@@ -179,14 +180,20 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
+    </div>
   </div>
 </template>
 
 <script>
 import { getITGuides, createITGuide, updateITGuide, deleteITGuide, publishITGuide, unpublishITGuide, uploadITGuideMedia, deleteITGuideMedia } from '@/api/it_guide'
+import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
   name: 'ITGuideList',
+  components: { DualControlDialog },
   data() {
     return {
       items: [],
@@ -218,8 +225,8 @@ export default {
         if (this.filters.is_published) params.is_published = this.filters.is_published
         if (this.filters.category) params.category = this.filters.category
         const res = await getITGuides(params)
-        this.items = res.data.data || []
-        this.categories = res.data.categories || []
+        this.items = res.data || []
+        this.categories = res.categories || []
       } catch (e) { console.error(e) } finally { this.loading = false }
     },
     handleSearch() { this.fetchItems() },
@@ -257,7 +264,7 @@ export default {
       try {
         const { getITGuide } = await import('@/api/it_guide')
         const res = await getITGuide(this.editingId)
-        const { steps, media } = res.data
+        const { steps, media } = res
         if (this.form.guide_type === 'step') {
           this.form.steps = (steps || []).map(s => ({
             id: s.id, title: s.title, description: s.description, sort_order: s.sort_order,
@@ -273,6 +280,7 @@ export default {
         }
       } catch (e) { console.error(e) }
     },
+    noopUpload() {},
     // 步骤操作
     addStep() { this.form.steps.push({ title: '', description: '', images: [], videoFile: null, videoUrl: '' }) },
     removeStep(idx) { this.form.steps.splice(idx, 1) },
@@ -334,25 +342,26 @@ export default {
       }
       this.saving = true
       try {
+        const dualToken = await this.$refs.dualControl.open()
         let guideId = this.editingId
         if (this.dialogMode === 'create') {
-          const res = await createITGuide(this.form)
-          guideId = res.data.data.id
+          const res = await createITGuide(this.form, dualToken)
+          guideId = res.data.id
         } else {
-          await updateITGuide(this.editingId, this.form)
+          await updateITGuide(this.editingId, this.form, dualToken)
           // 清除旧的媒体和步骤
           const { getITGuide, deleteITGuideStep, deleteITGuideMedia } = await import('@/api/it_guide')
           const old = await getITGuide(this.editingId)
-          for (const s of (old.data.steps || [])) { await deleteITGuideStep(this.editingId, s.id) }
-          for (const m of (old.data.media || [])) { await deleteITGuideMedia(this.editingId, m.id) }
+          for (const s of (old.data.steps || [])) { await deleteITGuideStep(this.editingId, s.id, dualToken) }
+          for (const m of (old.data.media || [])) { await deleteITGuideMedia(this.editingId, m.id, dualToken) }
         }
         // 上传步骤指南内容
         if (this.form.guide_type === 'step') {
           const { createITGuideStep, uploadITGuideMedia } = await import('@/api/it_guide')
           for (let i = 0; i < this.form.steps.length; i++) {
             const step = this.form.steps[i]
-            const stepRes = await createITGuideStep(guideId, { title: step.title, description: step.description, sort_order: i })
-            const newStepId = stepRes.data.data.id
+            const stepRes = await createITGuideStep(guideId, { title: step.title, description: step.description, sort_order: i }, dualToken)
+            const newStepId = stepRes.data.id
             // 上传图片
             for (const img of (step.images || [])) {
               if (img.raw) {
@@ -360,7 +369,7 @@ export default {
                 fd.append('file', img.raw)
                 fd.append('media_type', 'image')
                 fd.append('step_id', newStepId)
-                await uploadITGuideMedia(guideId, fd)
+                await uploadITGuideMedia(guideId, fd, dualToken)
               }
             }
             // 上传视频
@@ -369,7 +378,7 @@ export default {
               fd.append('file', step.videoFile)
               fd.append('media_type', 'video')
               fd.append('step_id', newStepId)
-              await uploadITGuideMedia(guideId, fd)
+              await uploadITGuideMedia(guideId, fd, dualToken)
             }
           }
         } else {
@@ -380,38 +389,46 @@ export default {
             fd.append('file', this.form.videoFile)
             fd.append('media_type', 'video')
             fd.append('step_id', '0')
-            await uploadITGuideMedia(guideId, fd)
+            await uploadITGuideMedia(guideId, fd, dualToken)
           }
         }
         this.$message.success(this.dialogMode === 'create' ? '创建成功' : '保存成功')
         this.dialogVisible = false
         this.fetchItems()
       } catch (e) {
-        console.error(e)
-        this.$message.error('保存失败')
+        if (e.message !== 'canceled') {
+          console.error(e)
+          this.$message.error('保存失败')
+        }
       } finally { this.saving = false }
     },
     // 发布/取消发布
     async handleTogglePublish(item) {
       try {
+        const dualToken = await this.$refs.dualControl.open()
         if (item.is_published) {
-          await unpublishITGuide(item.id)
+          await unpublishITGuide(item.id, dualToken)
           this.$message.success('已取消发布')
         } else {
-          await publishITGuide(item.id)
+          await publishITGuide(item.id, dualToken)
           this.$message.success('发布成功')
         }
         this.fetchItems()
-      } catch (e) { this.$message.error('操作失败') }
+      } catch (e) {
+        if (e.message !== 'canceled') this.$message.error('操作失败')
+      }
     },
     // 删除
     handleDelete(item) {
       this.$confirm(`确定删除指南"${item.title}"？`, '提示', { type: 'warning' }).then(async () => {
         try {
-          await deleteITGuide(item.id)
+          const dualToken = await this.$refs.dualControl.open()
+          await deleteITGuide(item.id, dualToken)
           this.$message.success('删除成功')
           this.fetchItems()
-        } catch (e) { this.$message.error('删除失败') }
+        } catch (e) {
+          if (e.message !== 'canceled') this.$message.error('删除失败')
+        }
       }).catch(() => {})
     }
   }
@@ -419,7 +436,17 @@ export default {
 </script>
 
 <style scoped>
-.it-guide-page { max-width: 1200px; }
+.it-guide-page {
+  padding: 20px;
+}
+
+.page-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #E2E8F0;
+}
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
 .page-title { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 700; color: #1E293B; margin: 0; }
 .filter-bar { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }

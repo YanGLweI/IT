@@ -504,7 +504,8 @@ export default {
   flex-shrink: 0;
   background: #f8fafc;
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #E2E8F0;
   padding: 16px;
   overflow-y: auto;
 }
@@ -567,7 +568,8 @@ export default {
   flex-direction: column;
   background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #E2E8F0;
   overflow: hidden;
 }
 

@@ -11,38 +11,48 @@ export function getITGuide(id) {
 }
 
 // 创建指南
-export function createITGuide(data) {
+export function createITGuide(data, dualToken) {
   const formData = new FormData()
   formData.append('title', data.title)
   formData.append('description', data.description || '')
   formData.append('guide_type', data.guide_type)
   formData.append('category', data.category || '')
-  return request.post('/it-guides', formData)
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.post('/it-guides', formData, config)
 }
 
 // 更新指南基本信息
-export function updateITGuide(id, data) {
+export function updateITGuide(id, data, dualToken) {
   const formData = new FormData()
   if (data.title) formData.append('title', data.title)
   formData.append('description', data.description || '')
   formData.append('category', data.category || '')
   if (data.sort_order !== undefined) formData.append('sort_order', data.sort_order)
-  return request.put(`/it-guides/${id}`, formData)
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/it-guides/${id}`, formData, config)
 }
 
 // 删除指南
-export function deleteITGuide(id) {
-  return request.delete(`/it-guides/${id}`)
+export function deleteITGuide(id, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.delete(`/it-guides/${id}`, config)
 }
 
 // 发布指南
-export function publishITGuide(id) {
-  return request.put(`/it-guides/${id}/publish`)
+export function publishITGuide(id, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/it-guides/${id}/publish`, {}, config)
 }
 
 // 取消发布
-export function unpublishITGuide(id) {
-  return request.put(`/it-guides/${id}/unpublish`)
+export function unpublishITGuide(id, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/it-guides/${id}/unpublish`, {}, config)
 }
 
 // 获取指南步骤列表
@@ -51,12 +61,14 @@ export function getITGuideSteps(guideId) {
 }
 
 // 创建步骤
-export function createITGuideStep(guideId, data) {
+export function createITGuideStep(guideId, data, dualToken) {
   const formData = new FormData()
   formData.append('title', data.title || '')
   formData.append('description', data.description || '')
   formData.append('sort_order', data.sort_order || 0)
-  return request.post(`/it-guides/${guideId}/steps`, formData)
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.post(`/it-guides/${guideId}/steps`, formData, config)
 }
 
 // 更新步骤
@@ -69,8 +81,10 @@ export function updateITGuideStep(guideId, stepId, data) {
 }
 
 // 删除步骤
-export function deleteITGuideStep(guideId, stepId) {
-  return request.delete(`/it-guides/${guideId}/steps/${stepId}`)
+export function deleteITGuideStep(guideId, stepId, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.delete(`/it-guides/${guideId}/steps/${stepId}`, config)
 }
 
 // 批量更新步骤排序
@@ -79,14 +93,15 @@ export function reorderITGuideSteps(guideId, stepIds) {
 }
 
 // 上传媒体文件
-export function uploadITGuideMedia(guideId, formData) {
-  return request.post(`/it-guides/${guideId}/media`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 120000
-  })
+export function uploadITGuideMedia(guideId, formData, dualToken) {
+  const config = { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
+  if (dualToken) config.headers['X-Dual-Control-Token'] = dualToken
+  return request.post(`/it-guides/${guideId}/media`, formData, config)
 }
 
 // 删除媒体文件
-export function deleteITGuideMedia(guideId, mediaId) {
-  return request.delete(`/it-guides/${guideId}/media/${mediaId}`)
+export function deleteITGuideMedia(guideId, mediaId, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.delete(`/it-guides/${guideId}/media/${mediaId}`, config)
 }

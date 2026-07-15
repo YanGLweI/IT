@@ -40,13 +40,13 @@
             <!-- 图片网格 -->
             <div v-if="getStepImages(step.id).length" class="step-images">
               <div v-for="img in getStepImages(step.id)" :key="img.id" class="step-image-wrap" @click="previewImage(img)">
-                <img :src="img.file_path" :alt="img.file_name" class="step-image" loading="lazy" />
+                <img :src="getFileUrl(img.file_path)" :alt="img.file_name" class="step-image" loading="lazy" />
               </div>
             </div>
 
             <!-- 步骤视频 -->
             <div v-if="getStepVideo(step.id)" class="step-video-wrap">
-              <video controls preload="metadata" :src="getStepVideo(step.id).file_path" style="width: 100%; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
+              <video controls preload="metadata" :src="getFileUrl(getStepVideo(step.id).file_path)" style="width: 100%; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
             </div>
           </div>
         </div>
@@ -58,7 +58,7 @@
           <p style="white-space: pre-wrap;">{{ guide.description }}</p>
         </div>
         <div v-if="guideVideo" class="video-player-wrap">
-          <video controls preload="metadata" :src="guideVideo.file_path" style="width: 100%; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
+          <video controls preload="metadata" :src="getFileUrl(guideVideo.file_path)" style="width: 100%; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
         </div>
       </div>
     </template>
@@ -71,7 +71,7 @@
 
     <!-- 图片全屏预览 -->
     <div v-if="imageViewer.visible" class="image-viewer-overlay" @click="imageViewer.visible = false">
-      <img :src="imageViewer.url" class="viewer-image" />
+      <img :src="getFileUrl(imageViewer.url)" class="viewer-image" />
     </div>
   </div>
 </template>
@@ -103,10 +103,15 @@ export default {
       this.loading = true
       try {
         const res = await getPublicITGuideDetail(this.$route.params.id)
-        const data = res.data.data || res.data
-        this.guide = data
-        this.steps = data.steps || []
-        this.media = data.media || []
+        const body = res.data
+        this.guide = body.data
+        this.steps = body.steps || []
+        // 媒体数据：优先从步骤嵌套中提取，兼容顶层 media
+        const stepMedia = []
+        ;(body.steps || []).forEach(s => {
+          if (s.media && s.media.length) stepMedia.push(...s.media)
+        })
+        this.media = stepMedia.length ? stepMedia : (body.media || [])
       } catch (e) {
         console.error('获取指南详情失败:', e)
         this.guide = null
@@ -119,6 +124,10 @@ export default {
     },
     getStepVideo(stepId) {
       return this.media.find(m => m.step_id === stepId && m.media_type === 'video') || null
+    },
+    getFileUrl(path) {
+      if (!path) return ''
+      return path.startsWith('/') ? path : '/' + path
     },
     previewImage(img) {
       this.imageViewer.url = img.file_path
