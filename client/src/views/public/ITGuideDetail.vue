@@ -311,9 +311,12 @@ export default {
   border: 1px solid #E2E8F0;
   overflow: hidden;
 }
-.step-carousel .el-carousel__container { height: auto; }
-.step-carousel .el-carousel__item { display: flex; align-items: center; justify-content: center; background: #F8FAFC; }
-.carousel-image-wrap { width: 100%; cursor: pointer; }
+.el-carousel__container { height: auto; }
+.el-carousel__item { display: flex; align-items: center; justify-content: center; background: #F8FAFC; }
+.carousel-image-wrap { 
+  width: 100%; 
+  cursor: pointer; 
+}
 .carousel-image { width: 100%; height: auto; display: block; }
 
 /* 单张图片 */
