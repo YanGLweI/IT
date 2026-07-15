@@ -117,7 +117,7 @@
 
         <!-- 步骤指南编辑器 -->
         <div v-if="form.guide_type === 'step'">
-          <div v-for="(step, idx) in form.steps" :key="idx" class="step-card" :class="{ dragging: dragIndex === idx }" draggable="true" @dragstart="onDragStart(idx)" @dragover.prevent="onDragOver(idx)" @drop="onDrop(idx)" @dragend="onDragEnd" @paste="(e) => onPasteImage(e, idx)" tabindex="0">
+          <div v-for="(step, idx) in form.steps" :key="idx" class="step-card" :class="{ dragging: dragIndex === idx, 'is-focused': focusedStepIdx === idx }" draggable="true" @dragstart="onDragStart(idx)" @dragover.prevent="onDragOver(idx)" @drop="onDrop(idx)" @dragend="onDragEnd" @mousedown="focusedStepIdx = idx">
             <div class="step-drag-handle">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="#94A3B8"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
             </div>
@@ -211,10 +211,18 @@ export default {
         steps: [], videoDescription: '', videoFile: null, videoUrl: ''
       },
       // 拖拽
-      dragIndex: -1
+      dragIndex: -1,
+      focusedStepIdx: 0
     }
   },
   created() { this.fetchItems() },
+  mounted() {
+    this._pasteHandler = (e) => this.onGlobalPaste(e)
+    document.addEventListener('paste', this._pasteHandler)
+  },
+  beforeDestroy() {
+    document.removeEventListener('paste', this._pasteHandler)
+  },
   methods: {
     async fetchItems() {
       this.loading = true
@@ -294,25 +302,32 @@ export default {
     },
     onImageChange(stepIdx, fileList) { this.form.steps[stepIdx].images = fileList },
     onImageRemove(stepIdx, fileList) { this.form.steps[stepIdx].images = fileList },
-    // 粘贴图片
-    onPasteImage(e, stepIdx) {
-      const items = (e.clipboardData || e.originalEvent.clipboardData).items
+    // 全局粘贴监听（弹窗打开时生效）
+    onGlobalPaste(e) {
+      if (!this.dialogVisible || this.dialogStep !== 2) return
+      const items = (e.clipboardData || window.clipboardData).items
+      if (!items) return
       for (const item of items) {
         if (item.type.startsWith('image/')) {
           const file = item.getAsFile()
           if (!file) continue
           const isLt5M = file.size / 1024 / 1024 < 5
-          if (!isLt5M) { this.$message.error('图片大小不能超过 5MB'); continue }
-          // 生成预览 URL
+          if (!isLt5M) { this.$message.error('图片大小不能超过 5MB'); return }
+          // 使用最后点击的步骤卡片
+          const stepIdx = this.focusedStepIdx
           const url = URL.createObjectURL(file)
           const uid = Date.now() + Math.random()
-          file.uid = uid
-          file.name = file.name || `pasted-${uid}.png`
-          file.status = 'success'
-          file.url = url
-          this.form.steps[stepIdx].images.push(file)
-          this.$message.success('图片已粘贴')
-          break // 每次粘贴只处理第一张图片
+          // File 对象属性只读，需包装为新对象
+          const wrapped = {
+            uid: uid,
+            name: file.name || `pasted-${uid}.png`,
+            status: 'success',
+            url: url,
+            raw: file
+          }
+          this.form.steps[stepIdx].images.push(wrapped)
+          this.$message.success('图片已粘贴到步骤 ' + (stepIdx + 1))
+          break
         }
       }
     },
@@ -516,8 +531,8 @@ export default {
 .step-label { font-size: 15px; font-weight: 600; color: #1E293B; }
 .add-step-btn { color: #409EFF; border: 1px dashed #BFDBFE; border-radius: 8px; padding: 6px 16px; background: #EFF6FF; }
 .add-step-btn:hover { background: #DBEAFE; }
-.step-card { display: flex; gap: 12px; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fff; transition: opacity 0.15s ease; outline: none; }
-.step-card:focus { border-color: #BFDBFE; box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.08); }
+.step-card { display: flex; gap: 12px; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fff; transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.15s ease; }
+.step-card.is-focused { border-color: #BFDBFE; box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1); }
 .step-card.dragging { opacity: 0.6; }
 .step-drag-handle { cursor: grab; display: flex; align-items: flex-start; padding-top: 4px; flex-shrink: 0; }
 .step-drag-handle:active { cursor: grabbing; }
