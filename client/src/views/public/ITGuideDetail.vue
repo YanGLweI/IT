@@ -38,7 +38,7 @@
             <p class="step-desc" v-if="step.description">{{ step.description }}</p>
 
             <!-- 图片走马灯 -->
-            <el-carousel v-if="getStepImages(step.id).length > 1" :interval="0" trigger="click" class="step-carousel" arrow="always" indicator-position="bottom">
+            <el-carousel v-if="getStepImages(step.id).length > 1" :interval="0" trigger="click" indicator-position="outside">
               <el-carousel-item v-for="img in getStepImages(step.id)" :key="img.id">
                 <div class="carousel-image-wrap" @click="previewImage(img)">
                   <img :src="getFileUrl(img.file_path)" :alt="img.file_name" class="carousel-image" loading="lazy" />
