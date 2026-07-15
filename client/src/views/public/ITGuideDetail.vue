@@ -135,6 +135,7 @@ export default {
     },
     getFileUrl(path) {
       if (!path) return ''
+      if (!path.includes('uploads/it_guide_media/')) return ''
       return path.startsWith('/') ? path : '/' + path
     },
     previewImage(img) {
@@ -317,7 +318,7 @@ export default {
   width: 100%; 
   cursor: pointer; 
 }
-.carousel-image { width: 100%; height: auto; display: block; }
+.carousel-image { max-width: 100%; max-height: 480px; width: auto; height: auto; display: block; object-fit: contain; }
 
 /* 单张图片 */
 .step-images {
@@ -333,6 +334,11 @@ export default {
   overflow: hidden;
   cursor: pointer;
   transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 480px;
+  background: #F8FAFC;
 }
 
 .step-image-wrap:hover {
@@ -341,10 +347,12 @@ export default {
 }
 
 .step-image {
-  width: 100%;
+  max-width: 100%;
+  max-height: 480px;
+  width: auto;
   height: auto;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 /* 步骤视频 */

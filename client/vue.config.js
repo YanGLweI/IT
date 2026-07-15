@@ -11,7 +11,7 @@ module.exports = defineConfig({
         changeOrigin: true,
         secure: false
       },
-      '/uploads': {
+      '/uploads/it_guide_media': {
         target: 'https://localhost:8080',
         changeOrigin: true,
         secure: false

@@ -301,8 +301,8 @@ export default {
             videoUrl: (media || []).find(m => m.step_id === s.id && m.media_type === 'video')?.file_path || ''
           }))
         } else {
-          // 视频指南：用 videoDescription 作为指南描述
-          this.form.description = this.form.videoDescription || ''
+          // 视频指南：用 description 作为指南说明
+          this.form.videoDescription = this.form.description || ''
           const guideMedia = (media || []).filter(m => m.step_id === 0)
           const video = guideMedia.find(m => m.media_type === 'video')
           if (video) { this.form.videoFile = { name: video.file_name, id: video.id }; this.form.videoUrl = video.file_path; this.form._hasNewVideo = false }
@@ -470,18 +470,24 @@ export default {
           const oldMedia = old.media || []
 
           if (this.form.guide_type === 'step') {
+            // 构建旧步骤 ID 映射
+            const oldStepMap = {}
+            for (const s of oldSteps) { oldStepMap[s.id] = s }
+            const processedOldStepIds = new Set()
+
             for (let i = 0; i < this.form.steps.length; i++) {
               const step = this.form.steps[i]
               let stepId
 
-              if (i < oldSteps.length) {
-                // 更新已有步骤
-                stepId = oldSteps[i].id
+              if (step.id && oldStepMap[step.id]) {
+                // 按 ID 匹配已有步骤
+                stepId = step.id
+                processedOldStepIds.add(stepId)
                 await updateITGuideStep(this.editingId, stepId, {
                   title: step.title, description: step.description, sort_order: i
                 }, dualToken)
               } else {
-                // 创建新步骤
+                // 新步骤（无 id 或 id 不在旧列表中）
                 const stepRes = await createITGuideStep(this.editingId, {
                   title: step.title, description: step.description, sort_order: i
                 }, dualToken)
@@ -530,9 +536,11 @@ export default {
               }
             }
 
-            // 删除多余的旧步骤（新步骤数少于旧步骤数时）
-            for (let i = this.form.steps.length; i < oldSteps.length; i++) {
-              try { await deleteITGuideStep(this.editingId, oldSteps[i].id, dualToken) } catch (e) {}
+            // 删除未被匹配的旧步骤
+            for (const s of oldSteps) {
+              if (!processedOldStepIds.has(s.id)) {
+                try { await deleteITGuideStep(this.editingId, s.id, dualToken) } catch (e) {}
+              }
             }
           } else {
             // 视频指南：处理视频更新

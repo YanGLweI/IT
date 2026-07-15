@@ -190,6 +190,9 @@ func DeleteITGuide(c *gin.Context) {
 			os.Remove(m.FilePath)
 		}
 	}
+	// 清理指南媒体目录
+	guideMediaDir := filepath.Join(config.Cfg.Upload.ITGuideMediaPath, fmt.Sprintf("%d", guide.ID))
+	os.RemoveAll(guideMediaDir)
 
 	// 级联删除
 	database.GetDB().Where("guide_id = ?", guide.ID).Delete(&models.ITGuideStep{})
@@ -333,10 +336,9 @@ func CreateITGuideStep(c *gin.Context) {
 func UpdateITGuideStep(c *gin.Context) {
 	guideID, _ := strconv.Atoi(c.Param("id"))
 	stepID, _ := strconv.Atoi(c.Param("stepId"))
-	_ = guideID
 
 	var step models.ITGuideStep
-	if err := database.GetDB().First(&step, stepID).Error; err != nil {
+	if err := database.GetDB().Where("id = ? AND guide_id = ?", stepID, guideID).First(&step, stepID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "步骤不存在"})
 		return
 	}
@@ -385,6 +387,11 @@ func DeleteITGuideStep(c *gin.Context) {
 	for _, m := range mediaList {
 		if m.FilePath != "" {
 			os.Remove(m.FilePath)
+			dir := filepath.Dir(m.FilePath)
+			entries, _ := os.ReadDir(dir)
+			if len(entries) == 0 {
+				os.Remove(dir)
+			}
 		}
 	}
 	database.GetDB().Where("guide_id = ? AND step_id = ?", step.GuideID, step.ID).Delete(&models.ITGuideMedia{})
@@ -526,6 +533,11 @@ func DeleteITGuideMedia(c *gin.Context) {
 
 	if media.FilePath != "" {
 		os.Remove(media.FilePath)
+		dir := filepath.Dir(media.FilePath)
+		entries, _ := os.ReadDir(dir)
+		if len(entries) == 0 {
+			os.Remove(dir)
+		}
 	}
 	database.GetDB().Delete(&media)
 

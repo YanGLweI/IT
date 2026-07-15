@@ -15,7 +15,7 @@ func SetupRouter() *gin.Engine {
 	r.Use(middleware.Cors())
 
 	// 静态文件服务
-	r.Static("/uploads", "./uploads")
+	r.Static("/uploads/it_guide_media", "./uploads/it_guide_media")
 
 	// API路由组
 	api := r.Group("/api")
