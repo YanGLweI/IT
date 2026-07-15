@@ -24,7 +24,7 @@
             发布于 {{ formatDate(guide.published_at) }}
           </span>
         </div>
-        <p class="detail-desc" v-if="guide.description">{{ guide.description }}</p>
+        <p class="detail-desc" v-if="guide.description && guide.guide_type === 'step'">{{ guide.description }}</p>
       </div>
 
       <!-- 步骤指南 -->

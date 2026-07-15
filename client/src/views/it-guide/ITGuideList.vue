@@ -98,7 +98,7 @@
           <el-form-item label="分类">
             <el-input v-model="form.category" placeholder="如：系统操作、网络配置" />
           </el-form-item>
-          <el-form-item label="描述">
+          <el-form-item label="描述" v-if="form.guide_type !== 'video'">
             <el-input v-model="form.description" type="textarea" :rows="3" placeholder="简要描述指南内容" />
           </el-form-item>
         </el-form>
@@ -285,7 +285,8 @@ export default {
             videoUrl: (media || []).find(m => m.step_id === s.id && m.media_type === 'video')?.file_path || ''
           }))
         } else {
-          this.form.videoDescription = this.form.description
+          // 视频指南：用 videoDescription 作为指南描述
+          this.form.description = this.form.videoDescription || ''
           const guideMedia = (media || []).filter(m => m.step_id === 0)
           const video = guideMedia.find(m => m.media_type === 'video')
           if (video) { this.form.videoFile = { name: video.file_name, id: video.id }; this.form.videoUrl = video.file_path }
@@ -384,6 +385,10 @@ export default {
       this.saving = true
       try {
         const dualToken = await this.$refs.dualControl.open()
+        // 视频指南：将 videoDescription 同步到 description
+        if (this.form.guide_type === 'video') {
+          this.form.description = this.form.videoDescription || ''
+        }
         let guideId = this.editingId
         if (this.dialogMode === 'create') {
           const res = await createITGuide(this.form, dualToken)
