@@ -117,7 +117,7 @@
 
         <!-- 步骤指南编辑器 -->
         <div v-if="form.guide_type === 'step'">
-          <div v-for="(step, idx) in form.steps" :key="idx" class="step-card" :class="{ dragging: dragIndex === idx }" draggable="true" @dragstart="onDragStart(idx)" @dragover.prevent="onDragOver(idx)" @drop="onDrop(idx)" @dragend="onDragEnd">
+          <div v-for="(step, idx) in form.steps" :key="idx" class="step-card" :class="{ dragging: dragIndex === idx }" draggable="true" @dragstart="onDragStart(idx)" @dragover.prevent="onDragOver(idx)" @drop="onDrop(idx)" @dragend="onDragEnd" @paste="(e) => onPasteImage(e, idx)" tabindex="0">
             <div class="step-drag-handle">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="#94A3B8"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
             </div>
@@ -133,7 +133,7 @@
 
               <!-- 图片上传 -->
               <div class="media-section">
-                <div class="media-label">图片指引</div>
+                <div class="media-label">图片指引 <span class="paste-hint">支持 Ctrl+V 粘贴</span></div>
                 <el-upload action="#" :http-request="noopUpload" :file-list="step.images" list-type="picture-card" :on-change="(f, fl) => onImageChange(idx, fl)" :on-remove="(f, fl) => onImageRemove(idx, fl)" :before-upload="beforeImageUpload" accept="image/*" multiple>
                   <i class="el-icon-plus"></i>
                 </el-upload>
@@ -294,6 +294,28 @@ export default {
     },
     onImageChange(stepIdx, fileList) { this.form.steps[stepIdx].images = fileList },
     onImageRemove(stepIdx, fileList) { this.form.steps[stepIdx].images = fileList },
+    // 粘贴图片
+    onPasteImage(e, stepIdx) {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (!file) continue
+          const isLt5M = file.size / 1024 / 1024 < 5
+          if (!isLt5M) { this.$message.error('图片大小不能超过 5MB'); continue }
+          // 生成预览 URL
+          const url = URL.createObjectURL(file)
+          const uid = Date.now() + Math.random()
+          file.uid = uid
+          file.name = file.name || `pasted-${uid}.png`
+          file.status = 'success'
+          file.url = url
+          this.form.steps[stepIdx].images.push(file)
+          this.$message.success('图片已粘贴')
+          break // 每次粘贴只处理第一张图片
+        }
+      }
+    },
     // 视频上传
     beforeVideoUpload(file, stepIdx) {
       const isVideo = file.type.startsWith('video/')
@@ -494,7 +516,8 @@ export default {
 .step-label { font-size: 15px; font-weight: 600; color: #1E293B; }
 .add-step-btn { color: #409EFF; border: 1px dashed #BFDBFE; border-radius: 8px; padding: 6px 16px; background: #EFF6FF; }
 .add-step-btn:hover { background: #DBEAFE; }
-.step-card { display: flex; gap: 12px; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fff; transition: opacity 0.15s ease; }
+.step-card { display: flex; gap: 12px; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fff; transition: opacity 0.15s ease; outline: none; }
+.step-card:focus { border-color: #BFDBFE; box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.08); }
 .step-card.dragging { opacity: 0.6; }
 .step-drag-handle { cursor: grab; display: flex; align-items: flex-start; padding-top: 4px; flex-shrink: 0; }
 .step-drag-handle:active { cursor: grabbing; }
@@ -505,6 +528,7 @@ export default {
 .step-delete-btn:hover { color: #DC2626; }
 .media-section { margin-top: 12px; }
 .media-label { font-size: 13px; font-weight: 500; color: #64748B; margin-bottom: 8px; }
+.paste-hint { font-size: 11px; color: #94A3B8; font-weight: 400; margin-left: 6px; }
 .video-preview-wrap { position: relative; }
 .remove-video-btn { position: absolute; top: 8px; right: 8px; color: #fff; background: rgba(0,0,0,0.5); border-radius: 6px; }
 .empty-steps { text-align: center; padding: 40px 20px; color: #94A3B8; font-size: 14px; }
