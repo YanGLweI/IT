@@ -54,7 +54,8 @@
 
             <!-- 步骤视频 -->
             <div v-if="getStepVideo(step.id)" class="step-video-wrap">
-              <video controls preload="metadata" :src="getFileUrl(getStepVideo(step.id).file_path)" class="step-video" loading="lazy"></video>
+              <iframe v-if="getStepVideo(step.id).embed_url" :src="getStepVideo(step.id).embed_url" scrolling="no" border="0" frameborder="0" allowfullscreen="true" sandbox="allow-scripts allow-same-origin allow-presentation" class="step-video-embed"></iframe>
+              <video v-else controls preload="metadata" :src="getFileUrl(getStepVideo(step.id).file_path)" class="step-video" loading="lazy"></video>
             </div>
           </div>
         </div>
@@ -66,7 +67,8 @@
           <p style="white-space: pre-wrap;">{{ guide.description }}</p>
         </div>
         <div v-if="guideVideo" class="video-player-wrap">
-          <video controls preload="metadata" :src="getFileUrl(guideVideo.file_path)" class="guide-video" loading="lazy"></video>
+          <iframe v-if="guideVideo.embed_url" :src="guideVideo.embed_url" scrolling="no" border="0" frameborder="0" allowfullscreen="true" sandbox="allow-scripts allow-same-origin allow-presentation" class="guide-video-embed"></iframe>
+          <video v-else controls preload="metadata" :src="getFileUrl(guideVideo.file_path)" class="guide-video" loading="lazy"></video>
         </div>
       </div>
     </template>
@@ -370,6 +372,13 @@ export default {
   display: block;
   object-fit: contain;
 }
+.step-video-embed {
+  width: 100%;
+  height: 480px;
+  border-radius: 12px;
+  border: none;
+  display: block;
+}
 
 /* 视频指南 */
 .video-guide-text {
@@ -399,6 +408,13 @@ export default {
   border: 1px solid #E2E8F0;
   display: block;
   object-fit: contain;
+}
+.guide-video-embed {
+  width: 100%;
+  height: 540px;
+  border-radius: 12px;
+  border: none;
+  display: block;
 }
 
 /* 图片查看器 */

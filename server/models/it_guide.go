@@ -46,6 +46,7 @@ type ITGuideMedia struct {
 	FilePath  string `gorm:"type:varchar(500)" json:"file_path"`
 	FileSize  int64  `gorm:"type:bigint" json:"file_size"`
 	FileType  string `gorm:"type:varchar(255)" json:"file_type"`
+	EmbedURL  string `gorm:"type:varchar(500)" json:"embed_url"` // 嵌入视频URL（如B站iframe src）
 	SortOrder int    `gorm:"type:int;default:0" json:"sort_order"`
 }
 

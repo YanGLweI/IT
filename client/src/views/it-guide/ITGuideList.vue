@@ -142,15 +142,38 @@
               <!-- 视频上传 -->
               <div class="media-section">
                 <div class="media-label">视频指引（可选）</div>
-                <div v-if="step.videoFile" class="video-preview-wrap">
-                  <video :src="step.videoUrl" controls style="width: 100%; max-height: 200px; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
-                  <el-button class="remove-video-btn" @click="removeStepVideo(idx)" title="移除视频">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </el-button>
+                <!-- 模式切换 -->
+                <div style="margin-bottom: 10px;">
+                  <el-radio-group v-model="step.videoMode" size="small">
+                    <el-radio-button label="upload">上传视频</el-radio-button>
+                    <el-radio-button label="embed">嵌入视频</el-radio-button>
+                  </el-radio-group>
                 </div>
-                <el-upload v-else action="#" :http-request="noopUpload" :show-file-list="false" :before-upload="(f) => beforeVideoUpload(f, idx)" accept="video/mp4,video/webm">
-                  <el-button size="small" icon="el-icon-video-camera">上传视频</el-button>
-                </el-upload>
+                <!-- 上传模式 -->
+                <template v-if="step.videoMode === 'upload'">
+                  <div v-if="step.videoFile" class="video-preview-wrap">
+                    <video :src="step.videoUrl" controls style="width: 100%; max-height: 200px; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
+                    <el-button class="remove-video-btn" @click="removeStepVideo(idx)" title="移除视频">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </el-button>
+                  </div>
+                  <el-upload v-else action="#" :http-request="noopUpload" :show-file-list="false" :before-upload="(f) => beforeVideoUpload(f, idx)" accept="video/mp4,video/webm">
+                    <el-button size="small" icon="el-icon-video-camera">上传视频</el-button>
+                  </el-upload>
+                </template>
+                <!-- 嵌入模式 -->
+                <template v-else>
+                  <div v-if="step.embedUrl" class="video-preview-wrap">
+                    <iframe :src="step.embedUrl" style="width: 100%; height: 200px; border-radius: 12px; border: 1px solid #E2E8F0;" frameborder="0" allowfullscreen></iframe>
+                    <el-button class="remove-video-btn" @click="removeStepEmbedVideo(idx)" title="移除嵌入视频">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </el-button>
+                  </div>
+                  <div v-else>
+                    <el-input v-model="step.embedInput" type="textarea" :rows="3" placeholder="粘贴iframe嵌入代码或视频URL..." style="margin-bottom: 8px;" />
+                    <el-button size="small" type="primary" @click="applyStepEmbed(idx)">应用嵌入视频</el-button>
+                  </div>
+                </template>
               </div>
             </div>
           </div>
@@ -164,17 +187,40 @@
           <el-input v-model="form.videoDescription" type="textarea" :rows="8" placeholder="请输入指南说明..." class="video-desc-input" />
           <div class="media-section" style="margin-top: 20px;">
             <div class="media-label">教程视频</div>
-            <div v-if="form.videoFile" class="video-preview-wrap">
-              <video :src="form.videoUrl" controls style="width: 100%; max-height: 360px; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
-              <el-button class="remove-video-btn" @click="removeGuideVideo" title="移除视频">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </el-button>
+            <!-- 模式切换 -->
+            <div style="margin-bottom: 10px;">
+              <el-radio-group v-model="form.videoMode" size="small">
+                <el-radio-button label="upload">上传视频</el-radio-button>
+                <el-radio-button label="embed">嵌入视频</el-radio-button>
+              </el-radio-group>
             </div>
-            <el-upload v-else drag action="#" :http-request="noopUpload" :show-file-list="false" :before-upload="beforeGuideVideoUpload" accept="video/mp4,video/webm" class="video-drag-upload">
-              <i class="el-icon-upload2" style="font-size: 40px; color: #94A3B8;"></i>
-              <div class="el-upload__text">将视频文件拖到此处，或<em>点击上传</em></div>
-              <div slot="tip" class="el-upload__tip">仅支持 MP4/WebM 格式，最大 200MB</div>
-            </el-upload>
+            <!-- 上传模式 -->
+            <template v-if="form.videoMode === 'upload'">
+              <div v-if="form.videoFile" class="video-preview-wrap">
+                <video :src="form.videoUrl" controls style="width: 100%; max-height: 360px; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
+                <el-button class="remove-video-btn" @click="removeGuideVideo" title="移除视频">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </el-button>
+              </div>
+              <el-upload v-else drag action="#" :http-request="noopUpload" :show-file-list="false" :before-upload="beforeGuideVideoUpload" accept="video/mp4,video/webm" class="video-drag-upload">
+                <i class="el-icon-upload2" style="font-size: 40px; color: #94A3B8;"></i>
+                <div class="el-upload__text">将视频文件拖到此处，或<em>点击上传</em></div>
+                <div slot="tip" class="el-upload__tip">仅支持 MP4/WebM 格式，最大 200MB</div>
+              </el-upload>
+            </template>
+            <!-- 嵌入模式 -->
+            <template v-else>
+              <div v-if="form.embedUrl" class="video-preview-wrap">
+                <iframe :src="form.embedUrl" style="width: 100%; height: 360px; border-radius: 12px; border: 1px solid #E2E8F0;" frameborder="0" allowfullscreen></iframe>
+                <el-button class="remove-video-btn" @click="removeGuideEmbedVideo" title="移除嵌入视频">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </el-button>
+              </div>
+              <div v-else>
+                <el-input v-model="form.embedInput" type="textarea" :rows="4" placeholder="粘贴iframe嵌入代码或视频URL..." style="margin-bottom: 8px;" />
+                <el-button size="small" type="primary" @click="applyGuideEmbed">应用嵌入视频</el-button>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -212,7 +258,8 @@ export default {
       saving: false,
       form: {
         title: '', description: '', guide_type: '', category: '',
-        steps: [], videoDescription: '', videoFile: null, videoUrl: '', _hasNewVideo: false
+        steps: [], videoDescription: '', videoFile: null, videoUrl: '', _hasNewVideo: false,
+        videoMode: 'upload', embedUrl: '', embedInput: ''
       },
       // 拖拽
       dragIndex: -1,
@@ -265,12 +312,15 @@ export default {
       this.form.videoFile = null
       this.form.videoUrl = ''
       this.form._hasNewVideo = false
+      this.form.videoMode = 'upload'
+      this.form.embedUrl = ''
+      this.form.embedInput = ''
       this.dialogStep = 1
       this.dialogVisible = true
       this.contentLoaded = false
     },
     resetForm() {
-      this.form = { title: '', description: '', guide_type: '', category: '', steps: [], videoDescription: '', videoFile: null, videoUrl: '', _hasNewVideo: false }
+      this.form = { title: '', description: '', guide_type: '', category: '', steps: [], videoDescription: '', videoFile: null, videoUrl: '', _hasNewVideo: false, videoMode: 'upload', embedUrl: '', embedInput: '' }
     },
     resetDialog() { this.resetForm(); this.dialogStep = 1; this.contentLoaded = false; this._serverImageMap = {} },
     goToStep2() {
@@ -294,24 +344,42 @@ export default {
           }
         }
         if (this.form.guide_type === 'step') {
-          this.form.steps = (steps || []).map(s => ({
-            id: s.id, title: s.title, description: s.description, sort_order: s.sort_order,
-            images: (media || []).filter(m => m.step_id === s.id && m.media_type === 'image').map(m => ({ name: m.file_name, url: m.file_path, id: m.id })),
-            videoFile: (media || []).find(m => m.step_id === s.id && m.media_type === 'video'),
-            videoUrl: (media || []).find(m => m.step_id === s.id && m.media_type === 'video')?.file_path || ''
-          }))
+          this.form.steps = (steps || []).map(s => {
+            const stepVideo = (media || []).find(m => m.step_id === s.id && m.media_type === 'video')
+            return {
+              id: s.id, title: s.title, description: s.description, sort_order: s.sort_order,
+              images: (media || []).filter(m => m.step_id === s.id && m.media_type === 'image').map(m => ({ name: m.file_name, url: m.file_path, id: m.id })),
+              videoFile: stepVideo && stepVideo.file_path ? stepVideo : null,
+              videoUrl: stepVideo?.file_path || '',
+              videoMode: stepVideo?.embed_url ? 'embed' : 'upload',
+              embedUrl: stepVideo?.embed_url || '',
+              embedInput: ''
+            }
+          })
         } else {
           // 视频指南：用 description 作为指南说明
           this.form.videoDescription = this.form.description || ''
           const guideMedia = (media || []).filter(m => m.step_id === 0)
           const video = guideMedia.find(m => m.media_type === 'video')
-          if (video) { this.form.videoFile = { name: video.file_name, id: video.id }; this.form.videoUrl = video.file_path; this.form._hasNewVideo = false }
+          if (video) {
+            if (video.embed_url) {
+              // 嵌入视频
+              this.form.videoMode = 'embed'
+              this.form.embedUrl = video.embed_url
+              this.form.embedInput = ''
+            } else {
+              // 文件视频
+              this.form.videoFile = { name: video.file_name, id: video.id }
+              this.form.videoUrl = video.file_path
+              this.form._hasNewVideo = false
+            }
+          }
         }
       } catch (e) { console.error(e) } finally { this.contentLoaded = true }
     },
     noopUpload() {},
     // 步骤操作
-    addStep() { this.form.steps.push({ title: '', description: '', images: [], videoFile: null, videoUrl: '' }) },
+    addStep() { this.form.steps.push({ title: '', description: '', images: [], videoFile: null, videoUrl: '', videoMode: 'upload', embedUrl: '', embedInput: '' }) },
     removeStep(idx) { this.form.steps.splice(idx, 1) },
     // 图片上传
     beforeImageUpload(file) {
@@ -339,7 +407,7 @@ export default {
     },
     // 全局粘贴监听（弹窗打开时生效）
     onGlobalPaste(e) {
-      if (!this.dialogVisible || this.dialogStep !== 2) return
+      if (!this.dialogVisible || this.dialogStep !== 2 || this.form.guide_type !== 'step') return
       const items = (e.clipboardData || window.clipboardData).items
       if (!items) return
       for (const item of items) {
@@ -397,6 +465,41 @@ export default {
       this.form.videoUrl = ''
       this.form._hasNewVideo = false
     },
+    // 嵌入视频处理
+    _extractEmbedSrc(input) {
+      if (!input) return ''
+      // 尝试从 iframe 代码中提取 src
+      const iframeMatch = input.match(/src=["']([^"']+)["']/)
+      if (iframeMatch) {
+        const src = iframeMatch[1]
+        return src.startsWith('//') ? 'https:' + src : src
+      }
+      // 如果是直接 URL，确保有协议
+      if (input.startsWith('//')) return 'https:' + input
+      if (input.startsWith('http')) return input
+      // 拒绝非安全协议（如 javascript:、data: 等）
+      return ''
+    },
+    applyStepEmbed(idx) {
+      const src = this._extractEmbedSrc(this.form.steps[idx].embedInput)
+      if (!src) { this.$message.warning('请输入有效的嵌入代码或URL'); return }
+      this.form.steps[idx].embedUrl = src
+      this.form.steps[idx].embedInput = ''
+    },
+    removeStepEmbedVideo(idx) {
+      this.form.steps[idx].embedUrl = ''
+      this.form.steps[idx].embedInput = ''
+    },
+    applyGuideEmbed() {
+      const src = this._extractEmbedSrc(this.form.embedInput)
+      if (!src) { this.$message.warning('请输入有效的嵌入代码或URL'); return }
+      this.form.embedUrl = src
+      this.form.embedInput = ''
+    },
+    removeGuideEmbedVideo() {
+      this.form.embedUrl = ''
+      this.form.embedInput = ''
+    },
     // 拖拽排序
     onDragStart(idx) { this.dragIndex = idx },
     onDragOver(idx) { this.dragOverIndex = idx },
@@ -411,8 +514,13 @@ export default {
       if (this.form.guide_type === 'step' && !this.form.steps.length) {
         this.$message.warning('请至少添加一个步骤'); return
       }
-      if (this.form.guide_type === 'video' && !this.form.videoFile && !this.form.videoUrl) {
-        this.$message.warning('请上传教程视频'); return
+      if (this.form.guide_type === 'video') {
+        if (this.form.videoMode === 'upload' && !this.form.videoFile) {
+          this.$message.warning('请上传教程视频'); return
+        }
+        if (this.form.videoMode === 'embed' && !this.form.embedUrl) {
+          this.$message.warning('请输入嵌入视频URL'); return
+        }
       }
       this.saving = true
       try {
@@ -443,20 +551,32 @@ export default {
                   await uploadITGuideMedia(guideId, fd, dualToken)
                 }
               }
-              // 上传视频
-              if (step.videoFile) {
+              // 上传视频（按当前模式提交）
+              if (step.videoMode === 'upload' && step.videoFile) {
                 const fd = new FormData()
                 fd.append('file', step.videoFile)
+                fd.append('media_type', 'video')
+                fd.append('step_id', newStepId)
+                await uploadITGuideMedia(guideId, fd, dualToken)
+              } else if (step.videoMode === 'embed' && step.embedUrl) {
+                const fd = new FormData()
+                fd.append('embed_url', step.embedUrl)
                 fd.append('media_type', 'video')
                 fd.append('step_id', newStepId)
                 await uploadITGuideMedia(guideId, fd, dualToken)
               }
             }
           } else {
-            // 视频指南：上传视频
-            if (this.form.videoFile) {
+            // 视频指南：上传视频（按当前模式提交）
+            if (this.form.videoMode === 'upload' && this.form.videoFile) {
               const fd = new FormData()
               fd.append('file', this.form.videoFile)
+              fd.append('media_type', 'video')
+              fd.append('step_id', '0')
+              await uploadITGuideMedia(guideId, fd, dualToken)
+            } else if (this.form.videoMode === 'embed' && this.form.embedUrl) {
+              const fd = new FormData()
+              fd.append('embed_url', this.form.embedUrl)
               fd.append('media_type', 'video')
               fd.append('step_id', '0')
               await uploadITGuideMedia(guideId, fd, dualToken)
@@ -522,9 +642,10 @@ export default {
                 }
               }
 
-              // 处理视频：有新视频文件则替换
-              if (step.videoFile) {
-                const oldVideo = oldMedia.find(m => m.step_id === stepId && m.media_type === 'video')
+              // 处理视频：按当前模式提交
+              const oldVideo = oldMedia.find(m => m.step_id === stepId && m.media_type === 'video')
+              if (step.videoMode === 'upload' && step.videoFile) {
+                // 上传文件视频
                 if (oldVideo) {
                   try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
                 }
@@ -533,6 +654,22 @@ export default {
                 fd.append('media_type', 'video')
                 fd.append('step_id', stepId)
                 await uploadITGuideMedia(this.editingId, fd, dualToken)
+              } else if (step.videoMode === 'embed' && step.embedUrl) {
+                // 嵌入视频
+                if (oldVideo) {
+                  try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
+                }
+                const fd = new FormData()
+                fd.append('embed_url', step.embedUrl)
+                fd.append('media_type', 'video')
+                fd.append('step_id', stepId)
+                await uploadITGuideMedia(this.editingId, fd, dualToken)
+              } else if (step.videoMode === 'upload' && !step.videoFile && !step.videoUrl && oldVideo) {
+                // 上传模式下用户移除了视频
+                try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
+              } else if (step.videoMode === 'embed' && !step.embedUrl && oldVideo) {
+                // 嵌入模式下用户移除了视频
+                try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
               }
             }
 
@@ -543,10 +680,10 @@ export default {
               }
             }
           } else {
-            // 视频指南：处理视频更新
+            // 视频指南：处理视频更新（按当前模式提交）
             const oldVideo = oldMedia.find(m => m.media_type === 'video' && m.step_id === 0)
-            if (this.form.videoFile && this.form._hasNewVideo) {
-              // 有新视频：删除旧视频，上传新视频
+            if (this.form.videoMode === 'upload' && this.form.videoFile && this.form._hasNewVideo) {
+              // 上传模式：有新视频文件
               if (oldVideo) {
                 try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
               }
@@ -555,8 +692,21 @@ export default {
               fd.append('media_type', 'video')
               fd.append('step_id', '0')
               await uploadITGuideMedia(this.editingId, fd, dualToken)
-            } else if (!this.form.videoFile && !this.form.videoUrl && oldVideo) {
-              // 用户移除了视频
+            } else if (this.form.videoMode === 'embed' && this.form.embedUrl) {
+              // 嵌入模式
+              if (oldVideo) {
+                try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
+              }
+              const fd = new FormData()
+              fd.append('embed_url', this.form.embedUrl)
+              fd.append('media_type', 'video')
+              fd.append('step_id', '0')
+              await uploadITGuideMedia(this.editingId, fd, dualToken)
+            } else if (this.form.videoMode === 'upload' && !this.form.videoFile && !this.form.videoUrl && oldVideo) {
+              // 上传模式下用户移除了视频
+              try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
+            } else if (this.form.videoMode === 'embed' && !this.form.embedUrl && oldVideo) {
+              // 嵌入模式下用户移除了视频
               try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
             }
           }

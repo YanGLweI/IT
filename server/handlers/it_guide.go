@@ -435,7 +435,7 @@ func ReorderITGuideSteps(c *gin.Context) {
 
 // ============ 媒体上传 ============
 
-// UploadITGuideMedia 上传媒体文件
+// UploadITGuideMedia 上传媒体文件（支持文件上传和嵌入URL）
 func UploadITGuideMedia(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var guide models.ITGuide
@@ -444,15 +444,54 @@ func UploadITGuideMedia(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请上传文件"})
-		return
-	}
-
 	mediaType := c.PostForm("media_type")
 	if mediaType != "image" && mediaType != "video" {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "媒体类型必须为 image 或 video"})
+		return
+	}
+
+	// 检查是否为嵌入视频（提供 embed_url 而非文件）
+	embedURL := c.PostForm("embed_url")
+	if embedURL != "" && mediaType == "video" {
+		// 校验 URL 协议白名单
+		if !strings.HasPrefix(embedURL, "http://") && !strings.HasPrefix(embedURL, "https://") && !strings.HasPrefix(embedURL, "//") {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "嵌入URL必须以 http:// 或 https:// 开头"})
+			return
+		}
+		stepID, _ := strconv.Atoi(c.PostForm("step_id"))
+		sortOrder, _ := strconv.Atoi(c.DefaultPostForm("sort_order", "0"))
+
+		media := models.ITGuideMedia{
+			GuideID:   uint(id),
+			StepID:    uint(stepID),
+			MediaType: "video",
+			FileName:  "embed_video",
+			FilePath:  "",
+			FileSize:  0,
+			FileType:  "embed",
+			EmbedURL:  embedURL,
+			SortOrder: sortOrder,
+		}
+
+		if err := database.GetDB().Create(&media).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存嵌入视频记录失败"})
+			return
+		}
+
+		username, displayName, approver := services.GetUserContext(c)
+		details := []services.LogDetail{
+			{FieldName: "EmbedURL", FieldLabel: "嵌入URL", NewValue: embedURL},
+			{FieldName: "MediaType", FieldLabel: "媒体类型", NewValue: "video(embed)"},
+		}
+		services.LogOperation(username, displayName, "添加嵌入视频", "it_guide", guide.ID, guide.Title, approver, c.ClientIP(), details)
+
+		c.JSON(http.StatusOK, gin.H{"code": 200, "message": "嵌入视频添加成功", "data": media})
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请上传文件或提供嵌入URL"})
 		return
 	}
 
