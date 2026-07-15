@@ -54,7 +54,7 @@
 
             <!-- 步骤视频 -->
             <div v-if="getStepVideo(step.id)" class="step-video-wrap">
-              <video controls preload="metadata" :src="getFileUrl(getStepVideo(step.id).file_path)" style="width: 100%; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
+              <video controls preload="metadata" :src="getFileUrl(getStepVideo(step.id).file_path)" class="step-video" loading="lazy"></video>
             </div>
           </div>
         </div>
@@ -66,7 +66,7 @@
           <p style="white-space: pre-wrap;">{{ guide.description }}</p>
         </div>
         <div v-if="guideVideo" class="video-player-wrap">
-          <video controls preload="metadata" :src="getFileUrl(guideVideo.file_path)" style="width: 100%; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
+          <video controls preload="metadata" :src="getFileUrl(guideVideo.file_path)" class="guide-video" loading="lazy"></video>
         </div>
       </div>
     </template>
@@ -351,6 +351,14 @@ export default {
   border-radius: 12px;
   padding: 8px;
 }
+.step-video {
+  width: 100%;
+  max-height: 480px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  display: block;
+  object-fit: contain;
+}
 
 /* 视频指南 */
 .video-guide-text {
@@ -372,6 +380,14 @@ export default {
   background: #F1F5F9;
   border-radius: 12px;
   padding: 8px;
+}
+.guide-video {
+  width: 100%;
+  max-height: 540px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  display: block;
+  object-fit: contain;
 }
 
 /* 图片查看器 */

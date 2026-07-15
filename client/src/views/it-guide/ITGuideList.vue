@@ -144,7 +144,9 @@
                 <div class="media-label">视频指引（可选）</div>
                 <div v-if="step.videoFile" class="video-preview-wrap">
                   <video :src="step.videoUrl" controls style="width: 100%; max-height: 200px; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
-                  <el-button type="text" class="remove-video-btn" @click="removeStepVideo(idx)">移除视频</el-button>
+                  <el-button class="remove-video-btn" @click="removeStepVideo(idx)" title="移除视频">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </el-button>
                 </div>
                 <el-upload v-else action="#" :http-request="noopUpload" :show-file-list="false" :before-upload="(f) => beforeVideoUpload(f, idx)" accept="video/mp4,video/webm">
                   <el-button size="small" icon="el-icon-video-camera">上传视频</el-button>
@@ -164,7 +166,9 @@
             <div class="media-label">教程视频</div>
             <div v-if="form.videoFile" class="video-preview-wrap">
               <video :src="form.videoUrl" controls style="width: 100%; max-height: 360px; border-radius: 12px; border: 1px solid #E2E8F0;"></video>
-              <el-button type="text" class="remove-video-btn" @click="removeGuideVideo">移除视频</el-button>
+              <el-button class="remove-video-btn" @click="removeGuideVideo" title="移除视频">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </el-button>
             </div>
             <el-upload v-else drag action="#" :http-request="noopUpload" :show-file-list="false" :before-upload="beforeGuideVideoUpload" accept="video/mp4,video/webm" class="video-drag-upload">
               <i class="el-icon-upload2" style="font-size: 40px; color: #94A3B8;"></i>
@@ -545,9 +549,40 @@ export default {
 .media-label { font-size: 13px; font-weight: 500; color: #64748B; margin-bottom: 8px; }
 .paste-hint { font-size: 11px; color: #94A3B8; font-weight: 400; margin-left: 6px; }
 .video-preview-wrap { position: relative; }
-.remove-video-btn { position: absolute; top: 8px; right: 8px; color: #fff; background: rgba(0,0,0,0.5); border-radius: 6px; }
+.remove-video-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+.remove-video-btn:hover {
+  background: rgba(220, 38, 38, 0.85);
+  transform: scale(1.1);
+}
+.remove-video-btn svg { display: block; }
 .empty-steps { text-align: center; padding: 40px 20px; color: #94A3B8; font-size: 14px; }
 .video-desc-input ::v-deep .el-textarea__inner { border-radius: 8px; }
-.video-drag-upload ::v-deep .el-upload-dragger { border-radius: 12px; border: 1px dashed #BFDBFE; background: #FAFBFF; }
+.video-drag-upload ::v-deep .el-upload-dragger {
+  border-radius: 12px;
+  border: 1px dashed #BFDBFE;
+  background: #FAFBFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
 @media (max-width: 640px) { .guide-grid { grid-template-columns: 1fr; } .page-title { font-size: 20px; } .type-selector { grid-template-columns: 1fr; } }
 </style>
