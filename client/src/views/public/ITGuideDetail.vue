@@ -37,10 +37,18 @@
             <h3 class="step-title">步骤 {{ idx + 1 }}: {{ step.title }}</h3>
             <p class="step-desc" v-if="step.description">{{ step.description }}</p>
 
-            <!-- 图片网格 -->
-            <div v-if="getStepImages(step.id).length" class="step-images">
-              <div v-for="img in getStepImages(step.id)" :key="img.id" class="step-image-wrap" @click="previewImage(img)">
-                <img :src="getFileUrl(img.file_path)" :alt="img.file_name" class="step-image" loading="lazy" />
+            <!-- 图片走马灯 -->
+            <el-carousel v-if="getStepImages(step.id).length > 1" :interval="0" trigger="click" class="step-carousel" arrow="always" indicator-position="bottom">
+              <el-carousel-item v-for="img in getStepImages(step.id)" :key="img.id">
+                <div class="carousel-image-wrap" @click="previewImage(img)">
+                  <img :src="getFileUrl(img.file_path)" :alt="img.file_name" class="carousel-image" loading="lazy" />
+                </div>
+              </el-carousel-item>
+            </el-carousel>
+            <!-- 单张图片直接展示 -->
+            <div v-else-if="getStepImages(step.id).length === 1" class="step-images">
+              <div class="step-image-wrap" @click="previewImage(getStepImages(step.id)[0])">
+                <img :src="getFileUrl(getStepImages(step.id)[0].file_path)" :alt="getStepImages(step.id)[0].file_name" class="step-image" loading="lazy" />
               </div>
             </div>
 
@@ -296,10 +304,22 @@ export default {
   white-space: pre-wrap;
 }
 
-/* 图片网格 */
+/* 图片走马灯 */
+.step-carousel {
+  margin-top: 12px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  overflow: hidden;
+}
+.step-carousel .el-carousel__container { height: auto; }
+.step-carousel .el-carousel__item { display: flex; align-items: center; justify-content: center; background: #F8FAFC; }
+.carousel-image-wrap { width: 100%; cursor: pointer; }
+.carousel-image { width: 100%; height: auto; display: block; }
+
+/* 单张图片 */
 .step-images {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-top: 12px;
 }
@@ -407,8 +427,8 @@ export default {
   .detail-title {
     font-size: 20px;
   }
-  .step-images {
-    grid-template-columns: 1fr;
+  .step-carousel {
+    border-radius: 8px;
   }
   .timeline-item {
     padding-left: 28px;
