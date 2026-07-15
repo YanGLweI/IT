@@ -259,6 +259,7 @@ export default {
       this.form.category = item.category
       this.dialogStep = 1
       this.dialogVisible = true
+      this.contentLoaded = false
     },
     resetForm() {
       this.form = { title: '', description: '', guide_type: '', category: '', steps: [], videoDescription: '', videoFile: null, videoUrl: '', _hasNewVideo: false }
