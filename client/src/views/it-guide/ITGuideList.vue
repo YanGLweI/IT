@@ -212,11 +212,12 @@ export default {
       saving: false,
       form: {
         title: '', description: '', guide_type: '', category: '',
-        steps: [], videoDescription: '', videoFile: null, videoUrl: ''
+        steps: [], videoDescription: '', videoFile: null, videoUrl: '', _hasNewVideo: false
       },
       // 拖拽
       dragIndex: -1,
-      focusedStepIdx: 0
+      focusedStepIdx: 0,
+      contentLoaded: false
     }
   },
   created() { this.fetchItems() },
@@ -260,15 +261,15 @@ export default {
       this.dialogVisible = true
     },
     resetForm() {
-      this.form = { title: '', description: '', guide_type: '', category: '', steps: [], videoDescription: '', videoFile: null, videoUrl: '' }
+      this.form = { title: '', description: '', guide_type: '', category: '', steps: [], videoDescription: '', videoFile: null, videoUrl: '', _hasNewVideo: false }
     },
-    resetDialog() { this.resetForm(); this.dialogStep = 1 },
+    resetDialog() { this.resetForm(); this.dialogStep = 1; this.contentLoaded = false },
     goToStep2() {
       if (!this.form.title) { this.$message.warning('请输入指南标题'); return }
       if (!this.form.guide_type) { this.$message.warning('请选择指南类型'); return }
       this.dialogStep = 2
-      // 编辑模式：加载已有步骤和媒体
-      if (this.dialogMode === 'edit' && this.editingId) {
+      // 编辑模式：加载已有步骤和媒体（仅加载一次，避免覆盖用户修改）
+      if (this.dialogMode === 'edit' && this.editingId && !this.contentLoaded) {
         this.loadGuideContent()
       }
     },
@@ -289,9 +290,9 @@ export default {
           this.form.description = this.form.videoDescription || ''
           const guideMedia = (media || []).filter(m => m.step_id === 0)
           const video = guideMedia.find(m => m.media_type === 'video')
-          if (video) { this.form.videoFile = { name: video.file_name, id: video.id }; this.form.videoUrl = video.file_path }
+          if (video) { this.form.videoFile = { name: video.file_name, id: video.id }; this.form.videoUrl = video.file_path; this.form._hasNewVideo = false }
         }
-      } catch (e) { console.error(e) }
+      } catch (e) { console.error(e) } finally { this.contentLoaded = true }
     },
     noopUpload() {},
     // 步骤操作
@@ -358,12 +359,14 @@ export default {
       if (!isLt200M) { this.$message.error('视频大小不能超过 200MB'); return false }
       this.form.videoFile = file
       this.form.videoUrl = URL.createObjectURL(file)
+      this.form._hasNewVideo = true
       return false
     },
     removeGuideVideo() {
       if (this.form.videoUrl) URL.revokeObjectURL(this.form.videoUrl)
       this.form.videoFile = null
       this.form.videoUrl = ''
+      this.form._hasNewVideo = false
     },
     // 拖拽排序
     onDragStart(idx) { this.dragIndex = idx },
@@ -429,7 +432,7 @@ export default {
           }
         } else {
           // 上传视频指南的视频
-          if (this.form.videoFile) {
+          if (this.form.videoFile && this.form._hasNewVideo) {
             const { uploadITGuideMedia } = await import('@/api/it_guide')
             const fd = new FormData()
             fd.append('file', this.form.videoFile)
