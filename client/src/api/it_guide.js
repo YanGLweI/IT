@@ -72,12 +72,14 @@ export function createITGuideStep(guideId, data, dualToken) {
 }
 
 // 更新步骤
-export function updateITGuideStep(guideId, stepId, data) {
+export function updateITGuideStep(guideId, stepId, data, dualToken) {
   const formData = new FormData()
   if (data.title) formData.append('title', data.title)
   formData.append('description', data.description || '')
   if (data.sort_order !== undefined) formData.append('sort_order', data.sort_order)
-  return request.put(`/it-guides/${guideId}/steps/${stepId}`, formData)
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.put(`/it-guides/${guideId}/steps/${stepId}`, formData, config)
 }
 
 // 删除步骤

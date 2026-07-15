@@ -331,12 +331,12 @@ func CreateITGuideStep(c *gin.Context) {
 
 // UpdateITGuideStep 更新步骤
 func UpdateITGuideStep(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
 	guideID, _ := strconv.Atoi(c.Param("id"))
+	stepID, _ := strconv.Atoi(c.Param("stepId"))
 	_ = guideID
 
 	var step models.ITGuideStep
-	if err := database.GetDB().First(&step, id).Error; err != nil {
+	if err := database.GetDB().First(&step, stepID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "步骤不存在"})
 		return
 	}

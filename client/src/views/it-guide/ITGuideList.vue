@@ -192,7 +192,7 @@
 </template>
 
 <script>
-import { getITGuides, createITGuide, updateITGuide, deleteITGuide, publishITGuide, unpublishITGuide, uploadITGuideMedia, deleteITGuideMedia } from '@/api/it_guide'
+import { getITGuides, getITGuide, createITGuide, updateITGuide, deleteITGuide, publishITGuide, unpublishITGuide, uploadITGuideMedia, deleteITGuideMedia, deleteITGuideStep, createITGuideStep, updateITGuideStep } from '@/api/it_guide'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -217,7 +217,8 @@ export default {
       // 拖拽
       dragIndex: -1,
       focusedStepIdx: 0,
-      contentLoaded: false
+      contentLoaded: false,
+      _serverImageMap: {}
     }
   },
   created() { this.fetchItems() },
@@ -246,6 +247,7 @@ export default {
     showCreateDialog() {
       this.dialogMode = 'create'
       this.editingId = null
+      this._serverImageMap = {}
       this.resetForm()
       this.dialogVisible = true
       this.dialogStep = 1
@@ -253,10 +255,16 @@ export default {
     handleEdit(item) {
       this.dialogMode = 'edit'
       this.editingId = item.id
+      this._serverImageMap = {}
       this.form.title = item.title
       this.form.description = item.description
       this.form.guide_type = item.guide_type
       this.form.category = item.category
+      this.form.steps = []
+      this.form.videoDescription = ''
+      this.form.videoFile = null
+      this.form.videoUrl = ''
+      this.form._hasNewVideo = false
       this.dialogStep = 1
       this.dialogVisible = true
       this.contentLoaded = false
@@ -264,7 +272,7 @@ export default {
     resetForm() {
       this.form = { title: '', description: '', guide_type: '', category: '', steps: [], videoDescription: '', videoFile: null, videoUrl: '', _hasNewVideo: false }
     },
-    resetDialog() { this.resetForm(); this.dialogStep = 1; this.contentLoaded = false },
+    resetDialog() { this.resetForm(); this.dialogStep = 1; this.contentLoaded = false; this._serverImageMap = {} },
     goToStep2() {
       if (!this.form.title) { this.$message.warning('请输入指南标题'); return }
       if (!this.form.guide_type) { this.$message.warning('请选择指南类型'); return }
@@ -276,9 +284,15 @@ export default {
     },
     async loadGuideContent() {
       try {
-        const { getITGuide } = await import('@/api/it_guide')
         const res = await getITGuide(this.editingId)
         const { steps, media } = res
+        // 构建服务器图片映射（key=url, value={id, url, name}）
+        this._serverImageMap = {}
+        for (const m of (media || [])) {
+          if (m.media_type === 'image') {
+            this._serverImageMap[m.file_path] = { id: m.id, url: m.file_path, name: m.file_name }
+          }
+        }
         if (this.form.guide_type === 'step') {
           this.form.steps = (steps || []).map(s => ({
             id: s.id, title: s.title, description: s.description, sort_order: s.sort_order,
@@ -307,8 +321,22 @@ export default {
       if (!isLt5M) { this.$message.error('图片大小不能超过 5MB'); return false }
       return true
     },
-    onImageChange(stepIdx, fileList) { this.form.steps[stepIdx].images = fileList },
-    onImageRemove(stepIdx, fileList) { this.form.steps[stepIdx].images = fileList },
+    // 恢复服务器图片属性（el-upload change 事件会替换文件对象，丢失 id）
+    _restoreServerImageProps(fileList) {
+      return fileList.map(f => {
+        if (f.url && this._serverImageMap[f.url]) {
+          const serverImg = this._serverImageMap[f.url]
+          return Object.assign({}, f, { id: serverImg.id })
+        }
+        return f
+      })
+    },
+    onImageChange(stepIdx, fileList) {
+      this.form.steps[stepIdx].images = this._restoreServerImageProps(fileList)
+    },
+    onImageRemove(stepIdx, fileList) {
+      this.form.steps[stepIdx].images = this._restoreServerImageProps(fileList)
+    },
     // 全局粘贴监听（弹窗打开时生效）
     onGlobalPaste(e) {
       if (!this.dialogVisible || this.dialogStep !== 2) return
@@ -397,49 +425,132 @@ export default {
         if (this.dialogMode === 'create') {
           const res = await createITGuide(this.form, dualToken)
           guideId = res.data.id
-        } else {
-          await updateITGuide(this.editingId, this.form, dualToken)
-          // 清除旧的媒体和步骤
-          const { getITGuide, deleteITGuideStep, deleteITGuideMedia } = await import('@/api/it_guide')
-          const old = await getITGuide(this.editingId)
-          for (const s of (old.data.steps || [])) { await deleteITGuideStep(this.editingId, s.id, dualToken) }
-          for (const m of (old.data.media || [])) { await deleteITGuideMedia(this.editingId, m.id, dualToken) }
-        }
-        // 上传步骤指南内容
-        if (this.form.guide_type === 'step') {
-          const { createITGuideStep, uploadITGuideMedia } = await import('@/api/it_guide')
-          for (let i = 0; i < this.form.steps.length; i++) {
-            const step = this.form.steps[i]
-            const stepRes = await createITGuideStep(guideId, { title: step.title, description: step.description, sort_order: i }, dualToken)
-            const newStepId = stepRes.data.id
-            // 上传图片
-            for (const img of (step.images || [])) {
-              if (img.raw) {
+          // 创建模式：创建步骤和上传媒体
+          if (this.form.guide_type === 'step') {
+            for (let i = 0; i < this.form.steps.length; i++) {
+              const step = this.form.steps[i]
+              const stepRes = await createITGuideStep(guideId, {
+                title: step.title, description: step.description, sort_order: i
+              }, dualToken)
+              const newStepId = stepRes.data.id
+              // 上传图片
+              for (const img of (step.images || [])) {
+                if (img.raw) {
+                  const fd = new FormData()
+                  fd.append('file', img.raw)
+                  fd.append('media_type', 'image')
+                  fd.append('step_id', newStepId)
+                  await uploadITGuideMedia(guideId, fd, dualToken)
+                }
+              }
+              // 上传视频
+              if (step.videoFile) {
                 const fd = new FormData()
-                fd.append('file', img.raw)
-                fd.append('media_type', 'image')
+                fd.append('file', step.videoFile)
+                fd.append('media_type', 'video')
                 fd.append('step_id', newStepId)
                 await uploadITGuideMedia(guideId, fd, dualToken)
               }
             }
-            // 上传视频
-            if (step.videoFile) {
+          } else {
+            // 视频指南：上传视频
+            if (this.form.videoFile) {
               const fd = new FormData()
-              fd.append('file', step.videoFile)
+              fd.append('file', this.form.videoFile)
               fd.append('media_type', 'video')
-              fd.append('step_id', newStepId)
+              fd.append('step_id', '0')
               await uploadITGuideMedia(guideId, fd, dualToken)
             }
           }
         } else {
-          // 上传视频指南的视频
-          if (this.form.videoFile && this.form._hasNewVideo) {
-            const { uploadITGuideMedia } = await import('@/api/it_guide')
-            const fd = new FormData()
-            fd.append('file', this.form.videoFile)
-            fd.append('media_type', 'video')
-            fd.append('step_id', '0')
-            await uploadITGuideMedia(guideId, fd, dualToken)
+          await updateITGuide(this.editingId, this.form, dualToken)
+          // 获取当前服务器上的步骤和媒体
+          const old = await getITGuide(this.editingId)
+          const oldSteps = old.steps || []
+          const oldMedia = old.media || []
+
+          if (this.form.guide_type === 'step') {
+            for (let i = 0; i < this.form.steps.length; i++) {
+              const step = this.form.steps[i]
+              let stepId
+
+              if (i < oldSteps.length) {
+                // 更新已有步骤
+                stepId = oldSteps[i].id
+                await updateITGuideStep(this.editingId, stepId, {
+                  title: step.title, description: step.description, sort_order: i
+                }, dualToken)
+              } else {
+                // 创建新步骤
+                const stepRes = await createITGuideStep(this.editingId, {
+                  title: step.title, description: step.description, sort_order: i
+                }, dualToken)
+                stepId = stepRes.data.id
+              }
+
+              // 找出该步骤在服务器上的图片
+              const serverStepImages = oldMedia.filter(m => m.step_id === stepId && m.media_type === 'image')
+
+              // 删除被移除的图片（在服务器列表中但不在当前列表中）
+              const currentImageIds = new Set(
+                (step.images || []).filter(img => img.id).map(img => img.id)
+              )
+              for (const m of serverStepImages) {
+                if (!currentImageIds.has(m.id)) {
+                  try {
+                    await deleteITGuideMedia(this.editingId, m.id, dualToken)
+                  } catch (e) {
+                    console.warn('删除媒体失败:', e)
+                  }
+                }
+              }
+
+              // 只上传新图片（没有 id 属性 = 用户新上传的）
+              for (const img of (step.images || [])) {
+                if (!img.id && img.raw) {
+                  const fd = new FormData()
+                  fd.append('file', img.raw)
+                  fd.append('media_type', 'image')
+                  fd.append('step_id', stepId)
+                  await uploadITGuideMedia(this.editingId, fd, dualToken)
+                }
+              }
+
+              // 处理视频：有新视频文件则替换
+              if (step.videoFile) {
+                const oldVideo = oldMedia.find(m => m.step_id === stepId && m.media_type === 'video')
+                if (oldVideo) {
+                  try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
+                }
+                const fd = new FormData()
+                fd.append('file', step.videoFile)
+                fd.append('media_type', 'video')
+                fd.append('step_id', stepId)
+                await uploadITGuideMedia(this.editingId, fd, dualToken)
+              }
+            }
+
+            // 删除多余的旧步骤（新步骤数少于旧步骤数时）
+            for (let i = this.form.steps.length; i < oldSteps.length; i++) {
+              try { await deleteITGuideStep(this.editingId, oldSteps[i].id, dualToken) } catch (e) {}
+            }
+          } else {
+            // 视频指南：处理视频更新
+            const oldVideo = oldMedia.find(m => m.media_type === 'video' && m.step_id === 0)
+            if (this.form.videoFile && this.form._hasNewVideo) {
+              // 有新视频：删除旧视频，上传新视频
+              if (oldVideo) {
+                try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
+              }
+              const fd = new FormData()
+              fd.append('file', this.form.videoFile)
+              fd.append('media_type', 'video')
+              fd.append('step_id', '0')
+              await uploadITGuideMedia(this.editingId, fd, dualToken)
+            } else if (!this.form.videoFile && !this.form.videoUrl && oldVideo) {
+              // 用户移除了视频
+              try { await deleteITGuideMedia(this.editingId, oldVideo.id, dualToken) } catch (e) {}
+            }
           }
         }
         this.$message.success(this.dialogMode === 'create' ? '创建成功' : '保存成功')
