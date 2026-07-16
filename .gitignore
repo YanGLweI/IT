@@ -11,6 +11,7 @@ server/uploads/
 
 # Qoder AI metadata
 .qoder/
+.qoderignore
 webapp-testing/
 
 # Logs
