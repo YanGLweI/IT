@@ -181,7 +181,8 @@ export default {
         'form_vault': '表单发布',
         'calendar': '日历日程',
         'password_category': '密码分类',
-        'password_entry': '密码条目'
+        'password_entry': '密码条目',
+        'it_guide': 'IT指南'
       }
     }
   },

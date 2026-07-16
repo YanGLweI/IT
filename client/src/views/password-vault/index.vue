@@ -61,7 +61,7 @@
       </div>
 
       <!-- 表格 -->
-      <el-table :data="entries" v-loading="tableLoading" stripe style="width: 100%" @sort-change="handleSortChange">
+      <el-table :data="entries" v-loading="tableLoading" stripe style="width: 100%" :max-height="tableMaxHeight" @sort-change="handleSortChange">
         <el-table-column width="50" align="center">
           <template slot-scope="{ row }">
             <svg-icon :name="row.icon" :size="20" />
@@ -124,7 +124,7 @@
     <DualControlDialog ref="dualControl" />
     <UnlockDialog ref="unlockDialog" />
     <CategoryDialog ref="categoryDialog" :categories="categories" @saved="loadCategories" />
-    <PasswordEntryDialog ref="entryDialog" :categories="categories" @saved="loadEntries" />
+    <PasswordEntryDialog ref="entryDialog" :categories="categories" @saved="onEntrySaved" />
   </div>
 </template>
 
@@ -150,12 +150,13 @@ export default {
       total: 0,
       totalCount: 0,
       currentPage: 1,
-      pageSize: 20,
+      pageSize: 10,
       tableLoading: false,
       contextMenuVisible: false,
       contextMenuX: 0,
       contextMenuY: 0,
-      contextMenuCat: null
+      contextMenuCat: null,
+      tableMaxHeight: 400
     }
   },
   computed: {
@@ -166,16 +167,23 @@ export default {
     }
   },
   created() {
+    this.calcTableHeight()
     this.loadCategories()
     this.loadEntries()
     document.addEventListener('click', this.hideContextMenu)
     document.addEventListener('keydown', this.handleKeydown)
+    window.addEventListener('resize', this.calcTableHeight)
   },
   beforeDestroy() {
     document.removeEventListener('click', this.hideContextMenu)
     document.removeEventListener('keydown', this.handleKeydown)
+    window.removeEventListener('resize', this.calcTableHeight)
   },
   methods: {
+    calcTableHeight() {
+      // 100vh - 100px(page) - 40px(main padding) - 52px(toolbar) - 52px(pagination) = ~244px
+      this.tableMaxHeight = window.innerHeight - 244
+    },
     async loadCategories() {
       try {
         const res = await getPasswordCategories()
@@ -217,6 +225,10 @@ export default {
     openEntryDialog(entry) {
       this.$refs.entryDialog.open(entry)
     },
+    onEntrySaved() {
+      this.loadEntries()
+      this.loadCategories()
+    },
     openUnlockDialog(entry) {
       this.$refs.unlockDialog.open(entry)
     },
@@ -236,6 +248,10 @@ export default {
         const dualToken = await this.$refs.dualControl.open()
         await deletePasswordEntry(row.id, dualToken)
         this.$message.success('删除成功')
+        // 如果当前页只剩一条数据且不是第一页，返回上一页
+        if (this.entries.length === 1 && this.currentPage > 1) {
+          this.currentPage--
+        }
         this.loadEntries()
         this.loadCategories()
       } catch (e) {
@@ -467,6 +483,7 @@ export default {
 .password-vault-page ::v-deep .el-table {
   border-radius: 12px;
   overflow: hidden;
+  flex: 1;
 }
 .password-vault-page ::v-deep .el-table th {
   background: #f1f5f9;

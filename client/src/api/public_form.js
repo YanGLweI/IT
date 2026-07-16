@@ -34,3 +34,13 @@ export function getPublicITGuides(params) {
 export function getPublicITGuideDetail(id) {
   return publicRequest.get(`/public/it-guides/${id}`)
 }
+
+// 记录指南浏览量
+export function recordITGuideView(id) {
+  return publicRequest.post(`/public/it-guides/${id}/view`)
+}
+
+// 点赞/取消点赞
+export function toggleITGuideLike(id, data) {
+  return publicRequest.post(`/public/it-guides/${id}/like`, data)
+}

@@ -648,3 +648,39 @@ func GetPublicITGuide(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": guide, "steps": steps, "media": guideMedia})
 }
+
+// RecordITGuideView 记录指南浏览量（公开）
+func RecordITGuideView(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	result := database.GetDB().Model(&models.ITGuide{}).Where("id = ?", id).UpdateColumn("view_count", database.GetDB().Raw("view_count + 1"))
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "记录浏览失败"})
+		return
+	}
+	var guide models.ITGuide
+	database.GetDB().Select("view_count").First(&guide, id)
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": gin.H{"view_count": guide.ViewCount}})
+}
+
+// ToggleITGuideLike 点赞/取消点赞（公开）
+func ToggleITGuideLike(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var body struct {
+		Liked bool `json:"liked"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
+		return
+	}
+
+	db := database.GetDB()
+	if body.Liked {
+		db.Model(&models.ITGuide{}).Where("id = ?", id).UpdateColumn("like_count", db.Raw("like_count + 1"))
+	} else {
+		db.Model(&models.ITGuide{}).Where("id = ? AND like_count > 0", id).UpdateColumn("like_count", db.Raw("like_count - 1"))
+	}
+
+	var guide models.ITGuide
+	db.Select("like_count").First(&guide, id)
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": gin.H{"liked": body.Liked, "like_count": guide.LikeCount}})
+}

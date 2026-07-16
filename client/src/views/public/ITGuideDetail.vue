@@ -15,6 +15,14 @@
       <!-- 页面头部 -->
       <div class="detail-header">
         <h1 class="detail-title">{{ guide.title }}</h1>
+        <!-- 点赞按钮 -->
+        <button class="like-btn" :class="{ liked: isLiked }" @click="handleLike">
+          <span class="leftContainer">
+            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"></path></svg>
+            <span class="likeText">Like</span>
+          </span>
+          <span class="likeCount">{{ formatLikeCount(likeCount) }}</span>
+        </button>
         <div class="detail-meta">
           <span class="meta-tag" :class="guide.guide_type === 'step' ? 'tag-step' : 'tag-video'">
             {{ guide.guide_type === 'step' ? '步骤指南' : '视频指南' }}
@@ -87,7 +95,7 @@
 </template>
 
 <script>
-import { getPublicITGuideDetail } from '@/api/public_form'
+import { getPublicITGuideDetail, recordITGuideView, toggleITGuideLike } from '@/api/public_form'
 
 export default {
   name: 'PublicITGuideDetail',
@@ -97,7 +105,10 @@ export default {
       steps: [],
       media: [],
       loading: false,
-      imageViewer: { visible: false, url: '' }
+      imageViewer: { visible: false, url: '' },
+      isLiked: false,
+      likeCount: 0,
+      _likeCooldown: false
     }
   },
   computed: {
@@ -122,6 +133,9 @@ export default {
           if (s.media && s.media.length) stepMedia.push(...s.media)
         })
         this.media = stepMedia.length ? stepMedia : (body.media || [])
+        this.likeCount = body.data.like_count || 0
+        // 记录浏览量
+        try { await recordITGuideView(this.$route.params.id) } catch (e) {}
       } catch (e) {
         console.error('获取指南详情失败:', e)
         this.guide = null
@@ -148,6 +162,26 @@ export default {
       if (!dateStr) return ''
       const d = new Date(dateStr)
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    },
+    formatLikeCount(n) {
+      if (!n) return '0'
+      if (n >= 10000) return (n / 10000).toFixed(1) + 'W'
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
+      return String(n)
+    },
+    async handleLike() {
+      if (this._likeCooldown) return
+      this._likeCooldown = true
+      setTimeout(() => { this._likeCooldown = false }, 500)
+      const nextLiked = !this.isLiked
+      try {
+        const res = await toggleITGuideLike(this.$route.params.id, { liked: nextLiked })
+        const data = res.data.data
+        this.isLiked = data.liked
+        this.likeCount = data.like_count
+      } catch (e) {
+        console.error('点赞操作失败:', e)
+      }
     }
   }
 }
@@ -182,9 +216,94 @@ export default {
   background: #EFF6FF;
 }
 
+/* 点赞按钮 */
+.like-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 140px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: none;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.089);
+  cursor: pointer;
+  background-color: transparent;
+  padding: 0;
+}
+
+.like-btn .leftContainer {
+  width: 60%;
+  height: 100%;
+  background-color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.25s ease;
+}
+
+.like-btn.liked .leftContainer {
+  background-color: #EE0000;
+}
+
+.like-btn .leftContainer svg {
+  width: 1em;
+  height: 1em;
+  fill: white;
+  transition: transform 0.2s ease;
+}
+
+.like-btn .likeText {
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.like-btn .likeCount {
+  width: 40%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  font-weight: 600;
+  font-size: 13px;
+  position: relative;
+  background-color: white;
+  transition: color 0.25s ease;
+}
+
+.like-btn.liked .likeCount {
+  color: #EE0000;
+}
+
+.like-btn .likeCount::before {
+  height: 8px;
+  width: 8px;
+  position: absolute;
+  content: "";
+  background-color: white;
+  transform: rotate(45deg);
+  left: -4px;
+}
+
+.like-btn:hover .leftContainer {
+  filter: brightness(0.88);
+}
+
+.like-btn:active .leftContainer svg {
+  transform: scale(1.15);
+  transform-origin: top;
+}
+
 /* 页面头部 */
 .detail-header {
   margin-bottom: 32px;
+  position: relative;
 }
 
 .detail-title {
@@ -193,6 +312,7 @@ export default {
   color: #1E293B;
   margin: 0 0 12px 0;
   line-height: 1.3;
+  padding-right: 160px;
 }
 
 .detail-meta {
@@ -316,9 +436,12 @@ export default {
 }
 .el-carousel__container { height: auto; }
 .el-carousel__item { display: flex; align-items: center; justify-content: center; background: #F8FAFC; }
-.carousel-image-wrap { 
-  width: 100%; 
-  cursor: pointer; 
+.carousel-image-wrap {
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .carousel-image { max-width: 100%; max-height: 480px; width: auto; height: auto; display: block; object-fit: contain; }
 

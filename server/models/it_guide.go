@@ -14,6 +14,8 @@ type ITGuide struct {
 	SortOrder   int        `gorm:"type:int;default:0" json:"sort_order"`
 	IsPublished bool       `gorm:"type:tinyint(1);default:0" json:"is_published"`
 	PublishedAt *time.Time `json:"published_at"`
+	ViewCount   int        `gorm:"type:int;default:0" json:"view_count"`
+	LikeCount   int        `gorm:"type:int;default:0" json:"like_count"`
 }
 
 // TableName 指定表名

@@ -436,6 +436,14 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"IsAllDay":       "全天",
 			"RepeatRuleJSON": "重复规则",
 		}
+	case "it_guide":
+		return map[string]string{
+			"Title":       "标题",
+			"Description": "描述",
+			"GuideType":   "指南类型",
+			"Category":    "分类",
+			"IsPublished": "发布状态",
+		}
 	case "password_category":
 		return map[string]string{
 			"Name":      "分类名称",

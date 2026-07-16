@@ -35,6 +35,8 @@ func SetupRouter() *gin.Engine {
 			// IT指南公开接口
 			public.GET("/public/it-guides", handlers.ListPublicITGuides)
 			public.GET("/public/it-guides/:id", handlers.GetPublicITGuide)
+			public.POST("/public/it-guides/:id/view", handlers.RecordITGuideView)
+			public.POST("/public/it-guides/:id/like", handlers.ToggleITGuideLike)
 		}
 
 		// 受保护接口（需要JWT认证）

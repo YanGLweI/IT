@@ -64,6 +64,13 @@
             查看详情
             <i class="el-icon-arrow-right"></i>
           </span>
+          <span class="view-count">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            {{ formatViewCount(item.view_count) }}
+          </span>
         </div>
       </div>
     </div>
@@ -116,6 +123,12 @@ export default {
     },
     goDetail(item) {
       this.$router.push(`/public/it-guides/${item.id}`)
+    },
+    formatViewCount(n) {
+      if (!n) return '0'
+      if (n >= 10000) return (n / 10000).toFixed(1) + 'W'
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
+      return String(n)
     }
   }
 }
@@ -289,6 +302,9 @@ export default {
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .view-link {
@@ -302,6 +318,15 @@ export default {
   border-radius: 6px;
   background: #EFF6FF;
   transition: all 0.25s ease;
+}
+
+.view-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #94A3B8;
 }
 
 .guide-card:hover .view-link {
