@@ -127,7 +127,7 @@ IT/
 
 - Go 1.25+
 - Node.js + npm
-- MySQL 5.7+
+- MariaDB 11.8+
 
 ### 后端启动
 
