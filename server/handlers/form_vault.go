@@ -275,6 +275,11 @@ func PreviewFormVaultItem(c *gin.Context) {
 
 // serveFormFile 根据来源类型提供文件下载
 func serveFormFile(c *gin.Context, item *models.FormVaultItem) {
+	// 防止浏览器缓存下载响应，确保每次点击都计数
+	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
+
 	switch item.SourceType {
 	case models.SourceTypeUpload:
 		if _, err := os.Stat(item.FilePath); os.IsNotExist(err) {

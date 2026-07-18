@@ -95,9 +95,8 @@
         <!-- 下载按钮 -->
         <div class="card-footer">
           <a
-            :href="'/api/public/forms/' + item.id + '/download'"
             class="download-link"
-            @click.stop
+            @click.stop="handleDownload(item)"
           >
             <i class="el-icon-download"></i>
             下载
@@ -221,6 +220,17 @@ export default {
     },
     handleSearch() {
       this.fetchForms()
+    },
+    handleDownload(item) {
+      // 创建临时 a 标签触发下载
+      const link = document.createElement('a')
+      link.href = '/api/public/forms/' + item.id + '/download'
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      // 延迟刷新列表以更新下载计数
+      setTimeout(() => { this.fetchForms() }, 500)
     },
     getFileExt(fileName) {
       if (!fileName) return ''
