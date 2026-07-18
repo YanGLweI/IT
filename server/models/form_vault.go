@@ -38,8 +38,9 @@ type FormVaultItem struct {
 	SnapshotPath string `gorm:"type:varchar(500)" json:"snapshot_path"`  // static 类型的快照文件路径
 
 	// 发布状态
-	IsPublished bool       `gorm:"type:tinyint(1);default:0" json:"is_published"` // 是否已发布
-	PublishedAt *time.Time `json:"published_at"`                                  // 发布时间
+	IsPublished   bool       `gorm:"type:tinyint(1);default:0" json:"is_published"` // 是否已发布
+	PublishedAt   *time.Time `json:"published_at"`                                  // 发布时间
+	DownloadCount int        `gorm:"type:int;default:0" json:"download_count"`       // 下载次数
 }
 
 // TableName 指定表名

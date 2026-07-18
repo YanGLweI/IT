@@ -102,6 +102,14 @@
             <i class="el-icon-download"></i>
             下载
           </a>
+          <span class="download-count">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {{ formatDownloadCount(item.download_count) }}
+          </span>
         </div>
       </div>
     </div>
@@ -228,6 +236,11 @@ export default {
     getSourceLabel(type) {
       const labels = { upload: '文件', static: '模板', dynamic: '动态生成' }
       return labels[type] || type
+    },
+    formatDownloadCount(n) {
+      if (!n) return '0'
+      if (n >= 1000) return (n / 1000).toFixed(2) + 'K'
+      return String(n)
     },
     // ---- 预览 ----
     async handlePreview(item) {
@@ -508,6 +521,9 @@ export default {
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .download-link {
@@ -528,6 +544,15 @@ export default {
 .download-link:hover {
   background: #DBEAFE;
   color: #2563EB;
+}
+
+.download-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #94A3B8;
 }
 
 /* 空状态 */

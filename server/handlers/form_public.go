@@ -65,6 +65,9 @@ func PublicDownloadForm(c *gin.Context) {
 		return
 	}
 
+	// 递增下载计数
+	database.GetDB().Model(&models.FormVaultItem{}).Where("id = ?", id).UpdateColumn("download_count", database.GetDB().Raw("download_count + 1"))
+
 	serveFormFile(c, &item)
 }
 
