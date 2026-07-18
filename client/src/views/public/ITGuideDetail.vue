@@ -16,7 +16,12 @@
       <div class="detail-header">
         <h1 class="detail-title">{{ guide.title }}</h1>
         <!-- 点赞按钮 -->
-        <button class="like-btn" :class="{ liked: isLiked }" @click="handleLike">
+        <button class="like-btn" :class="{ liked: isLiked }"
+                ref="likeBtn"
+                @click="handleLike"
+                @mouseenter="onLikeBtnEnter"
+                @mousemove="onLikeBtnMove"
+                @mouseleave="onLikeBtnLeave">
           <span class="leftContainer">
             <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"></path></svg>
             <span class="likeText">Like</span>
@@ -96,6 +101,7 @@
 
 <script>
 import { getPublicITGuideDetail, recordITGuideView, toggleITGuideLike } from '@/api/public_form'
+import { animate, utils } from 'animejs'
 
 export default {
   name: 'PublicITGuideDetail',
@@ -109,7 +115,14 @@ export default {
       isLiked: false,
       likeCount: 0,
       likeAnimKey: 0,
-      _likeCooldown: false
+      _likeCooldown: false,
+      heartParticles: [],
+      heartPoolSize: 24,
+      heartTimer: null,
+      iconAnim: null,
+      pointerX: 0,
+      pointerY: 0,
+      heartSpread: 16
     }
   },
   computed: {
@@ -119,6 +132,12 @@ export default {
   },
   created() {
     this.fetchDetail()
+  },
+  mounted() {
+    if (this.guide) this.initHeartParticles()
+  },
+  beforeDestroy() {
+    this.cleanupHeartParticles()
   },
   methods: {
     async fetchDetail() {
@@ -142,6 +161,7 @@ export default {
         this.guide = null
       } finally {
         this.loading = false
+        this.$nextTick(() => { this.initHeartParticles() })
       }
     },
     getStepImages(stepId) {
@@ -184,6 +204,82 @@ export default {
       } catch (e) {
         console.error('点赞操作失败:', e)
       }
+    },
+    initHeartParticles() {
+      if (this.heartParticles.length > 0) return
+      const btn = this.$refs.likeBtn
+      if (!btn) return
+      const svg = btn.querySelector('svg')
+      if (!svg) return
+      for (let i = 0; i < this.heartPoolSize; i++) {
+        const p = svg.cloneNode(true)
+        p.style.cssText = 'position:absolute;top:0;left:0;mix-blend-mode:plus-lighter;visibility:hidden;pointer-events:none;z-index:10;'
+        p.classList.add('heart-particle')
+        btn.appendChild(p)
+        this.heartParticles.push({ el: p, inUse: false })
+      }
+    },
+    getHeartParticle() {
+      const p = this.heartParticles.find(x => !x.inUse)
+      if (p) { p.inUse = true; p.el.style.visibility = 'visible'; return p }
+      return null
+    },
+    releaseHeartParticle(p) {
+      p.inUse = false
+      p.el.style.visibility = 'hidden'
+    },
+    emitHeartParticle() {
+      const p = this.getHeartParticle()
+      if (!p) return
+      const prefixA = utils.randomPick(['-=', '+='])
+      const prefixB = prefixA === '-=' ? '+=' : '-='
+      animate(p.el, {
+        translateX: [
+          this.pointerX + utils.random(-this.heartSpread, this.heartSpread),
+          prefixA + (5 + utils.random(-2, 2, 2)),
+          prefixB + (6 + utils.random(-2, 2, 2)),
+          prefixA + (4 + utils.random(-2, 2, 2))
+        ],
+        translateY: [
+          { from: this.pointerY + utils.random(-5, 5), to: '-=' + utils.random(30, 50) }
+        ],
+        scale: [{ from: 0, to: 0.85 }, { to: 0 }],
+        opacity: [{ from: 0, to: 1, duration: 150 }, { to: 0 }],
+        duration: 1200,
+        easing: 'easeOutQuad',
+        onComplete: () => this.releaseHeartParticle(p)
+      })
+    },
+    onLikeBtnEnter(e) {
+      this.updatePointer(e)
+      const svg = this.$refs.likeBtn.querySelector('svg')
+      if (this.iconAnim) this.iconAnim.revert()
+      this.iconAnim = animate(svg, {
+        scale: [1, 1.25, 1],
+        loop: true,
+        duration: 900
+      })
+      this.heartTimer = setInterval(() => this.emitHeartParticle(), 100)
+    },
+    onLikeBtnMove(e) {
+      this.updatePointer(e)
+    },
+    onLikeBtnLeave() {
+      clearInterval(this.heartTimer)
+      this.heartTimer = null
+      const svg = this.$refs.likeBtn.querySelector('svg')
+      if (this.iconAnim) this.iconAnim.revert()
+      this.iconAnim = animate(svg, { scale: 1, duration: 500 })
+    },
+    updatePointer(e) {
+      const rect = this.$refs.likeBtn.getBoundingClientRect()
+      this.pointerX = utils.clamp(e.clientX - rect.left, this.heartSpread, rect.width - this.heartSpread)
+      this.pointerY = utils.clamp(e.clientY - rect.top, 0, rect.height)
+    },
+    cleanupHeartParticles() {
+      clearInterval(this.heartTimer)
+      this.heartParticles.forEach(p => p.el.remove())
+      this.heartParticles = []
     }
   }
 }
@@ -229,8 +325,8 @@ export default {
   align-items: center;
   justify-content: flex-start;
   border: none;
-  border-radius: 5px;
-  overflow: hidden;
+  border-radius: 18px;
+  overflow: visible;
   box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.089);
   cursor: pointer;
   background-color: transparent;
@@ -245,7 +341,8 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background-color 0.25s ease;
+  border-radius: 18px 0 0 18px;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .like-btn.liked .leftContainer {
@@ -256,13 +353,14 @@ export default {
   width: 1em;
   height: 1em;
   fill: white;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, filter 0.25s ease;
 }
 
 .like-btn .likeText {
   color: white;
   font-weight: 600;
   font-size: 13px;
+  transition: text-shadow 0.25s ease;
 }
 
 .like-btn .likeCount {
@@ -276,6 +374,7 @@ export default {
   font-size: 13px;
   position: relative;
   background-color: white;
+  border-radius: 0 18px 18px 0;
   transition: color 0.25s ease;
 }
 
@@ -308,13 +407,29 @@ export default {
   left: -4px;
 }
 
-.like-btn:hover .leftContainer {
-  filter: brightness(0.88);
+.like-btn:hover:not(.liked) .leftContainer {
+  background-color: #C0392B;
+  box-shadow: 0 0 12px rgba(192, 57, 43, 0.5);
+}
+
+.like-btn:hover:not(.liked) .leftContainer svg {
+  filter: drop-shadow(0 0 4px rgba(255, 107, 129, 0.8));
+}
+
+.like-btn:hover:not(.liked) .likeText {
+  text-shadow: 0 0 6px rgba(255, 107, 129, 0.7);
 }
 
 .like-btn:active .leftContainer svg {
   transform: scale(1.15);
   transform-origin: top;
+}
+
+.heart-particle {
+  width: 14px;
+  height: 14px;
+  fill: #FF6B81;
+  filter: drop-shadow(0 0 4px rgba(255, 107, 129, 0.8));
 }
 
 /* 页面头部 */
