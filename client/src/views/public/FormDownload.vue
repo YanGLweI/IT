@@ -49,11 +49,12 @@
     </div>
 
     <!-- 表单卡片网格 -->
-    <div v-else-if="filteredItems.length > 0" class="form-grid">
+    <div v-else-if="filteredItems.length > 0" class="form-grid" :key="gridKey">
       <div
-        v-for="item in filteredItems"
+        v-for="(item, index) in filteredItems"
         :key="item.id"
-        class="form-card"
+        class="form-card card-anim"
+        :style="{ animationDelay: index * 0.06 + 's' }"
         @click="handlePreview(item)"
       >
         <!-- 文件图标 -->
@@ -172,6 +173,7 @@ export default {
       keyword: '',
       categoryFilter: '',
       loading: false,
+      gridKey: 0,
       // 预览相关
       previewVisible: false,
       previewUrl: '',
@@ -202,6 +204,7 @@ export default {
         // res.data = { code, data: [...], categories: [] }
         this.items = res.data.data || []
         this.categories = res.data.categories || []
+        this.gridKey++
       } catch (e) {
         console.error('获取表单列表失败:', e)
       } finally {
@@ -384,6 +387,22 @@ export default {
   flex-direction: column;
   transition: all 0.25s ease;
   cursor: pointer;
+}
+
+.form-card.card-anim {
+  opacity: 0;
+  animation: cardFadeInUp 0.4s ease-out forwards;
+}
+
+@keyframes cardFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .form-card:hover {

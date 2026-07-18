@@ -31,8 +31,8 @@
     </div>
 
     <!-- 卡片网格 -->
-    <div v-else-if="items.length" class="guide-grid">
-      <div v-for="item in items" :key="item.id" class="guide-card" @click="goDetail(item)">
+    <div v-else-if="items.length" class="guide-grid" :key="gridKey">
+      <div v-for="(item, index) in items" :key="item.id" class="guide-card card-anim" :style="{ animationDelay: index * 0.06 + 's' }" @click="goDetail(item)">
         <!-- 图标 -->
         <div class="card-icon" :class="item.guide_type === 'step' ? 'icon-step' : 'icon-video'">
           <svg v-if="item.guide_type === 'step'" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
@@ -97,7 +97,8 @@ export default {
       items: [],
       keyword: '',
       typeFilter: '',
-      loading: false
+      loading: false,
+      gridKey: 0
     }
   },
   created() {
@@ -112,6 +113,7 @@ export default {
         if (this.typeFilter) params.guide_type = this.typeFilter
         const res = await getPublicITGuides(params)
         this.items = res.data.data || []
+        this.gridKey++
       } catch (e) {
         console.error('获取IT指南列表失败:', e)
       } finally {
@@ -212,6 +214,22 @@ export default {
   flex-direction: column;
   transition: all 0.25s ease;
   cursor: pointer;
+}
+
+.guide-card.card-anim {
+  opacity: 0;
+  animation: cardFadeInUp 0.4s ease-out forwards;
+}
+
+@keyframes cardFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .guide-card:hover {
