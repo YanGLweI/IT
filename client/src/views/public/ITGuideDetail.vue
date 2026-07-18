@@ -21,7 +21,7 @@
             <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"></path></svg>
             <span class="likeText">Like</span>
           </span>
-          <span class="likeCount">{{ formatLikeCount(likeCount) }}</span>
+          <span class="likeCount"><span class="likeCountNum" :key="likeAnimKey">{{ formatLikeCount(likeCount) }}</span></span>
         </button>
         <div class="detail-meta">
           <span class="meta-tag" :class="guide.guide_type === 'step' ? 'tag-step' : 'tag-video'">
@@ -108,6 +108,7 @@ export default {
       imageViewer: { visible: false, url: '' },
       isLiked: false,
       likeCount: 0,
+      likeAnimKey: 0,
       _likeCooldown: false
     }
   },
@@ -179,6 +180,7 @@ export default {
         const data = res.data.data
         this.isLiked = data.liked
         this.likeCount = data.like_count
+        this.likeAnimKey++
       } catch (e) {
         console.error('点赞操作失败:', e)
       }
@@ -275,6 +277,21 @@ export default {
   position: relative;
   background-color: white;
   transition: color 0.25s ease;
+}
+
+.like-btn .likeCountNum {
+  animation: likeCountRise 0.35s ease-out;
+}
+
+@keyframes likeCountRise {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .like-btn.liked .likeCount {
