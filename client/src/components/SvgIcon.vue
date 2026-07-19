@@ -276,6 +276,19 @@ const icons = {
   'book-open': [
     { tag: 'path', d: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z' },
     { tag: 'path', d: 'M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' }
+  ],
+  'clipboard': [
+    { tag: 'path', d: 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2' },
+    { tag: 'rect', x: 8, y: 2, w: 8, h: 4, rx: 1 }
+  ],
+  'link': [
+    { tag: 'path', d: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71' },
+    { tag: 'path', d: 'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' }
+  ],
+  'shield-lock': [
+    { tag: 'path', d: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' },
+    { tag: 'rect', x: 9, y: 10, w: 6, h: 5, rx: 1 },
+    { tag: 'path', d: 'M10 10V8a2 2 0 0 1 4 0v2' }
   ]
 }
 

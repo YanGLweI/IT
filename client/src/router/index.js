@@ -74,7 +74,9 @@ const routes = [
       { path: 'form-publish', name: 'FormPublish', component: () => import('../views/form-publish/FormVault.vue'), meta: { title: '表单发布', enTitle: 'Form Publishing' } },
       { path: 'it-guide', name: 'ITGuide', component: () => import('../views/it-guide/ITGuideList.vue'), meta: { title: 'IT指南', enTitle: 'IT Guide' } },
       { path: 'calendar', name: 'Calendar', component: () => import('../views/calendar/CalendarView.vue'), meta: { title: '日程管理', enTitle: 'Calendar Management' } },
-      { path: 'password-vault', name: 'PasswordVault', component: () => import('../views/password-vault/index.vue'), meta: { title: '密码本', enTitle: 'Password Vault' } }
+      { path: 'password-vault', name: 'PasswordVault', component: () => import('../views/password-vault/index.vue'), meta: { title: '密码本', enTitle: 'Password Vault' } },
+      { path: 'dedicated-lines', name: 'DedicatedLines', component: () => import('../views/dedicated-line/DedicatedLineList.vue'), meta: { title: '专线信息', enTitle: 'Dedicated Lines' } },
+      { path: 'ipsec-vpn', name: 'IPsecVPN', component: () => import('../views/ipsec-vpn/IPsecVpnPlaceholder.vue'), meta: { title: 'IPsec VPN', enTitle: 'IPsec VPN' } }
     ]
   }
 ]

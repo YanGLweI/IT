@@ -166,10 +166,24 @@
           <svg-icon name="calendar" />
           <span>日程管理</span>
         </el-menu-item>
-        <el-menu-item index="/password-vault">
-          <svg-icon name="lock" />
-          <span>密码本</span>
-        </el-menu-item>
+        <el-submenu index="memo-management">
+          <template slot="title">
+            <svg-icon name="clipboard" />
+            <span>备忘管理</span>
+          </template>
+          <el-menu-item index="/password-vault">
+            <svg-icon name="lock" />
+            <span>密码本</span>
+          </el-menu-item>
+          <el-menu-item index="/dedicated-lines">
+            <svg-icon name="link" />
+            <span>专线信息</span>
+          </el-menu-item>
+          <el-menu-item index="/ipsec-vpn">
+            <svg-icon name="shield-lock" />
+            <span>IPsec VPN</span>
+          </el-menu-item>
+        </el-submenu>
       </el-menu>
     </el-aside>
     <el-container>

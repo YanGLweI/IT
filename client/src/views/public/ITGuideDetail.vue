@@ -94,7 +94,10 @@
 
     <!-- 图片全屏预览 -->
     <div v-if="imageViewer.visible" class="image-viewer-overlay" @click="imageViewer.visible = false">
-      <img :src="getFileUrl(imageViewer.url)" class="viewer-image" />
+      <button class="viewer-nav viewer-nav-prev" @click.stop="prevImage" v-if="viewerImages.length > 1">&#10094;</button>
+      <img :src="getFileUrl(imageViewer.url)" class="viewer-image" @click.stop />
+      <button class="viewer-nav viewer-nav-next" @click.stop="nextImage" v-if="viewerImages.length > 1">&#10095;</button>
+      <span class="viewer-counter" v-if="viewerImages.length > 1">{{ imageViewer.currentIndex + 1 }} / {{ viewerImages.length }}</span>
     </div>
   </div>
 </template>
@@ -111,7 +114,7 @@ export default {
       steps: [],
       media: [],
       loading: false,
-      imageViewer: { visible: false, url: '' },
+      imageViewer: { visible: false, url: '', currentIndex: 0, stepId: null },
       isLiked: false,
       likeCount: 0,
       likeAnimKey: 0,
@@ -128,6 +131,10 @@ export default {
   computed: {
     guideVideo() {
       return this.media.find(m => m.step_id === 0 && m.media_type === 'video') || null
+    },
+    viewerImages() {
+      if (this.imageViewer.stepId === null) return []
+      return this.media.filter(m => m.step_id === this.imageViewer.stepId && m.media_type === 'image')
     }
   },
   created() {
@@ -135,9 +142,11 @@ export default {
   },
   mounted() {
     if (this.guide) this.initHeartParticles()
+    window.addEventListener('keydown', this.handleViewerKeydown)
   },
   beforeDestroy() {
     this.cleanupHeartParticles()
+    window.removeEventListener('keydown', this.handleViewerKeydown)
   },
   methods: {
     async fetchDetail() {
@@ -176,8 +185,29 @@ export default {
       return path.startsWith('/') ? path : '/' + path
     },
     previewImage(img) {
+      this.imageViewer.stepId = img.step_id
+      const images = this.viewerImages
+      const idx = images.findIndex(m => m.file_path === img.file_path)
+      this.imageViewer.currentIndex = idx >= 0 ? idx : 0
       this.imageViewer.url = img.file_path
       this.imageViewer.visible = true
+    },
+    prevImage() {
+      if (this.viewerImages.length <= 1) return
+      const newIndex = (this.imageViewer.currentIndex - 1 + this.viewerImages.length) % this.viewerImages.length
+      this.imageViewer.currentIndex = newIndex
+      this.imageViewer.url = this.viewerImages[newIndex].file_path
+    },
+    nextImage() {
+      if (this.viewerImages.length <= 1) return
+      const newIndex = (this.imageViewer.currentIndex + 1) % this.viewerImages.length
+      this.imageViewer.currentIndex = newIndex
+      this.imageViewer.url = this.viewerImages[newIndex].file_path
+    },
+    handleViewerKeydown(e) {
+      if (!this.imageViewer.visible) return
+      if (e.key === 'ArrowLeft') this.prevImage()
+      else if (e.key === 'ArrowRight') this.nextImage()
     },
     formatDate(dateStr) {
       if (!dateStr) return ''
@@ -692,6 +722,37 @@ export default {
   max-height: 90vh;
   border-radius: 8px;
   object-fit: contain;
+}
+
+.viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 10000;
+}
+.viewer-nav:hover { background: rgba(255,255,255,0.3); }
+.viewer-nav-prev { left: 24px; }
+.viewer-nav-next { right: 24px; }
+.viewer-counter {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  z-index: 10000;
 }
 
 /* 空状态 */

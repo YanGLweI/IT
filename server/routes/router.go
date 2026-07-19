@@ -16,6 +16,7 @@ func SetupRouter() *gin.Engine {
 
 	// 静态文件服务
 	r.Static("/uploads/it_guide_media", "./uploads/it_guide_media")
+	r.Static("/uploads/dedicated_lines", "./uploads/dedicated_lines")
 
 	// API路由组
 	api := r.Group("/api")
@@ -207,6 +208,9 @@ func SetupRouter() *gin.Engine {
 			protected.PUT("/password-entries/:id/star", handlers.TogglePasswordEntryStar)
 			protected.PUT("/password-categories/:id/sort", handlers.SortPasswordCategory)
 
+			// 专线信息 - 读操作（不需要双控）
+			protected.GET("/dedicated-lines", handlers.ListDedicatedLines)
+
 			// LDAP用户获取（不需要双控）
 			protected.GET("/ldap/users", handlers.GetLDAPUsers)
 
@@ -377,6 +381,13 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/password-entries", handlers.CreatePasswordEntry)
 				dual.PUT("/password-entries/:id", handlers.UpdatePasswordEntry)
 				dual.DELETE("/password-entries/:id", handlers.DeletePasswordEntry)
+
+				// 专线信息 - 写操作（需要双控）
+				dual.POST("/dedicated-lines", handlers.CreateDedicatedLine)
+				dual.PUT("/dedicated-lines/:id", handlers.UpdateDedicatedLine)
+				dual.DELETE("/dedicated-lines/:id", handlers.DeleteDedicatedLine)
+				dual.POST("/dedicated-lines/upload-image", handlers.UploadDedicatedLineImage)
+				dual.DELETE("/dedicated-lines/image", handlers.DeleteDedicatedLineImage)
 			}
 		}
 	}
