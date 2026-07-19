@@ -76,7 +76,7 @@ const routes = [
       { path: 'calendar', name: 'Calendar', component: () => import('../views/calendar/CalendarView.vue'), meta: { title: '日程管理', enTitle: 'Calendar Management' } },
       { path: 'password-vault', name: 'PasswordVault', component: () => import('../views/password-vault/index.vue'), meta: { title: '密码本', enTitle: 'Password Vault' } },
       { path: 'dedicated-lines', name: 'DedicatedLines', component: () => import('../views/dedicated-line/DedicatedLineList.vue'), meta: { title: '专线信息', enTitle: 'Dedicated Lines' } },
-      { path: 'ipsec-vpn', name: 'IPsecVPN', component: () => import('../views/ipsec-vpn/IPsecVpnPlaceholder.vue'), meta: { title: 'IPsec VPN', enTitle: 'IPsec VPN' } }
+      { path: 'ipsec-vpn', name: 'IPsecVPN', component: () => import('../views/ipsec-vpn/IPsecVpnList.vue'), meta: { title: 'IPsec VPN', enTitle: 'IPsec VPN' } }
     ]
   }
 ]

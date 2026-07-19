@@ -15,6 +15,16 @@ module.exports = defineConfig({
         target: 'https://localhost:8080',
         changeOrigin: true,
         secure: false
+      },
+      '/uploads/dedicated_lines': {
+        target: 'https://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      },
+      '/uploads/ipsec_vpn': {
+        target: 'https://localhost:8080',
+        changeOrigin: true,
+        secure: false
       }
     }
   }

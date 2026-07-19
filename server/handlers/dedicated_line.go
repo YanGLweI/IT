@@ -38,7 +38,7 @@ func calcIPCount(ipStart, ipEnd string) int {
 	return int(endNum - startNum + 1)
 }
 
-// ListDedicatedLines 获取专线信息列表
+// ListDedicatedLines 获取专线信息列表（分页）
 func ListDedicatedLines(c *gin.Context) {
 	db := database.GetDB()
 	query := db.Model(&models.DedicatedLine{})
@@ -55,49 +55,110 @@ func ListDedicatedLines(c *gin.Context) {
 		query = query.Where("factory LIKE ? OR carrier LIKE ? OR ip_start LIKE ? OR gateway LIKE ? OR notes LIKE ?", kw, kw, kw, kw, kw)
 	}
 
+	// 总数
+	var total int64
+	query.Count(&total)
+
+	// 分页
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+
 	var lines []models.DedicatedLine
-	if err := query.Order("created_at DESC").Find(&lines).Error; err != nil {
+	if err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&lines).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 200, "data": lines})
+
+	// 获取全量厂区列表（不受分页影响）
+	var factories []string
+	db.Model(&models.DedicatedLine{}).Distinct("factory").Order("factory").Pluck("factory", &factories)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": lines, "total": total, "factories": factories})
 }
 
-// CreateDedicatedLine 创建专线信息
-func CreateDedicatedLine(c *gin.Context) {
-	var input struct {
-		Factory       string `json:"factory" binding:"required"`
-		Carrier       string `json:"carrier" binding:"required"`
-		BandwidthUp   int    `json:"bandwidth_up"`
-		BandwidthDown int    `json:"bandwidth_down"`
-		IPStart       string `json:"ip_start" binding:"required"`
-		IPEnd         string `json:"ip_end" binding:"required"`
-		SubnetMask    string `json:"subnet_mask" binding:"required"`
-		Gateway       string `json:"gateway" binding:"required"`
-		DNS           string `json:"dns"`
-		Images        string `json:"images"`
-		Notes         string `json:"notes"`
+// saveDedicatedLineImages 保存上传的图片文件，返回路径数组
+func saveDedicatedLineImages(c *gin.Context) ([]string, error) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return nil, nil // 没有文件上传
 	}
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误: " + err.Error()})
+	files := form.File["images"]
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	allowedExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true}
+	yearDir := filepath.Join("uploads", "dedicated_lines", fmt.Sprintf("%d", time.Now().Year()))
+	os.MkdirAll(yearDir, 0755)
+
+	var paths []string
+	for _, file := range files {
+		ext := strings.ToLower(filepath.Ext(file.Filename))
+		if !allowedExts[ext] {
+			continue
+		}
+		if file.Size > 10*1024*1024 {
+			continue
+		}
+		filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strings.TrimSuffix(filepath.Base(file.Filename), ext), ext)
+		filePath := filepath.Join(yearDir, filename)
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			continue
+		}
+		paths = append(paths, filePath)
+	}
+	return paths, nil
+}
+
+// CreateDedicatedLine 创建专线信息（multipart/form-data）
+func CreateDedicatedLine(c *gin.Context) {
+	factory := strings.TrimSpace(c.PostForm("factory"))
+	carrier := c.PostForm("carrier")
+	ipStart := strings.TrimSpace(c.PostForm("ip_start"))
+	ipEnd := strings.TrimSpace(c.PostForm("ip_end"))
+	subnetMask := strings.TrimSpace(c.PostForm("subnet_mask"))
+	gateway := strings.TrimSpace(c.PostForm("gateway"))
+
+	if factory == "" || carrier == "" || ipStart == "" || ipEnd == "" || subnetMask == "" || gateway == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "缺少必填字段"})
 		return
+	}
+
+	bandwidthUp, _ := strconv.Atoi(c.PostForm("bandwidth_up"))
+	bandwidthDown, _ := strconv.Atoi(c.PostForm("bandwidth_down"))
+	dns := strings.TrimSpace(c.PostForm("dns"))
+	notes := c.PostForm("notes")
+
+	// 保存上传的图片
+	imagePaths, _ := saveDedicatedLineImages(c)
+	imagesJSON := "[]"
+	if len(imagePaths) > 0 {
+		data, _ := json.Marshal(imagePaths)
+		imagesJSON = string(data)
 	}
 
 	username, displayName, approver := services.GetUserContext(c)
 
 	line := models.DedicatedLine{
-		Factory:       strings.TrimSpace(input.Factory),
-		Carrier:       input.Carrier,
-		BandwidthUp:   input.BandwidthUp,
-		BandwidthDown: input.BandwidthDown,
-		IPStart:       strings.TrimSpace(input.IPStart),
-		IPEnd:         strings.TrimSpace(input.IPEnd),
-		SubnetMask:    strings.TrimSpace(input.SubnetMask),
-		Gateway:       strings.TrimSpace(input.Gateway),
-		DNS:           strings.TrimSpace(input.DNS),
-		IPCount:       calcIPCount(input.IPStart, input.IPEnd),
-		Images:        input.Images,
-		Notes:         input.Notes,
+		Factory:       factory,
+		Carrier:       carrier,
+		BandwidthUp:   bandwidthUp,
+		BandwidthDown: bandwidthDown,
+		IPStart:       ipStart,
+		IPEnd:         ipEnd,
+		SubnetMask:    subnetMask,
+		Gateway:       gateway,
+		DNS:           dns,
+		IPCount:       calcIPCount(ipStart, ipEnd),
+		Images:        imagesJSON,
+		Notes:         notes,
 		CreatedBy:     displayName,
 		UpdatedBy:     displayName,
 	}
@@ -119,7 +180,7 @@ func CreateDedicatedLine(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": line})
 }
 
-// UpdateDedicatedLine 更新专线信息
+// UpdateDedicatedLine 更新专线信息（multipart/form-data）
 func UpdateDedicatedLine(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var line models.DedicatedLine
@@ -130,43 +191,86 @@ func UpdateDedicatedLine(c *gin.Context) {
 
 	oldLine := line
 
-	var input struct {
-		Factory       string `json:"factory" binding:"required"`
-		Carrier       string `json:"carrier" binding:"required"`
-		BandwidthUp   int    `json:"bandwidth_up"`
-		BandwidthDown int    `json:"bandwidth_down"`
-		IPStart       string `json:"ip_start" binding:"required"`
-		IPEnd         string `json:"ip_end" binding:"required"`
-		SubnetMask    string `json:"subnet_mask" binding:"required"`
-		Gateway       string `json:"gateway" binding:"required"`
-		DNS           string `json:"dns"`
-		Images        string `json:"images"`
-		Notes         string `json:"notes"`
-	}
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误: " + err.Error()})
+	factory := strings.TrimSpace(c.PostForm("factory"))
+	carrier := c.PostForm("carrier")
+	ipStart := strings.TrimSpace(c.PostForm("ip_start"))
+	ipEnd := strings.TrimSpace(c.PostForm("ip_end"))
+	subnetMask := strings.TrimSpace(c.PostForm("subnet_mask"))
+	gateway := strings.TrimSpace(c.PostForm("gateway"))
+
+	if factory == "" || carrier == "" || ipStart == "" || ipEnd == "" || subnetMask == "" || gateway == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "缺少必填字段"})
 		return
+	}
+
+	bandwidthUp, _ := strconv.Atoi(c.PostForm("bandwidth_up"))
+	bandwidthDown, _ := strconv.Atoi(c.PostForm("bandwidth_down"))
+	dns := strings.TrimSpace(c.PostForm("dns"))
+	notes := c.PostForm("notes")
+	existingImages := c.PostForm("existing_images") // 保留的已有图片路径 JSON
+
+	// 解析保留的已有图片（白名单校验：仅允许本记录原有且在上传目录下的图片）
+	var oldImages []string
+	if oldLine.Images != "" && oldLine.Images != "[]" {
+		json.Unmarshal([]byte(oldLine.Images), &oldImages)
+	}
+	oldSet := make(map[string]bool, len(oldImages))
+	for _, o := range oldImages {
+		oldSet[o] = true
+	}
+	var keptImages []string
+	if existingImages != "" && existingImages != "[]" {
+		var submitted []string
+		if json.Unmarshal([]byte(existingImages), &submitted) == nil {
+			for _, k := range submitted {
+				if oldSet[k] && strings.HasPrefix(k, "uploads/dedicated_lines/") && !strings.Contains(k, "..") {
+					keptImages = append(keptImages, k)
+				}
+			}
+		}
+	}
+
+	// 保存新上传的图片
+	newPaths, _ := saveDedicatedLineImages(c)
+
+	// 合并：保留的旧图 + 新上传的图
+	allImages := append(keptImages, newPaths...)
+	imagesJSON := "[]"
+	if len(allImages) > 0 {
+		data, _ := json.Marshal(allImages)
+		imagesJSON = string(data)
 	}
 
 	_, displayName, approver := services.GetUserContext(c)
 
-	line.Factory = strings.TrimSpace(input.Factory)
-	line.Carrier = input.Carrier
-	line.BandwidthUp = input.BandwidthUp
-	line.BandwidthDown = input.BandwidthDown
-	line.IPStart = strings.TrimSpace(input.IPStart)
-	line.IPEnd = strings.TrimSpace(input.IPEnd)
-	line.SubnetMask = strings.TrimSpace(input.SubnetMask)
-	line.Gateway = strings.TrimSpace(input.Gateway)
-	line.DNS = strings.TrimSpace(input.DNS)
-	line.IPCount = calcIPCount(input.IPStart, input.IPEnd)
-	line.Images = input.Images
-	line.Notes = input.Notes
+	line.Factory = factory
+	line.Carrier = carrier
+	line.BandwidthUp = bandwidthUp
+	line.BandwidthDown = bandwidthDown
+	line.IPStart = ipStart
+	line.IPEnd = ipEnd
+	line.SubnetMask = subnetMask
+	line.Gateway = gateway
+	line.DNS = dns
+	line.IPCount = calcIPCount(ipStart, ipEnd)
+	line.Images = imagesJSON
+	line.Notes = notes
 	line.UpdatedBy = displayName
 
 	if err := database.GetDB().Save(&line).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})
 		return
+	}
+
+	// DB 保存成功后再删除被移除的旧图片文件
+	keptSet := make(map[string]bool, len(keptImages))
+	for _, k := range keptImages {
+		keptSet[k] = true
+	}
+	for _, old := range oldImages {
+		if !keptSet[old] {
+			os.Remove(old)
+		}
 	}
 
 	// 记录操作日志
@@ -256,10 +360,11 @@ func UploadDedicatedLineImage(c *gin.Context) {
 	}})
 }
 
-// DeleteDedicatedLineImage 删除专线图片
+// DeleteDedicatedLineImage 删除专线图片（同时更新记录）
 func DeleteDedicatedLineImage(c *gin.Context) {
 	var input struct {
 		ImagePath string `json:"image_path" binding:"required"`
+		LineID    uint   `json:"line_id"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
@@ -273,5 +378,30 @@ func DeleteDedicatedLineImage(c *gin.Context) {
 	}
 
 	os.Remove(input.ImagePath)
+
+	// 如果提供了 line_id，更新记录的 images 字段
+	if input.LineID > 0 {
+		var line models.DedicatedLine
+		if err := database.GetDB().First(&line, input.LineID).Error; err == nil {
+			if line.Images != "" && line.Images != "[]" {
+				var images []string
+				if json.Unmarshal([]byte(line.Images), &images) == nil {
+					var kept []string
+					for _, img := range images {
+						if img != input.ImagePath {
+							kept = append(kept, img)
+						}
+					}
+					newJSON := "[]"
+					if len(kept) > 0 {
+						data, _ := json.Marshal(kept)
+						newJSON = string(data)
+					}
+					database.GetDB().Model(&line).Update("images", newJSON)
+				}
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

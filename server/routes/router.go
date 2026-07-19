@@ -17,6 +17,7 @@ func SetupRouter() *gin.Engine {
 	// 静态文件服务
 	r.Static("/uploads/it_guide_media", "./uploads/it_guide_media")
 	r.Static("/uploads/dedicated_lines", "./uploads/dedicated_lines")
+	r.Static("/uploads/ipsec_vpn", "./uploads/ipsec_vpn")
 
 	// API路由组
 	api := r.Group("/api")
@@ -211,6 +212,9 @@ func SetupRouter() *gin.Engine {
 			// 专线信息 - 读操作（不需要双控）
 			protected.GET("/dedicated-lines", handlers.ListDedicatedLines)
 
+			// IPsec VPN - 读操作（不需要双控）
+			protected.GET("/ipsec-vpns", handlers.ListIPsecVpns)
+
 			// LDAP用户获取（不需要双控）
 			protected.GET("/ldap/users", handlers.GetLDAPUsers)
 
@@ -388,6 +392,11 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/dedicated-lines/:id", handlers.DeleteDedicatedLine)
 				dual.POST("/dedicated-lines/upload-image", handlers.UploadDedicatedLineImage)
 				dual.DELETE("/dedicated-lines/image", handlers.DeleteDedicatedLineImage)
+
+				// IPsec VPN - 写操作（需要双控）
+				dual.POST("/ipsec-vpns", handlers.CreateIPsecVpn)
+				dual.PUT("/ipsec-vpns/:id", handlers.UpdateIPsecVpn)
+				dual.DELETE("/ipsec-vpns/:id", handlers.DeleteIPsecVpn)
 			}
 		}
 	}

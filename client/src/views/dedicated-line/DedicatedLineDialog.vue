@@ -14,32 +14,31 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">厂区 <span class="required">*</span></label>
-          <input v-model="form.factory" class="form-input" placeholder="请输入厂区名称" />
+          <el-input v-model="form.factory" placeholder="请输入厂区名称" size="small" />
         </div>
         <div class="form-group">
           <label class="form-label">运营商 <span class="required">*</span></label>
-          <select v-model="form.carrier" class="form-input">
-            <option value="" disabled>请选择运营商</option>
-            <option value="电信">电信</option>
-            <option value="联通">联通</option>
-            <option value="移动">移动</option>
-            <option value="广电">广电</option>
-          </select>
+          <el-select v-model="form.carrier" placeholder="请选择运营商" size="small" style="width: 100%">
+            <el-option label="电信" value="电信" />
+            <el-option label="联通" value="联通" />
+            <el-option label="移动" value="移动" />
+            <el-option label="广电" value="广电" />
+          </el-select>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">上行带宽</label>
-          <div class="bandwidth-wrap">
-            <input v-model.number="form.bandwidth_up" class="form-input" type="number" min="0" placeholder="0" />
-            <span class="unit">Mbps</span>
+          <div class="bandwidth-field">
+            <el-input v-model.number="form.bandwidth_up" type="number" placeholder="0" size="small" />
+            <span class="bandwidth-unit">Mbps</span>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">下行带宽</label>
-          <div class="bandwidth-wrap">
-            <input v-model.number="form.bandwidth_down" class="form-input" type="number" min="0" placeholder="0" />
-            <span class="unit">Mbps</span>
+          <div class="bandwidth-field">
+            <el-input v-model.number="form.bandwidth_down" type="number" placeholder="0" size="small" />
+            <span class="bandwidth-unit">Mbps</span>
           </div>
         </div>
       </div>
@@ -49,27 +48,27 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">IP范围（起始） <span class="required">*</span></label>
-          <input v-model="form.ip_start" class="form-input mono" placeholder="如 192.168.1.1" @input="calcIP" />
+          <el-input v-model="form.ip_start" placeholder="如 192.168.1.1" size="small" class="mono-input" @input="calcIP" />
         </div>
         <div class="form-group">
           <label class="form-label">IP范围（结束） <span class="required">*</span></label>
-          <input v-model="form.ip_end" class="form-input mono" placeholder="如 192.168.1.254" @input="calcIP" />
+          <el-input v-model="form.ip_end" placeholder="如 192.168.1.254" size="small" class="mono-input" @input="calcIP" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">子网掩码 <span class="required">*</span></label>
-          <input v-model="form.subnet_mask" class="form-input mono" placeholder="如 255.255.255.0" />
+          <el-input v-model="form.subnet_mask" placeholder="如 255.255.255.0" size="small" class="mono-input" />
         </div>
         <div class="form-group">
           <label class="form-label">网关 <span class="required">*</span></label>
-          <input v-model="form.gateway" class="form-input mono" placeholder="如 192.168.1.1" />
+          <el-input v-model="form.gateway" placeholder="如 192.168.1.1" size="small" class="mono-input" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">DNS</label>
-          <input v-model="form.dns" class="form-input mono" placeholder="如 8.8.8.8, 114.114.114.114" />
+          <el-input v-model="form.dns" placeholder="如 8.8.8.8, 114.114.114.114" size="small" class="mono-input" />
         </div>
         <div class="form-group">
           <label class="form-label">IP数（自动计算）</label>
@@ -82,33 +81,26 @@
       <div class="form-row full">
         <div class="form-group">
           <label class="form-label">图片附件（可选）</label>
-          <div class="upload-area" @click="triggerUpload">
-            <input ref="fileInput" type="file" accept=".jpg,.jpeg,.png,.gif,.webp" multiple style="display:none" @change="handleFileChange" />
-            <div class="upload-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-            </div>
-            <div class="upload-text">点击上传图片</div>
-            <div class="upload-hint">支持 JPG、PNG、GIF、WebP 格式</div>
-          </div>
-          <!-- 已上传图片预览 -->
-          <div v-if="images.length" class="image-preview-list">
-            <div v-for="(img, idx) in images" :key="idx" class="preview-item">
-              <img :src="img.url" :alt="img.name" @click="previewImage(img.url)" />
-              <button class="preview-remove" @click="removeImage(idx)">
-                <i class="el-icon-close"></i>
-              </button>
-            </div>
-          </div>
+          <el-upload
+            ref="upload"
+            action=""
+            list-type="picture-card"
+            :auto-upload="false"
+            :limit="1"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            :file-list="fileList"
+            accept=".jpg,.jpeg,.png,.gif,.webp"
+          >
+            <i class="el-icon-plus"></i>
+            <div slot="tip" class="el-upload__tip">支持 JPG、PNG、GIF、WebP 格式，限 1 张</div>
+          </el-upload>
         </div>
       </div>
       <div class="form-row full">
         <div class="form-group">
           <label class="form-label">备注</label>
-          <textarea v-model="form.notes" class="form-textarea" placeholder="输入备注信息..." rows="3"></textarea>
+          <el-input v-model="form.notes" type="textarea" placeholder="输入备注信息..." :rows="3" size="small" />
         </div>
       </div>
     </div>
@@ -127,7 +119,7 @@
 </template>
 
 <script>
-import { createDedicatedLine, updateDedicatedLine, uploadDedicatedLineImage, deleteDedicatedLineImage } from '@/api/dedicated_line'
+import { createDedicatedLine, updateDedicatedLine } from '@/api/dedicated_line'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -141,6 +133,7 @@ export default {
       saving: false,
       ipCount: 0,
       images: [],
+      selectedFiles: [],
       form: {
         factory: '',
         carrier: '',
@@ -155,10 +148,18 @@ export default {
       }
     }
   },
+  computed: {
+    fileList() {
+      const existing = this.images.map(img => ({ name: img.name, url: img.url, isExisting: true, path: img.path }))
+      const newFiles = this.selectedFiles.map((item, i) => ({ name: item.file.name, url: item.url, isNew: true, index: i }))
+      return [...existing, ...newFiles]
+    }
+  },
   methods: {
     open(item) {
       this.visible = true
       this.images = []
+      this.selectedFiles = []
       if (item) {
         this.isEdit = true
         this.editId = item.id
@@ -206,6 +207,11 @@ export default {
         ip_start: '', ip_end: '', subnet_mask: '', gateway: '', dns: '', notes: ''
       }
       this.images = []
+      // 释放所有 Blob URL
+      this.selectedFiles.forEach(item => {
+        if (item.url) URL.revokeObjectURL(item.url)
+      })
+      this.selectedFiles = []
       this.ipCount = 0
     },
     // IP计算
@@ -230,45 +236,20 @@ export default {
       }
       return num
     },
-    // 图片上传
-    triggerUpload() {
-      this.$refs.fileInput.click()
-    },
-    async handleFileChange(e) {
-      const files = e.target.files
-      if (!files || !files.length) return
-      try {
-        const token = await this.$refs.dualControl.open()
-        for (const file of files) {
-          const formData = new FormData()
-          formData.append('file', file)
-          const res = await uploadDedicatedLineImage(formData, token)
-          const data = res.data || res
-          this.images.push({ path: data.path, url: data.url, name: data.name })
-        }
-        this.$message.success('图片上传成功')
-      } catch (err) {
-        if (err.message !== 'canceled') {
-          // handled by interceptor
-        }
-      }
-      e.target.value = ''
-    },
-    async removeImage(idx) {
-      const img = this.images[idx]
-      try {
-        const token = await this.$refs.dualControl.open()
-        await deleteDedicatedLineImage(img.path, token)
-        this.images.splice(idx, 1)
-        this.$message.success('图片已删除')
-      } catch (err) {
-        if (err.message !== 'canceled') {
-          // handled
-        }
+    // 图片选择（不自动上传）
+    handleFileChange(file) {
+      if (file.raw) {
+        this.selectedFiles.push({ file: file.raw, url: URL.createObjectURL(file.raw) })
       }
     },
-    previewImage(url) {
-      window.open(url, '_blank')
+    handleFileRemove(file) {
+      if (file.isExisting) {
+        const idx = this.images.findIndex(img => img.path === file.path)
+        if (idx !== -1) this.images.splice(idx, 1)
+      } else if (file.isNew) {
+        const removed = this.selectedFiles.splice(file.index, 1)
+        if (removed.length && removed[0].url) URL.revokeObjectURL(removed[0].url)
+      }
     },
     // 保存
     async handleSave() {
@@ -297,17 +278,28 @@ export default {
       this.saving = true
       try {
         const token = await this.$refs.dualControl.open()
-        const payload = {
-          ...this.form,
-          bandwidth_up: this.form.bandwidth_up || 0,
-          bandwidth_down: this.form.bandwidth_down || 0,
-          images: JSON.stringify(this.images.map(i => i.path))
-        }
+        const formData = new FormData()
+        formData.append('factory', this.form.factory)
+        formData.append('carrier', this.form.carrier)
+        formData.append('bandwidth_up', this.form.bandwidth_up || 0)
+        formData.append('bandwidth_down', this.form.bandwidth_down || 0)
+        formData.append('ip_start', this.form.ip_start)
+        formData.append('ip_end', this.form.ip_end)
+        formData.append('subnet_mask', this.form.subnet_mask)
+        formData.append('gateway', this.form.gateway)
+        formData.append('dns', this.form.dns || '')
+        formData.append('notes', this.form.notes || '')
+        // 保留的已有图片
+        formData.append('existing_images', JSON.stringify(this.images.map(i => i.path)))
+        // 新上传的图片文件
+        this.selectedFiles.forEach(item => {
+          formData.append('images', item.file)
+        })
         if (this.isEdit) {
-          await updateDedicatedLine(this.editId, payload, token)
+          await updateDedicatedLine(this.editId, formData, token)
           this.$message.success('更新成功')
         } else {
-          await createDedicatedLine(payload, token)
+          await createDedicatedLine(formData, token)
           this.$message.success('创建成功')
         }
         this.visible = false
@@ -401,6 +393,19 @@ select.form-input {
   color: #64748b;
   white-space: nowrap;
 }
+.bandwidth-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bandwidth-field .el-input {
+  flex: 1;
+}
+.bandwidth-unit {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
 .ip-count-box {
   padding: 9px 12px;
   background: rgba(59, 130, 246, 0.06);
@@ -426,75 +431,6 @@ select.form-input {
 }
 .form-textarea:focus {
   border-color: #3b82f6;
-}
-
-/* 上传区域 */
-.upload-area {
-  border: 2px dashed #e2e8f0;
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-.upload-area:hover {
-  border-color: #3b82f6;
-}
-.upload-icon {
-  color: #94a3b8;
-  margin-bottom: 8px;
-}
-.upload-text {
-  font-size: 13px;
-  color: #64748b;
-}
-.upload-hint {
-  font-size: 11px;
-  color: #94a3b8;
-  margin-top: 4px;
-}
-
-/* 图片预览 */
-.image-preview-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
-}
-.preview-item {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-}
-.preview-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  cursor: pointer;
-}
-.preview-remove {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.preview-item:hover .preview-remove {
-  opacity: 1;
 }
 
 /* 底部按钮 */
@@ -558,5 +494,42 @@ select.form-input {
 .line-dialog .el-dialog__footer {
   padding: 16px 24px;
   border-top: 1px solid #f1f5f9;
+}
+.line-dialog .el-select .el-input__inner,
+.line-dialog .el-input__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+  height: 36px;
+  line-height: 36px;
+}
+.line-dialog .el-textarea__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+}
+.line-dialog .el-select .el-input__inner:focus,
+.line-dialog .el-input__inner:focus,
+.line-dialog .el-textarea__inner:focus {
+  border-color: #3b82f6;
+}
+.line-dialog .el-input--small .el-input__inner {
+  height: 36px;
+  line-height: 36px;
+}
+.line-dialog .el-upload--picture-card {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+}
+.line-dialog .el-upload--picture-card:hover {
+  border-color: #3b82f6;
+}
+.line-dialog .el-upload-list--picture-card .el-upload-list__item {
+  border-radius: 10px;
+  width: 80px;
+  height: 80px;
 }
 </style>
