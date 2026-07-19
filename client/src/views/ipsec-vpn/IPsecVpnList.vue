@@ -336,11 +336,19 @@ export default {
     },
     copyPSK(psk) {
       if (!psk) return
-      navigator.clipboard.writeText(psk).then(() => {
+      const textarea = document.createElement('textarea')
+      textarea.value = psk
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      try {
+        document.execCommand('copy')
         this.$message.success('密钥已复制到剪贴板')
-      }).catch(() => {
+      } catch (e) {
         this.$message.error('复制失败')
-      })
+      }
+      document.body.removeChild(textarea)
     },
     formatTime(t) {
       if (!t) return '-'
