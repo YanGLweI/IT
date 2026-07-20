@@ -150,7 +150,14 @@ func CreateIPsecVpn(c *gin.Context) {
 		return
 	}
 
-	services.LogOperation(username, displayName, "创建IPsec VPN", "ipsec_vpn", record.ID, tunnelName, approver, c.ClientIP(), nil)
+	services.LogOperation(username, displayName, "创建IPsec VPN", "ipsec_vpn", record.ID, tunnelName, approver, c.ClientIP(), []services.LogDetail{
+		{FieldName: "TunnelName", FieldLabel: "隧道名", NewValue: tunnelName},
+		{FieldName: "Owner", FieldLabel: "负责人", NewValue: owner},
+		{FieldName: "RemoteIP", FieldLabel: "对端IP", NewValue: remoteIP},
+		{FieldName: "LocalIP", FieldLabel: "本端IP", NewValue: localIP},
+		{FieldName: "IKEVersion", FieldLabel: "IKE版本", NewValue: fmt.Sprintf("%d", ikeVersion)},
+		{FieldName: "Mode", FieldLabel: "模式", NewValue: mode},
+	})
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "创建成功", "data": record})
 }
 
@@ -261,6 +268,8 @@ func UpdateIPsecVpn(c *gin.Context) {
 	phase2Bytes, _ := json.Marshal(phase2Entries)
 	username, displayName, approver := services.GetUserContext(c)
 
+	oldRecord := record
+
 	record.TunnelName = tunnelName
 	record.Owner = owner
 	record.RemoteIP = remoteIP
@@ -291,7 +300,9 @@ func UpdateIPsecVpn(c *gin.Context) {
 		}
 	}
 
-	services.LogOperation(username, displayName, "更新IPsec VPN", "ipsec_vpn", record.ID, tunnelName, approver, c.ClientIP(), nil)
+	fieldLabels := services.GetFieldLabels("ipsec_vpn")
+	details := services.DiffStructs(oldRecord, record, fieldLabels)
+	services.LogOperation(username, displayName, "更新IPsec VPN", "ipsec_vpn", record.ID, tunnelName, approver, c.ClientIP(), details)
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": record})
 }
 
@@ -333,6 +344,11 @@ func DeleteIPsecVpn(c *gin.Context) {
 	}
 
 	username, displayName, approver := services.GetUserContext(c)
-	services.LogOperation(username, displayName, "删除IPsec VPN", "ipsec_vpn", record.ID, record.TunnelName, approver, c.ClientIP(), nil)
+	services.LogOperation(username, displayName, "删除IPsec VPN", "ipsec_vpn", record.ID, record.TunnelName, approver, c.ClientIP(), []services.LogDetail{
+		{FieldName: "TunnelName", FieldLabel: "隧道名", OldValue: record.TunnelName},
+		{FieldName: "Owner", FieldLabel: "负责人", OldValue: record.Owner},
+		{FieldName: "RemoteIP", FieldLabel: "对端IP", OldValue: record.RemoteIP},
+		{FieldName: "LocalIP", FieldLabel: "本端IP", OldValue: record.LocalIP},
+	})
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }

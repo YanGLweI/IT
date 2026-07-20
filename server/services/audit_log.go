@@ -462,6 +462,29 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"Notes":      "备注",
 			"IsStarred":  "收藏",
 		}
+	case "dedicated_line":
+		return map[string]string{
+			"Factory":       "厂区",
+			"Carrier":       "运营商",
+			"BandwidthUp":   "上行带宽(Mbps)",
+			"BandwidthDown": "下行带宽(Mbps)",
+			"IPStart":       "IP起始",
+			"IPEnd":         "IP结束",
+			"SubnetMask":    "子网掩码",
+			"Gateway":       "网关",
+			"DNS":           "DNS",
+			"IPCount":       "IP数",
+			"Notes":         "备注",
+		}
+	case "ipsec_vpn":
+		return map[string]string{
+			"TunnelName": "隧道名",
+			"Owner":      "负责人",
+			"RemoteIP":   "对端IP",
+			"LocalIP":    "本端IP",
+			"IKEVersion": "IKE版本",
+			"Mode":       "模式",
+		}
 	default:
 		return make(map[string]string)
 	}

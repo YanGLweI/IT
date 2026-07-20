@@ -275,12 +275,8 @@ func UpdateDedicatedLine(c *gin.Context) {
 
 	// 记录操作日志
 	username, _, _ := services.GetUserContext(c)
-	details := []services.LogDetail{
-		{FieldName: "Factory", FieldLabel: "厂区", OldValue: oldLine.Factory, NewValue: line.Factory},
-		{FieldName: "Carrier", FieldLabel: "运营商", OldValue: oldLine.Carrier, NewValue: line.Carrier},
-		{FieldName: "IPStart", FieldLabel: "IP起始", OldValue: oldLine.IPStart, NewValue: line.IPStart},
-		{FieldName: "IPEnd", FieldLabel: "IP结束", OldValue: oldLine.IPEnd, NewValue: line.IPEnd},
-	}
+	fieldLabels := services.GetFieldLabels("dedicated_line")
+	details := services.DiffStructs(oldLine, line, fieldLabels)
 	services.LogOperation(username, displayName, "更新专线信息", "dedicated_line", line.ID, line.Factory+"-"+line.Carrier, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": line})

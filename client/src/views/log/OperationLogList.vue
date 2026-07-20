@@ -182,7 +182,9 @@ export default {
         'calendar': '日历日程',
         'password_category': '密码分类',
         'password_entry': '密码条目',
-        'it_guide': 'IT指南'
+        'it_guide': 'IT指南',
+        'dedicated_line': '专线信息',
+        'ipsec_vpn': 'IPsec VPN'
       }
     }
   },
