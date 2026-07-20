@@ -13,6 +13,7 @@ server/uploads/
 .qoder/
 .qoderignore
 webapp-testing/
+docs/
 
 # Logs
 server/server.log
