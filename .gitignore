@@ -32,4 +32,7 @@ client/client.log
 # server/config.yml
 
 # RSA private key
-server/certificate/rsa_private.pem
+server/certificate/*.pem
+server/certificate/*.key
+server/certificate/*.crt
+key/*.pem

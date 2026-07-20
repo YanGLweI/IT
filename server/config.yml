@@ -1,14 +1,17 @@
 # 服务器配置
 server:
   port: ":8080"
-  jwt_secret: "it-platform-secret-key-2024"
+  jwt_secret: "ENC[QCq+GGLygNJ7b8Ydc57qD9PdRxB34Et/Bw1qyRcq45halhddRqL9zWO0LO1+lbLqOJ6x8j6oKL/fu3WfpJcGoMoOmh3XtIFHvNpegVzcK/UGEDRWOcYu7hW7cpj5ojpojJGq6gfYu9hctn5jdJZeo5tfC1TMGzLaMC0i1ebuJQAPmB263hRuFdw9BFLnZ1g8Viu90naNXh4g5jSkGzP4v5bAWA9um6GsySc6uR0zvfO49aXDz/PWuzZlu/+7qSfBUtMf5CjJFSzi3oNUkNgO4bRACdiP1mxm0Eq33Atd5OSreeFwuXMgqiN8O7eQRbE5uqDrN520uSXrXLPd5vW4Zg==]"
   gin_mode: "debug"  # debug | release | test
   access_token_expiry: 120    # accessToken有效期（分钟）
   refresh_token_expiry: 7     # refreshToken有效期（天）
+  # TLS配置
   tls:
     enabled: true
     cert_path: "./certificate/server.crt"
     key_path: "./certificate/server.key"
+  # 配置加密私钥路径（用于解密 config.yml 中的 ENC[] 加密字段）
+  config-key: "./key/config-key.pem"
 
 # 文档版本号（用于导出文件页脚显示）
 document:
@@ -26,7 +29,7 @@ document:
 # 数据库配置
 database:
   username: "it"
-  password: "a*999999"
+  password: "ENC[hrjhY7ErjLuSV8nPz1FQ8QoYMXT27KksfxRH168pp6Eg+BC4pq1W3VGIJeSbZm75m7IKP7ciB3zBNjw5UA0DBOFWRckT74V+m/GpYAP8QKwJeE7QeJfCzyySwsn9ZdXsxvk4o5tsLz/CoLBrZ686IcF4GNxSEOC9dZm46woVdP8XPfwhQUXapEvDR0zYt1CMjv+0EDVc5g8zp83gVZAE1dTCgDckYH6T8+9NI9VzQ4W9uygqCyrwMp9Db5VkDj/rx6y2dZcC+rN96biUfUUcs8ZCtgWwKBLc0ULCwv/eNWKMcLXWrkjoH2p12Bta0gcF1BiZ8As2xW6v8ToH3AqT4A==]"
   host: "10.60.254.127"
   port: "3306"
   dbname: "it_platform"
@@ -84,10 +87,10 @@ ldap:
   insecure: true
   user_filter: "(sAMAccountName=%s)"
   username: "ylw@hot.local"
-  password: "!Qw2!Qw2!Qw2!Qw2"
+  password: "ENC[g4onpHvNo1rwP42MNNqcDpAK9SOjTfLdW5XP82uAm7/P0LYgMw6nHsWYgbWkm3VvYG9acYNEo5oyMx/ckBc0l1bJs0uIr33FGmZlSlqT6lbCWZjNd2dlXdjJdh/3NkuFEcVpFLiEt6eWVlUo665A6/IPs760Hp/AjKtVJi0Vmrkxvsc64rqAKLMe9ATVlkpQ279CMIMzCKZHLmt3FpIkv6VX3B0mDVziDgCCdefu/RYLEe2AyOgnrPPNZFy08KQAezMNI2d2SEh1EV2RgfLtxQcT+gx49DbPsnkKxSx+BnpyYxvoxvvWQNZlyDvG3aSKfsMFJ4MsBEg+PwVtpvyOeg==]"
   security_group_dn: "CN=IT部,OU=IT部,OU=HOT,DC=hot,DC=local"
   cert_path: "./certificate/ca.crt"
 
 # 密码本配置
 password_vault:
-  aes_key: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+  aes_key: "ENC[iox/LKoMo+w5Vw3XQCKhgOFM4JOc18wShUTMFreX9jWpsepoLWRHxXPI3gGMcxcKYuNpk81cqDjLAlyIbJuoQmaRH1Wo/Kfv+wzPDDxVhb9H+l7ClJxMDWWu3mHluzBxB6f86Z4skBpLPeMEaJ2aQ9CPPqWKsGAnEc8/GZU+rdWvyAG0sxwZzCG8PGIWnLiKURzimvO0dv/h+7lklHijMfcLLj1UIsEoPB7DX6K+lUisjmyA0UD0Ic/NOhdwulCN0twQHJOhFsqJ1+EGkl7ZPhbjweQc9Liti2dyaTn81EQkW+MYnNFTtX16zxPDUSpuiNMgH6KN8I6ZW3GIiDBaYA==]"
