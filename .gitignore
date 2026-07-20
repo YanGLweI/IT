@@ -4,7 +4,7 @@ server/go.sum
 
 # Build output
 client/dist/
-server/it-server
+server/it-server*
 
 # Uploads
 server/uploads/
