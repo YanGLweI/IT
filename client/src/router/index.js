@@ -78,6 +78,14 @@ const routes = [
       { path: 'dedicated-lines', name: 'DedicatedLines', component: () => import('../views/dedicated-line/DedicatedLineList.vue'), meta: { title: '专线信息', enTitle: 'Dedicated Lines' } },
       { path: 'ipsec-vpn', name: 'IPsecVPN', component: () => import('../views/ipsec-vpn/IPsecVpnList.vue'), meta: { title: 'IPsec VPN', enTitle: 'IPsec VPN' } }
     ]
+  },
+
+  // 404 通配符路由（必须放在最后）
+  {
+    path: '*',
+    name: 'NotFound',
+    component: () => import('../views/error/NotFound.vue'),
+    meta: { title: '页面未找到', public: true }
   }
 ]
 
