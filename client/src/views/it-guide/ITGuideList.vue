@@ -233,7 +233,7 @@
     </el-dialog>
 
     <!-- 附件管理弹窗 -->
-    <el-dialog :title="'管理附件 - ' + attachGuideTitle" :visible.sync="attachDialogVisible" width="600px" :close-on-click-modal="false">
+    <el-dialog :title="'附件关联 - ' + attachGuideTitle" :visible.sync="attachDialogVisible" width="600px" :close-on-click-modal="false">
       <div v-loading="attachLoading">
         <!-- 下载链接区域 -->
         <div class="attach-section">
@@ -271,12 +271,12 @@
             :http-request="noopUpload"
             :show-file-list="false"
             :before-upload="beforeAttachUpload"
-            accept=".exe,.msi,.zip,.rar,.7z,.tar,.gz,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.bat,.sh,.dmg,.iso,.apk"
+            accept=".exe,.msi,.zip,.rar,.7z,.tar,.gz,.pdf,.docx,.xlsx,.pptx,.txt,.bat,.sh,.dmg,.iso"
             class="attach-upload"
           >
             <i class="el-icon-upload2" style="font-size: 32px; color: #94A3B8;"></i>
             <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-            <div slot="tip" class="el-upload__tip">支持 exe/msi/zip/rar/7z/tar/gz/pdf/doc/docx/xls/xlsx/ppt/pptx/txt/bat/sh/dmg/iso/apk，最大 100MB</div>
+            <div slot="tip" class="el-upload__tip">支持 exe/msi/zip/rar/7z/tar/gz/pdf/docx/xlsx/pptx/txt/bat/sh/dmg，最大 100MB</div>
           </el-upload>
           <div v-if="attachFiles.length" class="attach-list">
             <div v-for="item in attachFiles" :key="item.id" class="attach-item">
