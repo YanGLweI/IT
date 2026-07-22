@@ -680,12 +680,12 @@ func UploadITGuideAttachment(c *gin.Context) {
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	allowedExts := map[string]bool{
 		".exe": true, ".msi": true, ".zip": true, ".rar": true, ".7z": true,
-		".tar": true, ".gz": true, ".pdf": true, ".doc": true, ".docx": true,
-		".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true, ".txt": true,
-		".bat": true, ".sh": true, ".dmg": true, ".iso": true, ".apk": true,
+		".tar": true, ".gz": true, ".pdf": true, ".docx": true,
+		".xlsx": true, ".pptx": true, ".txt": true,
+		".bat": true, ".sh": true, ".dmg": true, ".iso": true,
 	}
 	if !allowedExts[ext] {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不支持的文件格式，允许: exe/msi/zip/rar/7z/tar/gz/pdf/doc/docx/xls/xlsx/ppt/pptx/txt/bat/sh/dmg/iso/apk"})
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不支持的文件格式，允许: exe/msi/zip/rar/7z/tar/gz/pdf/docx/xlsx/pptx/txt/bat/sh/dmg/iso"})
 		return
 	}
 	if file.Size > 100*1024*1024 {

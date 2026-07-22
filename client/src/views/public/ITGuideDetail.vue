@@ -117,7 +117,7 @@
             </button>
           </div>
           <div class="resource-panel-body">
-            <a v-for="item in attachments" :key="item.id" class="resource-item" :href="item.attachment_type === 'link' ? item.url : getFileUrl(item.file_path)" :target="item.attachment_type === 'link' ? '_blank' : '_self'" :download="item.attachment_type === 'file'" :title="item.attachment_type === 'link' ? item.url : item.file_name">
+            <a v-for="item in attachments" :key="item.id" class="resource-item" :href="item.attachment_type === 'link' ? item.url : getFileUrl(item.file_path)" :target="item.attachment_type === 'link' ? '_blank' : '_self'" :download="item.attachment_type === 'file' ? item.file_name : undefined" :title="item.attachment_type === 'link' ? item.url : item.file_name">
               <svg v-if="item.attachment_type === 'link'" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#409EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               <svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               <span class="resource-item-label">{{ item.label || item.file_name }}</span>
@@ -218,8 +218,10 @@ export default {
     },
     getFileUrl(path) {
       if (!path) return ''
-      if (!path.includes('uploads/it_guide_media/')) return ''
-      return path.startsWith('/') ? path : '/' + path
+      if (!path.includes('uploads/it_guide_media/') && !path.includes('uploads/it_guide_attachments/')) return ''
+      // 去掉 ./ 前缀，确保以 / 开头
+      const p = path.replace(/^\.\//,'')
+      return p.startsWith('/') ? p : '/' + p
     },
     previewImage(img) {
       this.imageViewer.stepId = img.step_id
