@@ -56,3 +56,22 @@ type ITGuideMedia struct {
 func (ITGuideMedia) TableName() string {
 	return "it_guide_media"
 }
+
+// ITGuideAttachment 指南附件表（下载链接/上传文件）
+type ITGuideAttachment struct {
+	ID             uint   `gorm:"primaryKey" json:"id"`
+	GuideID        uint   `gorm:"type:int unsigned;not null;index" json:"guide_id"`
+	AttachmentType string `gorm:"type:varchar(10);not null" json:"attachment_type"` // "link" | "file"
+	Label          string `gorm:"type:varchar(200)" json:"label"`                   // 显示标签
+	URL            string `gorm:"type:varchar(500)" json:"url"`                     // 链接URL（type=link时）
+	FileName       string `gorm:"type:varchar(300)" json:"file_name"`               // 原始文件名（type=file时）
+	FilePath       string `gorm:"type:varchar(500)" json:"file_path"`               // 服务器路径
+	FileSize       int64  `gorm:"type:bigint" json:"file_size"`                     // 文件大小(bytes)
+	FileType       string `gorm:"type:varchar(100)" json:"file_type"`               // MIME类型
+	SortOrder      int    `gorm:"type:int;default:0" json:"sort_order"`
+}
+
+// TableName 指定表名
+func (ITGuideAttachment) TableName() string {
+	return "it_guide_attachments"
+}

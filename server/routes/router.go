@@ -16,6 +16,7 @@ func SetupRouter() *gin.Engine {
 
 	// 静态文件服务
 	r.Static("/uploads/it_guide_media", "./uploads/it_guide_media")
+	r.Static("/uploads/it_guide_attachments", "./uploads/it_guide_attachments")
 	r.Static("/uploads/dedicated_lines", "./uploads/dedicated_lines")
 	r.Static("/uploads/ipsec_vpn", "./uploads/ipsec_vpn")
 
@@ -190,6 +191,7 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/it-guides", handlers.ListITGuides)
 			protected.GET("/it-guides/:id", handlers.GetITGuide)
 			protected.GET("/it-guides/:id/steps", handlers.ListITGuideSteps)
+			protected.GET("/it-guides/:id/attachments", handlers.ListITGuideAttachments)
 
 			// 日历日程 - 读操作（不需要双控）
 			protected.GET("/calendars", handlers.ListCalendars)
@@ -377,6 +379,8 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/it-guides/:id/steps/reorder", handlers.ReorderITGuideSteps)
 				dual.POST("/it-guides/:id/media", handlers.UploadITGuideMedia)
 				dual.DELETE("/it-guides/:id/media/:mediaId", handlers.DeleteITGuideMedia)
+				dual.POST("/it-guides/:id/attachments", handlers.UploadITGuideAttachment)
+				dual.DELETE("/it-guides/:id/attachments/:attachId", handlers.DeleteITGuideAttachment)
 
 				// 密码本 - 写操作（需要双控）
 				dual.POST("/password-categories", handlers.CreatePasswordCategory)

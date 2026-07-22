@@ -107,3 +107,22 @@ export function deleteITGuideMedia(guideId, mediaId, dualToken) {
   if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
   return request.delete(`/it-guides/${guideId}/media/${mediaId}`, config)
 }
+
+// 获取指南附件列表
+export function getITGuideAttachments(guideId) {
+  return request.get(`/it-guides/${guideId}/attachments`)
+}
+
+// 上传附件（文件或链接）
+export function uploadITGuideAttachment(guideId, formData, dualToken) {
+  const config = { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
+  if (dualToken) config.headers['X-Dual-Control-Token'] = dualToken
+  return request.post(`/it-guides/${guideId}/attachments`, formData, config)
+}
+
+// 删除附件
+export function deleteITGuideAttachment(guideId, attachId, dualToken) {
+  const config = {}
+  if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
+  return request.delete(`/it-guides/${guideId}/attachments/${attachId}`, config)
+}

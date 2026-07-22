@@ -70,6 +70,7 @@ func InitDB() {
 		&models.ITGuide{},
 		&models.ITGuideStep{},
 		&models.ITGuideMedia{},
+		&models.ITGuideAttachment{},
 		&models.DedicatedLine{},
 		&models.IPsecVpn{},
 	)

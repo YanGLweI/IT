@@ -194,9 +194,22 @@ func DeleteITGuide(c *gin.Context) {
 	guideMediaDir := filepath.Join(config.Cfg.Upload.ITGuideMediaPath, fmt.Sprintf("%d", guide.ID))
 	os.RemoveAll(guideMediaDir)
 
+	// 删除关联的附件文件
+	var attachList []models.ITGuideAttachment
+	database.GetDB().Where("guide_id = ?", guide.ID).Find(&attachList)
+	for _, a := range attachList {
+		if a.FilePath != "" {
+			os.Remove(a.FilePath)
+		}
+	}
+	// 清理指南附件目录
+	guideAttachDir := filepath.Join(config.Cfg.Upload.ITGuideAttachmentPath, fmt.Sprintf("%d", guide.ID))
+	os.RemoveAll(guideAttachDir)
+
 	// 级联删除
 	database.GetDB().Where("guide_id = ?", guide.ID).Delete(&models.ITGuideStep{})
 	database.GetDB().Where("guide_id = ?", guide.ID).Delete(&models.ITGuideMedia{})
+	database.GetDB().Where("guide_id = ?", guide.ID).Delete(&models.ITGuideAttachment{})
 	database.GetDB().Delete(&guide)
 
 	// 记录操作日志
@@ -589,6 +602,168 @@ func DeleteITGuideMedia(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
 }
 
+// ============ 附件管理 ============
+
+// ListITGuideAttachments 获取指南附件列表
+func ListITGuideAttachments(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var guide models.ITGuide
+	if err := database.GetDB().First(&guide, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "指南不存在"})
+		return
+	}
+
+	var attachments []models.ITGuideAttachment
+	database.GetDB().Where("guide_id = ?", guide.ID).Order("sort_order ASC, id ASC").Find(&attachments)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": attachments})
+}
+
+// UploadITGuideAttachment 上传附件（文件或链接）
+func UploadITGuideAttachment(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var guide models.ITGuide
+	if err := database.GetDB().First(&guide, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "指南不存在"})
+		return
+	}
+
+	attachmentType := c.PostForm("attachment_type")
+	if attachmentType != "link" && attachmentType != "file" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "附件类型必须为 link 或 file"})
+		return
+	}
+
+	if attachmentType == "link" {
+		// 链接模式
+		label := c.PostForm("label")
+		url := c.PostForm("url")
+		if label == "" || url == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "链接标签和URL不能为空"})
+			return
+		}
+		if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "URL必须以 http:// 或 https:// 开头"})
+			return
+		}
+
+		attachment := models.ITGuideAttachment{
+			GuideID:        uint(id),
+			AttachmentType: "link",
+			Label:          label,
+			URL:            url,
+		}
+		if err := database.GetDB().Create(&attachment).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建链接失败"})
+			return
+		}
+
+		username, displayName, approver := services.GetUserContext(c)
+		details := []services.LogDetail{
+			{FieldName: "Label", FieldLabel: "标签", NewValue: label},
+			{FieldName: "URL", FieldLabel: "链接", NewValue: url},
+		}
+		services.LogOperation(username, displayName, "添加指南链接", "it_guide", guide.ID, guide.Title, approver, c.ClientIP(), details)
+
+		c.JSON(http.StatusOK, gin.H{"code": 200, "message": "链接添加成功", "data": attachment})
+		return
+	}
+
+	// 文件模式
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请上传文件"})
+		return
+	}
+
+	// 校验文件格式
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowedExts := map[string]bool{
+		".exe": true, ".msi": true, ".zip": true, ".rar": true, ".7z": true,
+		".tar": true, ".gz": true, ".pdf": true, ".doc": true, ".docx": true,
+		".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true, ".txt": true,
+		".bat": true, ".sh": true, ".dmg": true, ".iso": true, ".apk": true,
+	}
+	if !allowedExts[ext] {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不支持的文件格式，允许: exe/msi/zip/rar/7z/tar/gz/pdf/doc/docx/xls/xlsx/ppt/pptx/txt/bat/sh/dmg/iso/apk"})
+		return
+	}
+	if file.Size > 100*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "文件大小不能超过 100MB"})
+		return
+	}
+
+	// 按指南ID分目录存储
+	attachDir := filepath.Join(config.Cfg.Upload.ITGuideAttachmentPath, fmt.Sprintf("%d", guide.ID))
+	os.MkdirAll(attachDir, 0755)
+
+	filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strings.TrimSuffix(filepath.Base(file.Filename), ext), ext)
+	filePath := filepath.Join(attachDir, filename)
+
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "文件保存失败"})
+		return
+	}
+
+	label := c.PostForm("label")
+	if label == "" {
+		label = file.Filename
+	}
+
+	attachment := models.ITGuideAttachment{
+		GuideID:        uint(id),
+		AttachmentType: "file",
+		Label:          label,
+		FileName:       file.Filename,
+		FilePath:       filePath,
+		FileSize:       file.Size,
+		FileType:       file.Header.Get("Content-Type"),
+	}
+	if err := database.GetDB().Create(&attachment).Error; err != nil {
+		os.Remove(filePath)
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存附件记录失败"})
+		return
+	}
+
+	username, displayName, approver := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "FileName", FieldLabel: "文件名", NewValue: file.Filename},
+		{FieldName: "Label", FieldLabel: "标签", NewValue: label},
+	}
+	services.LogOperation(username, displayName, "上传指南附件", "it_guide", guide.ID, guide.Title, approver, c.ClientIP(), details)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "上传成功", "data": attachment})
+}
+
+// DeleteITGuideAttachment 删除附件
+func DeleteITGuideAttachment(c *gin.Context) {
+	attachID, _ := strconv.Atoi(c.Param("attachId"))
+	var attachment models.ITGuideAttachment
+	if err := database.GetDB().First(&attachment, attachID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "附件不存在"})
+		return
+	}
+
+	// 删除文件
+	if attachment.FilePath != "" {
+		os.Remove(attachment.FilePath)
+		dir := filepath.Dir(attachment.FilePath)
+		entries, _ := os.ReadDir(dir)
+		if len(entries) == 0 {
+			os.Remove(dir)
+		}
+	}
+	database.GetDB().Delete(&attachment)
+
+	username, displayName, approver := services.GetUserContext(c)
+	details := []services.LogDetail{
+		{FieldName: "Label", FieldLabel: "标签", OldValue: attachment.Label},
+	}
+	services.LogOperation(username, displayName, "删除指南附件", "it_guide", attachment.GuideID, "", approver, c.ClientIP(), details)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
+}
+
 // ============ 公开接口 ============
 
 // ListPublicITGuides 获取已发布指南列表（公开）
@@ -646,7 +821,11 @@ func GetPublicITGuide(c *gin.Context) {
 	var guideMedia []models.ITGuideMedia
 	database.GetDB().Where("guide_id = ? AND step_id = 0", guide.ID).Order("sort_order ASC").Find(&guideMedia)
 
-	c.JSON(http.StatusOK, gin.H{"code": 200, "data": guide, "steps": steps, "media": guideMedia})
+	// 加载附件
+	var attachments []models.ITGuideAttachment
+	database.GetDB().Where("guide_id = ?", guide.ID).Order("sort_order ASC, id ASC").Find(&attachments)
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": guide, "steps": steps, "media": guideMedia, "attachments": attachments})
 }
 
 // RecordITGuideView 记录指南浏览量（公开）

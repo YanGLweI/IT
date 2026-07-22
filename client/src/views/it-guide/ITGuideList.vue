@@ -60,6 +60,7 @@
         </div>
         <div class="card-footer">
           <a class="action-link" @click.stop="handleEdit(item)">编辑</a>
+          <a class="action-link" @click.stop="openAttachDialog(item)">附件</a>
           <a class="action-link" @click.stop="handleTogglePublish(item)" :style="{ color: item.is_published ? '#D97706' : '#16A34A' }">
             {{ item.is_published ? '取消发布' : '发布' }}
           </a>
@@ -231,6 +232,67 @@
       </div>
     </el-dialog>
 
+    <!-- 附件管理弹窗 -->
+    <el-dialog :title="'管理附件 - ' + attachGuideTitle" :visible.sync="attachDialogVisible" width="600px" :close-on-click-modal="false">
+      <div v-loading="attachLoading">
+        <!-- 下载链接区域 -->
+        <div class="attach-section">
+          <div class="attach-section-title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            下载链接
+          </div>
+          <div class="attach-link-form">
+            <el-input v-model="attachLinkForm.label" placeholder="标签名称" size="small" style="width: 140px;" />
+            <el-input v-model="attachLinkForm.url" placeholder="https://..." size="small" style="flex: 1;" />
+            <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAddLink" :loading="attachAddingLink">添加</el-button>
+          </div>
+          <div v-if="attachLinks.length" class="attach-list">
+            <div v-for="item in attachLinks" :key="item.id" class="attach-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#409EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <span class="attach-item-label" :title="item.url">{{ item.label }}</span>
+              <span class="attach-item-url">{{ item.url }}</span>
+              <el-popconfirm title="确定删除此链接？" @confirm="handleDeleteAttach(item)">
+                <el-button slot="reference" type="text" icon="el-icon-close" class="attach-delete-btn" />
+              </el-popconfirm>
+            </div>
+          </div>
+          <div v-else class="attach-empty">暂无下载链接</div>
+        </div>
+
+        <!-- 上传附件区域 -->
+        <div class="attach-section">
+          <div class="attach-section-title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            上传附件
+          </div>
+          <el-upload
+            drag
+            action="#"
+            :http-request="noopUpload"
+            :show-file-list="false"
+            :before-upload="beforeAttachUpload"
+            accept=".exe,.msi,.zip,.rar,.7z,.tar,.gz,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.bat,.sh,.dmg,.iso,.apk"
+            class="attach-upload"
+          >
+            <i class="el-icon-upload2" style="font-size: 32px; color: #94A3B8;"></i>
+            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+            <div slot="tip" class="el-upload__tip">支持 exe/msi/zip/rar/7z/tar/gz/pdf/doc/docx/xls/xlsx/ppt/pptx/txt/bat/sh/dmg/iso/apk，最大 100MB</div>
+          </el-upload>
+          <div v-if="attachFiles.length" class="attach-list">
+            <div v-for="item in attachFiles" :key="item.id" class="attach-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="attach-item-label">{{ item.label || item.file_name }}</span>
+              <span class="attach-item-size">{{ formatFileSize(item.file_size) }}</span>
+              <el-popconfirm title="确定删除此附件？" @confirm="handleDeleteAttach(item)">
+                <el-button slot="reference" type="text" icon="el-icon-close" class="attach-delete-btn" />
+              </el-popconfirm>
+            </div>
+          </div>
+          <div v-else class="attach-empty">暂无上传附件</div>
+        </div>
+      </div>
+    </el-dialog>
+
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
     </div>
@@ -238,7 +300,7 @@
 </template>
 
 <script>
-import { getITGuides, getITGuide, createITGuide, updateITGuide, deleteITGuide, publishITGuide, unpublishITGuide, uploadITGuideMedia, deleteITGuideMedia, deleteITGuideStep, createITGuideStep, updateITGuideStep } from '@/api/it_guide'
+import { getITGuides, getITGuide, createITGuide, updateITGuide, deleteITGuide, publishITGuide, unpublishITGuide, uploadITGuideMedia, deleteITGuideMedia, deleteITGuideStep, createITGuideStep, updateITGuideStep, getITGuideAttachments, uploadITGuideAttachment, deleteITGuideAttachment } from '@/api/it_guide'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 
 export default {
@@ -265,8 +327,21 @@ export default {
       dragIndex: -1,
       focusedStepIdx: 0,
       contentLoaded: false,
-      _serverImageMap: {}
+      _serverImageMap: {},
+      // 附件管理弹窗
+      attachDialogVisible: false,
+      attachGuideId: null,
+      attachGuideTitle: '',
+      attachList: [],
+      attachLoading: false,
+      attachLinkForm: { label: '', url: '' },
+      attachAddingLink: false,
+      attachUploading: false
     }
+  },
+  computed: {
+    attachLinks() { return this.attachList.filter(a => a.attachment_type === 'link') },
+    attachFiles() { return this.attachList.filter(a => a.attachment_type === 'file') }
   },
   created() { this.fetchItems() },
   mounted() {
@@ -739,7 +814,7 @@ export default {
     },
     // 删除
     handleDelete(item) {
-      this.$confirm(`确定删除指南"${item.title}"？`, '提示', { type: 'warning' }).then(async () => {
+      this.$confirm(`确定删除指南“${item.title}”？`, '提示', { type: 'warning' }).then(async () => {
         try {
           const dualToken = await this.$refs.dualControl.open()
           await deleteITGuide(item.id, dualToken)
@@ -749,6 +824,86 @@ export default {
           if (e.message !== 'canceled') this.$message.error('删除失败')
         }
       }).catch(() => {})
+    },
+    // ============ 附件管理 ============
+    openAttachDialog(item) {
+      this.attachGuideId = item.id
+      this.attachGuideTitle = item.title
+      this.attachList = []
+      this.attachLinkForm = { label: '', url: '' }
+      this.attachDialogVisible = true
+      this.fetchAttachments()
+    },
+    async fetchAttachments() {
+      this.attachLoading = true
+      try {
+        const res = await getITGuideAttachments(this.attachGuideId)
+        this.attachList = res.data || []
+      } catch (e) { console.error(e) } finally { this.attachLoading = false }
+    },
+    async handleAddLink() {
+      if (!this.attachLinkForm.label || !this.attachLinkForm.url) {
+        this.$message.warning('请输入标签和URL'); return
+      }
+      if (!this.attachLinkForm.url.startsWith('http://') && !this.attachLinkForm.url.startsWith('https://')) {
+        this.$message.warning('URL必须以 http:// 或 https:// 开头'); return
+      }
+      this.attachAddingLink = true
+      try {
+        const dualToken = await this.$refs.dualControl.open()
+        const fd = new FormData()
+        fd.append('attachment_type', 'link')
+        fd.append('label', this.attachLinkForm.label)
+        fd.append('url', this.attachLinkForm.url)
+        await uploadITGuideAttachment(this.attachGuideId, fd, dualToken)
+        this.$message.success('链接添加成功')
+        this.attachLinkForm = { label: '', url: '' }
+        this.fetchAttachments()
+      } catch (e) {
+        if (e.message !== 'canceled') this.$message.error('添加失败')
+      } finally { this.attachAddingLink = false }
+    },
+    beforeAttachUpload(file) {
+      const allowedExts = ['.exe', '.msi', '.zip', '.rar', '.7z', '.tar', '.gz', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.bat', '.sh', '.dmg', '.iso', '.apk']
+      const ext = '.' + file.name.split('.').pop().toLowerCase()
+      if (!allowedExts.includes(ext)) {
+        this.$message.error('不支持的文件格式'); return false
+      }
+      if (file.size / 1024 / 1024 > 100) {
+        this.$message.error('文件大小不能超过 100MB'); return false
+      }
+      this.doUploadFile(file)
+      return false
+    },
+    async doUploadFile(file) {
+      this.attachUploading = true
+      try {
+        const dualToken = await this.$refs.dualControl.open()
+        const fd = new FormData()
+        fd.append('attachment_type', 'file')
+        fd.append('file', file)
+        await uploadITGuideAttachment(this.attachGuideId, fd, dualToken)
+        this.$message.success('上传成功')
+        this.fetchAttachments()
+      } catch (e) {
+        if (e.message !== 'canceled') this.$message.error('上传失败')
+      } finally { this.attachUploading = false }
+    },
+    async handleDeleteAttach(item) {
+      try {
+        const dualToken = await this.$refs.dualControl.open()
+        await deleteITGuideAttachment(this.attachGuideId, item.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchAttachments()
+      } catch (e) {
+        if (e.message !== 'canceled') this.$message.error('删除失败')
+      }
+    },
+    formatFileSize(bytes) {
+      if (!bytes) return ''
+      if (bytes < 1024) return bytes + ' B'
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
     }
   }
 }
@@ -863,4 +1018,23 @@ export default {
   padding: 32px 20px;
 }
 @media (max-width: 640px) { .guide-grid { grid-template-columns: 1fr; } .page-title { font-size: 20px; } .type-selector { grid-template-columns: 1fr; } }
+
+/* 附件管理弹窗 */
+.attach-section { margin-bottom: 24px; }
+.attach-section:last-child { margin-bottom: 0; }
+.attach-section-title { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #1E293B; margin-bottom: 12px; }
+.attach-link-form { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.attach-list { border: 1px solid #F1F5F9; border-radius: 8px; overflow: hidden; }
+.attach-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #F1F5F9; transition: background 0.15s ease; }
+.attach-item:last-child { border-bottom: none; }
+.attach-item:hover { background: #F8FAFC; }
+.attach-item-label { font-size: 13px; font-weight: 500; color: #1E293B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.attach-item-url { font-size: 12px; color: #94A3B8; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.attach-item-size { font-size: 12px; color: #94A3B8; flex-shrink: 0; }
+.attach-delete-btn { color: #94A3B8; flex-shrink: 0; }
+.attach-delete-btn:hover { color: #DC2626; }
+.attach-empty { font-size: 13px; color: #94A3B8; text-align: center; padding: 16px 0; }
+.attach-upload ::v-deep .el-upload { width: 100%; }
+.attach-upload ::v-deep .el-upload-dragger { width: 100%; border-radius: 12px; border: 1px dashed #BFDBFE; background: #FAFBFF; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; height: auto; }
+.attach-upload ::v-deep .el-upload-dragger:hover { border-color: #409EFF; }
 </style>

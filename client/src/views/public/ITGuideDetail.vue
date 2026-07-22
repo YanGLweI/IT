@@ -99,6 +99,34 @@
       <button class="viewer-nav viewer-nav-next" @click.stop="nextImage" v-if="viewerImages.length > 1">&#10095;</button>
       <span class="viewer-counter" v-if="viewerImages.length > 1">{{ imageViewer.currentIndex + 1 }} / {{ viewerImages.length }}</span>
     </div>
+
+    <!-- 悬浮资源下载面板 -->
+    <template v-if="attachments.length">
+      <!-- 收缩态小标签 -->
+      <div v-if="resourcePanelCollapsed" class="resource-tab" @click="resourcePanelExpanded = true" aria-label="展开资源下载面板">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span class="resource-tab-text">资源</span>
+      </div>
+      <!-- 展开态面板 -->
+      <transition name="resource-panel">
+        <div v-if="!resourcePanelCollapsed || resourcePanelExpanded" class="resource-panel" :class="{ 'is-overlay': resourcePanelCollapsed }">
+          <div class="resource-panel-header">
+            <span class="resource-panel-title">资源下载</span>
+            <button v-if="resourcePanelCollapsed" class="resource-panel-close" @click="resourcePanelExpanded = false" aria-label="收起面板">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="resource-panel-body">
+            <a v-for="item in attachments" :key="item.id" class="resource-item" :href="item.attachment_type === 'link' ? item.url : getFileUrl(item.file_path)" :target="item.attachment_type === 'link' ? '_blank' : '_self'" :download="item.attachment_type === 'file'" :title="item.attachment_type === 'link' ? item.url : item.file_name">
+              <svg v-if="item.attachment_type === 'link'" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#409EFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <svg v-else viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="resource-item-label">{{ item.label || item.file_name }}</span>
+              <span v-if="item.attachment_type === 'file'" class="resource-item-size">{{ formatFileSize(item.file_size) }}</span>
+            </a>
+          </div>
+        </div>
+      </transition>
+    </template>
   </div>
 </template>
 
@@ -125,7 +153,11 @@ export default {
       iconAnim: null,
       pointerX: 0,
       pointerY: 0,
-      heartSpread: 16
+      heartSpread: 16,
+      // 资源下载面板
+      attachments: [],
+      resourcePanelCollapsed: false,
+      resourcePanelExpanded: false
     }
   },
   computed: {
@@ -143,10 +175,14 @@ export default {
   mounted() {
     if (this.guide) this.initHeartParticles()
     window.addEventListener('keydown', this.handleViewerKeydown)
+    this._resizeHandler = this._debounce(this.checkPanelCollapse, 150)
+    window.addEventListener('resize', this._resizeHandler)
+    this.checkPanelCollapse()
   },
   beforeDestroy() {
     this.cleanupHeartParticles()
     window.removeEventListener('keydown', this.handleViewerKeydown)
+    window.removeEventListener('resize', this._resizeHandler)
   },
   methods: {
     async fetchDetail() {
@@ -162,6 +198,7 @@ export default {
           if (s.media && s.media.length) stepMedia.push(...s.media)
         })
         this.media = stepMedia.length ? stepMedia : (body.media || [])
+        this.attachments = body.attachments || []
         this.likeCount = body.data.like_count || 0
         // 记录浏览量
         try { await recordITGuideView(this.$route.params.id) } catch (e) {}
@@ -310,6 +347,24 @@ export default {
       clearInterval(this.heartTimer)
       this.heartParticles.forEach(p => p.el.remove())
       this.heartParticles = []
+    },
+    // 资源面板响应式收缩
+    checkPanelCollapse() {
+      this.resourcePanelCollapsed = window.innerWidth < 1280
+      if (!this.resourcePanelCollapsed) this.resourcePanelExpanded = false
+    },
+    formatFileSize(bytes) {
+      if (!bytes) return ''
+      if (bytes < 1024) return bytes + ' B'
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+    },
+    _debounce(fn, delay) {
+      let timer = null
+      return function (...args) {
+        clearTimeout(timer)
+        timer = setTimeout(() => fn.apply(this, args), delay)
+      }
     }
   }
 }
@@ -792,5 +847,148 @@ export default {
   .timeline-item {
     padding-left: 28px;
   }
+}
+
+/* 悬浮资源下载面板 */
+.resource-panel {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 240px;
+  max-height: 60vh;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.resource-panel.is-overlay {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.resource-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.resource-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.resource-panel-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: #94A3B8;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.resource-panel-close:hover {
+  background: #F1F5F9;
+  color: #64748B;
+}
+
+.resource-panel-body {
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.resource-item:hover {
+  background: #F1F5F9;
+}
+
+.resource-item-label {
+  font-size: 13px;
+  color: #334155;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.resource-item:hover .resource-item-label {
+  color: #409EFF;
+}
+
+.resource-item-size {
+  font-size: 11px;
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+
+/* 收缩态小标签 */
+.resource-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s ease;
+  color: #64748B;
+}
+
+.resource-tab:hover {
+  background: #EFF6FF;
+  color: #409EFF;
+}
+
+.resource-tab-text {
+  writing-mode: vertical-rl;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+}
+
+/* 面板展开/收起动画 */
+.resource-panel-enter-active,
+.resource-panel-leave-active {
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.resource-panel-enter,
+.resource-panel-leave-to {
+  opacity: 0;
+  transform: translateY(-50%) translateX(12px);
 }
 </style>
