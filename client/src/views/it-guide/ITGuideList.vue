@@ -864,7 +864,7 @@ export default {
       } finally { this.attachAddingLink = false }
     },
     beforeAttachUpload(file) {
-      const allowedExts = ['.exe', '.msi', '.zip', '.rar', '.7z', '.tar', '.gz', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.bat', '.sh', '.dmg', '.iso', '.apk']
+      const allowedExts = ['.exe', '.msi', '.zip', '.rar', '.7z', '.tar', '.gz', '.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.bat', '.sh', '.dmg', '.iso']
       const ext = '.' + file.name.split('.').pop().toLowerCase()
       if (!allowedExts.includes(ext)) {
         this.$message.error('不支持的文件格式'); return false
@@ -886,7 +886,8 @@ export default {
         this.$message.success('上传成功')
         this.fetchAttachments()
       } catch (e) {
-        if (e.message !== 'canceled') this.$message.error('上传失败')
+        // 具体错误信息由请求拦截器统一提示，此处不重复弹窗
+        if (e.message !== 'canceled') console.error('上传附件失败:', e)
       } finally { this.attachUploading = false }
     },
     async handleDeleteAttach(item) {
