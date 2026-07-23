@@ -40,7 +40,7 @@
           @sort-change="handleSortChange"
           v-loading="loading"
         >
-          <el-table-column type="index" label="序号" width="70" align="center" :index="indexMethod" />
+          <el-table-column type="index" label="#" width="70" align="center" :index="indexMethod" />
           <el-table-column prop="computer_name" label="计算机名" sortable="custom" />
           <el-table-column prop="ip_address" label="IP地址" sortable="custom" />
           <el-table-column prop="os_type" label="操作系统" sortable="custom">

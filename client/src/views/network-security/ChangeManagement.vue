@@ -79,40 +79,40 @@
       </div>
 
       <!-- 数据表格 -->
-      <el-table :data="records" border stripe v-loading="recordsLoading" style="margin-top: 12px">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="year" label="年份" width="80" align="center" />
-        <el-table-column prop="month" label="月份" width="80" align="center">
-          <template slot-scope="{ row }">{{ row.month }}月</template>
-        </el-table-column>
-        <el-table-column label="变更类型" width="200" align="center">
-          <template slot-scope="{ row }">
-            <el-tag v-for="t in (row.change_types || [])" :key="t.id" size="mini" style="margin: 2px">{{ t.name }}</el-tag>
-            <span v-if="!row.change_types || row.change_types.length === 0">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
-        <el-table-column label="文件大小" width="100" align="center">
-          <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
-        </el-table-column>
-        <el-table-column label="申请日期" width="120" align="center">
-          <template slot-scope="{ row }">{{ formatDateOnly(row.apply_date) }}</template>
-        </el-table-column>
-        <el-table-column label="实施日期" width="120" align="center">
-          <template slot-scope="{ row }">{{ formatDateOnly(row.implement_date) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right" align="center">
-          <template slot-scope="{ row }">
-            <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="previewRecord(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-download" @click="downloadRecord(row)">下载</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="editRecord(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteRecord(row)">删除</el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="table-card" style="margin-top: 12px">
+        <el-table :data="records" stripe v-loading="recordsLoading">
+          <el-table-column type="index" label="#" width="70" align="center" />
+          <el-table-column prop="year" label="年份" width="85" align="center" />
+          <el-table-column prop="month" label="月份" width="80" align="center">
+            <template slot-scope="{ row }">{{ row.month }}月</template>
+          </el-table-column>
+          <el-table-column label="变更类型" width="180" align="center">
+            <template slot-scope="{ row }">
+              <el-tag v-for="t in (row.change_types || [])" :key="t.id" size="mini" style="margin: 2px">{{ t.name }}</el-tag>
+              <span v-if="!row.change_types || row.change_types.length === 0">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="file_name" label="文件名" min-width="150" show-overflow-tooltip />
+          <el-table-column label="申请日期" width="125" align="center">
+            <template slot-scope="{ row }">{{ formatDateOnly(row.apply_date) }}</template>
+          </el-table-column>
+          <el-table-column label="实施日期" width="125" align="center">
+            <template slot-scope="{ row }">{{ formatDateOnly(row.implement_date) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="340" fixed="right" align="center">
+            <template slot-scope="{ row }">
+              <div class="op-btns">
+                <el-button size="mini" type="text" icon="el-icon-view" @click="previewRecord(row)">预览</el-button>
+                <el-button size="mini" type="text" icon="el-icon-download" @click="downloadRecord(row)">下载</el-button>
+                <el-button size="mini" type="text" icon="el-icon-edit" @click="editRecord(row)">编辑</el-button>
+                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteRecord(row)">删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      
 
       <!-- 分页 -->
       <el-pagination

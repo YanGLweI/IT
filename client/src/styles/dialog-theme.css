@@ -57,7 +57,7 @@
 /* --- 主体 --- */
 .el-dialog__body {
   padding: 20px 24px !important;
-  max-height: 65vh;
+  max-height: 80vh;
   overflow-y: auto;
   background: #ffffff !important;
   color: #1e293b !important;
