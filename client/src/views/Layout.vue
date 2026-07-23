@@ -14,8 +14,9 @@
         unique-opened
         @select="handleMenuSelect"
       >
-        <!-- 我的收藏 -->
-        <el-submenu v-if="favorites.length" index="favorites" class="fav-submenu">
+        <!-- 我的收藏：固定渲染（即使暂无收藏），避免刷新时收藏加载后该分组才挂载、
+             插入菜单顶部把其余菜单项整体下推造成的布局跳动；收藏项只填充到默认折叠的分组内部，不产生可见高度变化 -->
+        <el-submenu index="favorites" class="fav-submenu">
           <template slot="title">
             <i class="el-icon-star-on fav-section-icon"></i>
             <span>我的收藏</span>
@@ -29,6 +30,8 @@
               @click.stop="toggleFavorite({ index: fav.menu_index, icon: fav.icon, title: fav.title })"
             ></i>
           </el-menu-item>
+          <!-- 空状态提示：用普通 div 而非 el-menu-item，避免被 el-menu 注册为菜单项 -->
+          <div v-if="!favorites.length" class="fav-empty">暂无收藏，可在各模块菜单右侧点星收藏</div>
         </el-submenu>
 
         <template v-for="entry in menuConfig">
@@ -200,7 +203,11 @@ export default {
     // ============ 菜单收藏 ============
     loadFavorites() {
       getMenuFavorites().then(res => {
+        // 首次加载收藏同样会挂载菜单项，触发 el-menu 的 items watcher -> initOpenedMenu，
+        // 按激活项重展开其原始父级分组并收起用户当前展开的分组，需同样保护
+        const restore = this.disableMenuAutoExpand()
         this.favorites = res.data || []
+        this.$nextTick(restore)
       }).catch(() => {})
     },
     isFavorited(index) {
@@ -210,13 +217,26 @@ export default {
     // 收藏变更会使新菜单项挂载 -> addItem 的 $set 触发 el-menu 内部 items watcher
     // -> updateActiveIndex -> initOpenedMenu，按激活项 indexPath 重展开其原始父级分组并
     // 收起用户当前展开的分组；事后恢复 openedMenus 也无法撤销已触发的收起/展开
-    // 过渡动画（导致菜单抖动），故在源头禁用。恢复用 delete 回退原型方法，
-    // 避免快速连点时把上一次的 no-op 捕获为“原方法”而永久固化。
+    // 过渡动画（导致菜单抖动），故在源头禁用。
+    // 注意：Vue 2 的 methods 经 initMethods 以 bind 挂为实例自有属性（不在原型链上），
+    // 用 delete 会永久删除该方法（之后路由切换时 updateActiveIndex 调用 initOpenedMenu
+    // 会抛 TypeError），必须保存原方法后赋值恢复；引用计数避免快速连点时把 no-op
+    // 误存为原方法而永久固化。
     disableMenuAutoExpand() {
       const menu = this.$refs.sidebarMenu
       if (!menu) return () => {}
+      if (!this.menuPatchDepth) {
+        this.menuPatchDepth = 0
+        this.origInitOpenedMenu = menu.initOpenedMenu
+      }
+      this.menuPatchDepth++
       menu.initOpenedMenu = () => {}
-      return () => { delete menu.initOpenedMenu }
+      return () => {
+        if (--this.menuPatchDepth <= 0) {
+          menu.initOpenedMenu = this.origInitOpenedMenu
+          this.menuPatchDepth = 0
+        }
+      }
     },
     toggleFavorite(item) {
       const index = item.index || item.menu_index
@@ -226,17 +246,28 @@ export default {
       // 乐观更新本地状态
       if (wasFaved) {
         this.favorites = this.favorites.filter(f => f.menu_index !== index)
+        // 若取消收藏的正是经收藏项导航的当前激活项，回退到按路由追踪，
+        // 避免 default-active 继续指向已销毁的收藏项导致侧边栏无高亮；
+        // 此时 initOpenedMenu 已被遮蔽，defaultActive watcher 不会引发手风琴抖动
+        if (this.favActiveIndex === 'fav-' + index) {
+          this.favActiveIndex = null
+        }
       } else {
         this.favorites.push({ menu_index: index, icon: item.icon, title: item.title })
       }
       this.$nextTick(restore)
-      // 同步后端，失败时回滚（回滚同样触发 items watcher，需同样保护）
+      // 同步后端；快速连点时较早失败的请求不能用过期快照回滚覆盖后续操作的结果，
+      // 仅当仍是该 index 的最新一次操作时才回滚（回滚同样触发 items watcher，需同样保护）
+      if (!this.favRequestSeq) this.favRequestSeq = {}
+      const seq = (this.favRequestSeq[index] || 0) + 1
+      this.favRequestSeq[index] = seq
       toggleMenuFavorite({
         menu_index: index,
         icon: item.icon,
         title: item.title,
         is_favorited: !wasFaved
       }).catch(() => {
+        if (this.favRequestSeq[index] !== seq) return
         const restoreRollback = this.disableMenuAutoExpand()
         this.favorites = prev
         this.$nextTick(restoreRollback)

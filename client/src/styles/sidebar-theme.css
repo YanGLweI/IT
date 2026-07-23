@@ -254,3 +254,11 @@
 .sidebar-aside .fav-submenu > .el-submenu__title {
   color: #CBD5E1 !important;
 }
+
+/* 暂无收藏空状态提示 */
+.sidebar-aside .fav-empty {
+  padding: 8px 20px 8px 50px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748B;
+}
