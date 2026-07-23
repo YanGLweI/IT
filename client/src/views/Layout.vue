@@ -6,184 +6,53 @@
         <span>管理平台</span>
       </div>
       <el-menu
+        ref="sidebarMenu"
         :default-active="activeMenu"
         background-color="#0F172A"
         text-color="#94A3B8"
         active-text-color="#F8FAFC"
-        router
+        unique-opened
+        @select="handleMenuSelect"
       >
-        <el-menu-item index="/dashboard">
-          <svg-icon name="bar-chart-2" />
-          <span slot="title">数据看板</span>
-        </el-menu-item>
-        <el-menu-item index="/policies">
-          <svg-icon name="file-text" />
-          <span slot="title">IT政策</span>
-        </el-menu-item>
-        <el-submenu index="asset">
+        <!-- 我的收藏 -->
+        <el-submenu v-if="favorites.length" index="favorites" class="fav-submenu">
           <template slot="title">
-            <svg-icon name="monitor" />
-            <span>资产管理</span>
+            <i class="el-icon-star-on fav-section-icon"></i>
+            <span>我的收藏</span>
           </template>
-          <el-menu-item index="/assets">
-            <svg-icon name="list" />
-            <span>资产列表</span>
-          </el-menu-item>
-          <el-menu-item index="/regions">
-            <svg-icon name="map-pin" />
-            <span>区域管理</span>
-          </el-menu-item>
-          <el-menu-item index="/os-types">
-            <svg-icon name="layers" />
-            <span>操作系统管理</span>
+          <el-menu-item v-for="fav in favorites" :key="'fav-' + fav.menu_index" :index="'fav-' + fav.menu_index">
+            <svg-icon :name="fav.icon" />
+            <span>{{ fav.title }}</span>
+            <i
+              class="fav-star el-icon-star-on is-faved"
+              title="取消收藏"
+              @click.stop="toggleFavorite({ index: fav.menu_index, icon: fav.icon, title: fav.title })"
+            ></i>
           </el-menu-item>
         </el-submenu>
-        <el-submenu index="network-security">
-          <template slot="title">
-            <svg-icon name="shield" />
-            <span>网络安全</span>
-          </template>
-          <el-menu-item index="/topology">
-            <svg-icon name="network" />
-            <span>网络拓扑图</span>
+
+        <template v-for="entry in menuConfig">
+          <el-menu-item v-if="entry.type === 'item'" :key="'item-' + entry.index" :index="entry.index">
+            <svg-icon :name="entry.icon" />
+            <span slot="title">{{ entry.title }}</span>
           </el-menu-item>
-          <el-menu-item index="/change-management">
-            <svg-icon name="git-branch" />
-            <span>变更管理</span>
-          </el-menu-item>
-          <el-menu-item index="/vulnerability-scan">
-            <svg-icon name="search" />
-            <span>漏洞扫描</span>
-          </el-menu-item>
-          <el-menu-item index="/penetration-test">
-            <svg-icon name="crosshair" />
-            <span>渗透测试</span>
-          </el-menu-item>
-          <el-menu-item index="/firewall-check">
-            <svg-icon name="shield-check" />
-            <span>防火墙检查</span>
-          </el-menu-item>
-          <el-menu-item index="/security-rectification">
-            <svg-icon name="pencil" />
-            <span>安全整改记录</span>
-          </el-menu-item>
-        </el-submenu>
-        <el-submenu index="system-security">
-          <template slot="title">
-            <svg-icon name="settings" />
-            <span>系统安全</span>
-          </template>
-          <el-menu-item index="/system-hardening">
-            <svg-icon name="hammer" />
-            <span>系统加固</span>
-          </el-menu-item>
-          <el-menu-item index="/patch-update">
-            <svg-icon name="download" />
-            <span>补丁更新</span>
-          </el-menu-item>
-          <el-menu-item index="/virus-control">
-            <svg-icon name="shield-alert" />
-            <span>病毒控制</span>
-          </el-menu-item>
-          <el-menu-item index="/backup-management">
-            <svg-icon name="database" />
-            <span>备份管理</span>
-          </el-menu-item>
-        </el-submenu>
-        <el-submenu index="permission">
-          <template slot="title">
-            <svg-icon name="users" />
-            <span>用户管理</span>
-          </template>
-          <el-menu-item index="/permissions">
-            <svg-icon name="key" />
-            <span>岗位权限设置</span>
-          </el-menu-item>
-          <el-menu-item index="/user-permissions">
-            <svg-icon name="user-check" />
-            <span>用户权限一览</span>
-          </el-menu-item>
-          <el-menu-item index="/sftp-accounts">
-            <svg-icon name="terminal" />
-            <span>SFTP账号一览</span>
-          </el-menu-item>
-          <el-menu-item index="/monthly-check-history">
-            <svg-icon name="calendar-check" />
-            <span>月度检查历史</span>
-          </el-menu-item>
-          <el-menu-item index="/user-change-history">
-            <svg-icon name="user-cog" />
-            <span>用户变更记录</span>
-          </el-menu-item>
-        </el-submenu>
-        <el-submenu index="third-party">
-          <template slot="title">
-            <svg-icon name="layout-grid" />
-            <span>第三方应用</span>
-          </template>
-          <el-menu-item index="/approved-software">
-            <svg-icon name="check-circle" />
-            <span>核准软件目录</span>
-          </el-menu-item>
-          <el-menu-item index="/asset-software">
-            <svg-icon name="table" />
-            <span>资产对应表</span>
-          </el-menu-item>
-          <el-menu-item index="/quarterly-check-history">
-            <svg-icon name="calendar" />
-            <span>季度检查历史</span>
-          </el-menu-item>
-        </el-submenu>
-        <el-submenu index="log">
-          <template slot="title">
-            <svg-icon name="scroll-text" />
-            <span>日志管理</span>
-          </template>
-          <el-menu-item index="/login-logs">
-            <svg-icon name="log-in" />
-            <span>登录日志</span>
-          </el-menu-item>
-          <el-menu-item index="/operation-logs">
-            <svg-icon name="file-search" />
-            <span>操作日志</span>
-          </el-menu-item>
-        </el-submenu>
-        <el-submenu index="public-service">
-          <template slot="title">
-            <svg-icon name="globe" />
-            <span>公共服务</span>
-          </template>
-          <el-menu-item index="/form-publish">
-            <svg-icon name="upload-cloud" />
-            <span>表单发布</span>
-          </el-menu-item>
-          <el-menu-item index="/it-guide">
-            <svg-icon name="book-open" />
-            <span>IT指南</span>
-          </el-menu-item>
-        </el-submenu>
-        <el-menu-item index="/calendar">
-          <svg-icon name="calendar" />
-          <span>日程管理</span>
-        </el-menu-item>
-        <el-submenu index="memo-management">
-          <template slot="title">
-            <svg-icon name="clipboard" />
-            <span>备忘管理</span>
-          </template>
-          <el-menu-item index="/password-vault">
-            <svg-icon name="lock" />
-            <span>密码本</span>
-          </el-menu-item>
-          <el-menu-item index="/dedicated-lines">
-            <svg-icon name="link" />
-            <span>专线信息</span>
-          </el-menu-item>
-          <el-menu-item index="/ipsec-vpn">
-            <svg-icon name="shield-lock" />
-            <span>IPsec VPN</span>
-          </el-menu-item>
-        </el-submenu>
+          <el-submenu v-else :key="'sub-' + entry.index" :index="entry.index">
+            <template slot="title">
+              <svg-icon :name="entry.icon" />
+              <span>{{ entry.title }}</span>
+            </template>
+            <el-menu-item v-for="child in entry.children" :key="child.index" :index="child.index">
+              <svg-icon :name="child.icon" />
+              <span>{{ child.title }}</span>
+              <i
+                class="fav-star"
+                :class="isFavorited(child.index) ? 'el-icon-star-on is-faved' : 'el-icon-star-off'"
+                :title="isFavorited(child.index) ? '取消收藏' : '收藏'"
+                @click.stop="toggleFavorite(child)"
+              ></i>
+            </el-menu-item>
+          </el-submenu>
+        </template>
       </el-menu>
     </el-aside>
     <el-container>
@@ -221,6 +90,7 @@
 
 <script>
 import { logout } from '@/api/audit_log'
+import { getMenuFavorites, toggleMenuFavorite } from '@/api/menu_favorite'
 import { animate, scrambleText } from 'animejs'
 import SvgIcon from '@/components/SvgIcon.vue'
 import NotificationBell from '@/components/NotificationBell.vue'
@@ -232,12 +102,64 @@ export default {
     return {
       displayName: localStorage.getItem('display_name') || '用户',
       subtitleAnimation: null,
-      titleTypingTimer: null
+      titleTypingTimer: null,
+      favorites: [],
+      favActiveIndex: null,
+      menuConfig: [
+        { type: 'item', index: '/dashboard', icon: 'bar-chart-2', title: '数据看板' },
+        { type: 'item', index: '/policies', icon: 'file-text', title: 'IT政策' },
+        { type: 'submenu', index: 'asset', icon: 'monitor', title: '资产管理', children: [
+          { index: '/assets', icon: 'list', title: '资产列表' },
+          { index: '/regions', icon: 'map-pin', title: '区域管理' },
+          { index: '/os-types', icon: 'layers', title: '操作系统管理' }
+        ]},
+        { type: 'submenu', index: 'network-security', icon: 'shield', title: '网络安全', children: [
+          { index: '/topology', icon: 'network', title: '网络拓扑图' },
+          { index: '/change-management', icon: 'git-branch', title: '变更管理' },
+          { index: '/vulnerability-scan', icon: 'search', title: '漏洞扫描' },
+          { index: '/penetration-test', icon: 'crosshair', title: '渗透测试' },
+          { index: '/firewall-check', icon: 'shield-check', title: '防火墙检查' },
+          { index: '/security-rectification', icon: 'pencil', title: '安全整改记录' }
+        ]},
+        { type: 'submenu', index: 'system-security', icon: 'settings', title: '系统安全', children: [
+          { index: '/system-hardening', icon: 'hammer', title: '系统加固' },
+          { index: '/patch-update', icon: 'download', title: '补丁更新' },
+          { index: '/virus-control', icon: 'shield-alert', title: '病毒控制' },
+          { index: '/backup-management', icon: 'database', title: '备份管理' }
+        ]},
+        { type: 'submenu', index: 'permission', icon: 'users', title: '用户管理', children: [
+          { index: '/permissions', icon: 'key', title: '岗位权限设置' },
+          { index: '/user-permissions', icon: 'user-check', title: '用户权限一览' },
+          { index: '/sftp-accounts', icon: 'terminal', title: 'SFTP账号一览' },
+          { index: '/monthly-check-history', icon: 'calendar-check', title: '月度检查历史' },
+          { index: '/user-change-history', icon: 'user-cog', title: '用户变更记录' }
+        ]},
+        { type: 'submenu', index: 'third-party', icon: 'layout-grid', title: '第三方应用', children: [
+          { index: '/approved-software', icon: 'check-circle', title: '核准软件目录' },
+          { index: '/asset-software', icon: 'table', title: '资产对应表' },
+          { index: '/quarterly-check-history', icon: 'calendar', title: '季度检查历史' }
+        ]},
+        { type: 'submenu', index: 'log', icon: 'scroll-text', title: '日志管理', children: [
+          { index: '/login-logs', icon: 'log-in', title: '登录日志' },
+          { index: '/operation-logs', icon: 'file-search', title: '操作日志' }
+        ]},
+        { type: 'submenu', index: 'public-service', icon: 'globe', title: '公共服务', children: [
+          { index: '/form-publish', icon: 'upload-cloud', title: '表单发布' },
+          { index: '/it-guide', icon: 'book-open', title: 'IT指南' }
+        ]},
+        { type: 'item', index: '/calendar', icon: 'calendar', title: '日程管理' },
+        { type: 'submenu', index: 'memo-management', icon: 'clipboard', title: '备忘管理', children: [
+          { index: '/password-vault', icon: 'lock', title: '密码本' },
+          { index: '/dedicated-lines', icon: 'link', title: '专线信息' },
+          { index: '/ipsec-vpn', icon: 'shield-lock', title: 'IPsec VPN' }
+        ]}
+      ]
     }
   },
   computed: {
     activeMenu() {
-      return this.$route.path
+      // 收藏导航后指向收藏项自身，避免 el-menu 内部 initOpenedMenu 展开原始父级分组
+      return this.favActiveIndex || this.$route.path
     }
   },
   watch: {
@@ -245,13 +167,16 @@ export default {
       this.$nextTick(() => {
         this.startSubtitleAnimation()
         this.startTitleTypingAnimation()
+        this.expandActiveMenu()
       })
     }
   },
   mounted() {
+    this.loadFavorites()
     this.$nextTick(() => {
       this.startSubtitleAnimation()
       this.startTitleTypingAnimation()
+      this.expandActiveMenu()
       // 检查是否需要弹出登录通知
       if (localStorage.getItem('show_login_notifications') === 'true') {
         localStorage.removeItem('show_login_notifications')
@@ -272,6 +197,88 @@ export default {
     }
   },
   methods: {
+    // ============ 菜单收藏 ============
+    loadFavorites() {
+      getMenuFavorites().then(res => {
+        this.favorites = res.data || []
+      }).catch(() => {})
+    },
+    isFavorited(index) {
+      return this.favorites.some(f => f.menu_index === index)
+    },
+    // 临时禁用 el-menu 的 initOpenedMenu，返回恢复函数。
+    // 收藏变更会使新菜单项挂载 -> addItem 的 $set 触发 el-menu 内部 items watcher
+    // -> updateActiveIndex -> initOpenedMenu，按激活项 indexPath 重展开其原始父级分组并
+    // 收起用户当前展开的分组；事后恢复 openedMenus 也无法撤销已触发的收起/展开
+    // 过渡动画（导致菜单抖动），故在源头禁用。恢复用 delete 回退原型方法，
+    // 避免快速连点时把上一次的 no-op 捕获为“原方法”而永久固化。
+    disableMenuAutoExpand() {
+      const menu = this.$refs.sidebarMenu
+      if (!menu) return () => {}
+      menu.initOpenedMenu = () => {}
+      return () => { delete menu.initOpenedMenu }
+    },
+    toggleFavorite(item) {
+      const index = item.index || item.menu_index
+      const wasFaved = this.isFavorited(index)
+      const prev = this.favorites.slice()
+      const restore = this.disableMenuAutoExpand()
+      // 乐观更新本地状态
+      if (wasFaved) {
+        this.favorites = this.favorites.filter(f => f.menu_index !== index)
+      } else {
+        this.favorites.push({ menu_index: index, icon: item.icon, title: item.title })
+      }
+      this.$nextTick(restore)
+      // 同步后端，失败时回滚（回滚同样触发 items watcher，需同样保护）
+      toggleMenuFavorite({
+        menu_index: index,
+        icon: item.icon,
+        title: item.title,
+        is_favorited: !wasFaved
+      }).catch(() => {
+        const restoreRollback = this.disableMenuAutoExpand()
+        this.favorites = prev
+        this.$nextTick(restoreRollback)
+      })
+    },
+    // 菜单点击导航（收藏项 index 带 fav- 前缀，与原始菜单项独立控制手风琴）
+    handleMenuSelect(index) {
+      const isFav = index.startsWith('fav-')
+      const path = isFav ? index.slice(4) : index
+      if (isFav) {
+        // 从收藏项导航：default-active 指向收藏项，且不自动展开原始父级菜单
+        // （非收藏点击不在此处清除 favActiveIndex，避免 default-active 中间跳变引发手风琴闪烁）
+        this.favActiveIndex = index
+        this.navFromFav = true
+      }
+      if (path === this.$route.path) {
+        this.navFromFav = false
+        return
+      }
+      this.$router.push(path).catch(() => {})
+    },
+    // 自动展开当前激活菜单所属的子菜单（若其已在展开的子菜单中则不切换）
+    expandActiveMenu() {
+      if (this.navFromFav) {
+        this.navFromFav = false
+        return
+      }
+      // 路由因非收藏来源变化（点击原始菜单、浏览器前进后退等），恢复按路由追踪激活项
+      this.favActiveIndex = null
+      const menu = this.$refs.sidebarMenu
+      if (!menu) return
+      const path = this.$route.path
+      const opened = menu.openedMenus || []
+      const inOpened = opened.some(idx => {
+        if (idx === 'favorites') return this.favorites.some(f => f.menu_index === path)
+        const entry = this.menuConfig.find(e => e.index === idx)
+        return entry && entry.children && entry.children.some(c => c.index === path)
+      })
+      if (inOpened) return
+      const parent = this.menuConfig.find(e => e.type === 'submenu' && e.children && e.children.some(c => c.index === path))
+      if (parent) menu.open(parent.index)
+    },
     handleCommand(command) {
       if (command === 'logout') {
         this.$confirm('确定要退出登录吗？', '提示', {

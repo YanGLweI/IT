@@ -73,6 +73,7 @@ func InitDB() {
 		&models.ITGuideAttachment{},
 		&models.DedicatedLine{},
 		&models.IPsecVpn{},
+		&models.MenuFavorite{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

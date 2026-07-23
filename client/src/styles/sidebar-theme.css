@@ -211,3 +211,46 @@
   color: #F8FAFC !important;
   background: rgba(64, 158, 255, 0.08) !important;
 }
+
+/* ---------- 10. 菜单收藏星星按钮 ---------- */
+.sidebar-aside .fav-star {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #64748B;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 200ms ease, color 200ms ease, transform 200ms ease;
+  z-index: 1;
+}
+
+/* hover 菜单项时显示星星 */
+.sidebar-aside .el-menu-item:hover .fav-star {
+  opacity: 1;
+}
+
+/* 已收藏：金色常显 */
+.sidebar-aside .fav-star.is-faved {
+  opacity: 1;
+  color: #F7BA2A;
+}
+
+/* hover 星星时微缩放反馈 */
+.sidebar-aside .fav-star:hover {
+  transform: translateY(-50%) scale(1.25);
+  color: #F7BA2A;
+}
+
+/* ---------- 11. 我的收藏分组 ---------- */
+.sidebar-aside .fav-section-icon {
+  font-size: 16px;
+  color: #F7BA2A;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+.sidebar-aside .fav-submenu > .el-submenu__title {
+  color: #CBD5E1 !important;
+}

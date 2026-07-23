@@ -220,6 +220,10 @@ func SetupRouter() *gin.Engine {
 			// LDAP用户获取（不需要双控）
 			protected.GET("/ldap/users", handlers.GetLDAPUsers)
 
+			// 菜单收藏（个人偏好，无需双控）
+			protected.GET("/menu-favorites", handlers.ListMenuFavorites)
+			protected.PUT("/menu-favorites/toggle", handlers.ToggleMenuFavorite)
+
 			// 日历日程 - 写操作（不需要双控，仅需JWT）
 			protected.POST("/calendars", handlers.CreateCalendar)
 			protected.PUT("/calendars/:id", handlers.UpdateCalendar)
