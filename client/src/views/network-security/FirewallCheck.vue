@@ -1,88 +1,90 @@
 <template>
   <div class="firewall-check">
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>防火墙检查</span>
-        <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openCreate">新增记录</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">防火墙检查</h2>
+        <p class="page-subtitle">管理季度防火墙合规检查记录，跟踪整改进度</p>
       </div>
-
-      <!-- 筛选栏 -->
-      <div class="filter-bar">
-        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
-          <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
-        </el-select>
-        <el-select v-model="filterQuarter" placeholder="全部季度" size="small" clearable @change="handleFilterChange" style="width: 120px">
-          <el-option v-for="q in 4" :key="q" :label="'Q' + q" :value="q" />
-        </el-select>
-        <el-select v-model="filterResult" placeholder="检查结果" size="small" clearable @change="handleFilterChange" style="width: 120px">
-          <el-option label="合规" value="compliant" />
-          <el-option label="不合规" value="non_compliant" />
-        </el-select>
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+      <div class="header-actions">
+        <el-button type="primary" size="small" icon="el-icon-plus" @click="openCreate">新增记录</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
       </div>
+    </div>
 
-      <!-- 数据表格 -->
-      <div class="table-card" style="margin-top: 12px">
-        <el-table :data="records" stripe v-loading="loading">
-          <el-table-column type="index" label="#" width="70" align="center" />
-          <el-table-column prop="year" label="年份" width="85" align="center" />
-          <el-table-column label="季度" width="85" align="center">
-            <template slot-scope="{ row }">Q{{ row.quarter }}</template>
-          </el-table-column>
-          <el-table-column prop="report_date" label="报告日期" width="150" align="center" />
-          <el-table-column label="防火墙" min-width="150" show-overflow-tooltip>
-            <template slot-scope="{ row }">
-              <span v-if="row.asset">{{ row.asset.computer_name }}</span>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="检查结果" width="150" align="center">
-            <template slot-scope="{ row }">
-              <el-tag :type="row.check_result === 'compliant' ? 'success' : 'danger'" size="small">
-                {{ row.check_result === 'compliant' ? '合规' : '不合规' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="file_name" label="检查报告" min-width="150" show-overflow-tooltip>
-            <template slot-scope="{ row }">
-              <span v-if="row.file_name">{{ row.file_name }}</span>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="整改报告" width="250" align="center">
-            <template slot-scope="{ row }">
-              <template v-if="row.check_result === 'non_compliant'">
-                <template v-if="row.rect_file_name">
-                  <div class="op-btns" style="justify-content: center">
-                    <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRect(row)">预览</el-button>
-                    <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDeleteRect(row)">删除</el-button>
-                  </div>
-                </template>
-                <el-button v-else size="mini" type="text" icon="el-icon-document-checked" style="color: #E6A23C" @click="openRectUpload(row)">整改</el-button>
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
+        <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
+      </el-select>
+      <el-select v-model="filterQuarter" placeholder="全部季度" size="small" clearable @change="handleFilterChange" style="width: 120px">
+        <el-option v-for="q in 4" :key="q" :label="'Q' + q" :value="q" />
+      </el-select>
+      <el-select v-model="filterResult" placeholder="检查结果" size="small" clearable @change="handleFilterChange" style="width: 120px">
+        <el-option label="合规" value="compliant" />
+        <el-option label="不合规" value="non_compliant" />
+      </el-select>
+      <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-card" style="margin-top: 12px">
+      <el-table :data="records" stripe v-loading="loading">
+        <el-table-column type="index" label="#" width="70" align="center" />
+        <el-table-column prop="year" label="年份" width="85" align="center" />
+        <el-table-column label="季度" width="85" align="center">
+          <template slot-scope="{ row }">Q{{ row.quarter }}</template>
+        </el-table-column>
+        <el-table-column prop="report_date" label="报告日期" width="150" align="center" />
+        <el-table-column label="防火墙" min-width="150" show-overflow-tooltip>
+          <template slot-scope="{ row }">
+            <span v-if="row.asset">{{ row.asset.computer_name }}</span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="检查结果" width="150" align="center">
+          <template slot-scope="{ row }">
+            <el-tag :type="row.check_result === 'compliant' ? 'success' : 'danger'" size="small">
+              {{ row.check_result === 'compliant' ? '合规' : '不合规' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="file_name" label="检查报告" min-width="150" show-overflow-tooltip>
+          <template slot-scope="{ row }">
+            <span v-if="row.file_name">{{ row.file_name }}</span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="整改报告" width="250" align="center">
+          <template slot-scope="{ row }">
+            <template v-if="row.check_result === 'non_compliant'">
+              <template v-if="row.rect_file_name">
+                <div class="op-btns" style="justify-content: center">
+                  <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRect(row)">预览</el-button>
+                  <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDeleteRect(row)">删除</el-button>
+                </div>
               </template>
-              <span v-else>-</span>
+              <el-button v-else size="mini" type="text" icon="el-icon-document-checked" style="color: #E6A23C" @click="openRectUpload(row)">整改</el-button>
             </template>
-          </el-table-column>
-          <el-table-column label="操作" width="350" fixed="right" align="center">
-            <template slot-scope="{ row }">
-              <div class="op-btns">
-                <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-                <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
-                <el-button size="mini" type="text" icon="el-icon-edit" @click="openEdit(row)">编辑</el-button>
-                <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-      
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="350" fixed="right" align="center">
+          <template slot-scope="{ row }">
+            <div class="op-btns">
+              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
+              <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
+              <el-button size="mini" type="text" icon="el-icon-edit" @click="openEdit(row)">编辑</el-button>
+              <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
-      <!-- 分页 -->
+    <!-- 分页 -->
+    <div class="pagination-wrap">
       <el-pagination
-        style="margin-top: 16px; text-align: right"
         background
         layout="total, sizes, prev, pager, next, jumper"
         :total="total"
@@ -92,10 +94,10 @@
         @size-change="handleSizeChange"
         @current-change="fetchData"
       />
-    </el-card>
+    </div>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog :title="isEdit ? '编辑检查记录' : '新增检查记录'" :visible.sync="showForm" width="580px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑检查记录' : '新增检查记录'" :visible.sync="showForm" width="580px" :close-on-click-modal="false">
       <el-form :model="form" ref="formRef" :rules="formRules" label-width="100px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -151,7 +153,7 @@
     </el-dialog>
 
     <!-- 整改报告上传弹窗 -->
-    <el-dialog title="上传整改报告" :visible.sync="showRectUpload" width="480px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" title="上传整改报告" :visible.sync="showRectUpload" width="480px" :close-on-click-modal="false">
       <el-upload
         ref="rectUploader"
         action=""
@@ -174,7 +176,7 @@
     </el-dialog>
 
     <!-- 检查报告预览弹窗 -->
-    <el-dialog title="检查报告预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
+    <el-dialog class="vault-dialog preview-dialog" title="检查报告预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
       <iframe v-if="previewUrl && isPdf && pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
         <div ref="docxContainer" class="docx-preview-container"></div>
@@ -185,7 +187,7 @@
     </el-dialog>
 
     <!-- 整改报告预览弹窗 -->
-    <el-dialog title="整改报告预览" :visible.sync="rectPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearRectPreview">
+    <el-dialog class="vault-dialog preview-dialog" title="整改报告预览" :visible.sync="rectPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearRectPreview">
       <iframe v-if="rectPreviewUrl && rectIsPdf && rectPdfBlobUrl" :src="rectPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <div v-else-if="!rectIsPdf" ref="rectDocxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
         <div ref="rectDocxContainer" class="docx-preview-container"></div>
@@ -606,29 +608,81 @@ export default {
 
 <style scoped>
 .firewall-check {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
   margin: 20px;
-  padding: 0;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
 }
+
+/* --- 页面头部 --- */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
-.page-header-right {
-  display: flex;
-  gap: 8px;
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
 }
-.filter-bar {
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+.header-actions {
   display: flex;
-  gap: 10px;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 10px;
 }
+
+/* --- 主按钮 --- */
+.header-actions .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.header-actions .el-button--primary:hover {
+  background: #2563eb;
+}
+
+/* --- 次要按钮 --- */
+.header-actions .el-button--default,
+.filter-bar .el-button {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover,
+.filter-bar .el-button:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+.filter-bar .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+}
+.filter-bar .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* --- 操作按钮间距 --- */
 .op-btns {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
 }
+
 /* DOCX 预览容器样式 */
 .docx-preview-container >>> .docx-wrapper {
   background: #fff;

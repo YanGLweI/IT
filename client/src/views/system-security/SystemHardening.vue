@@ -1,14 +1,17 @@
 <template>
   <div class="system-hardening">
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>系统加固</span>
-        <div class="page-header-right">
-          <el-button type="success" size="small" icon="el-icon-download" @click="handleExportChecklist">导出检查表</el-button>
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUpload = true">上传记录</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">系统加固</h2>
+        <p class="page-subtitle">管理系统加固检查记录，跟踪季度加固执行情况</p>
       </div>
+      <div class="header-actions">
+        <el-button type="success" size="small" icon="el-icon-download" @click="handleExportChecklist">导出检查表</el-button>
+        <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUpload = true">上传记录</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+      </div>
+    </div>
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
@@ -49,9 +52,9 @@
       </div>
       
 
-      <!-- 分页 -->
+    <!-- 分页 -->
+    <div class="pagination-wrap">
       <el-pagination
-        style="margin-top: 16px; text-align: right"
         background
         layout="total, sizes, prev, pager, next, jumper"
         :total="total"
@@ -61,10 +64,10 @@
         @size-change="handleSizeChange"
         @current-change="fetchData"
       />
-    </el-card>
+    </div>
 
     <!-- 上传/编辑弹窗 -->
-    <el-dialog :title="isEdit ? '编辑系统加固检查记录' : '上传系统加固检查记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑系统加固检查记录' : '上传系统加固检查记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -109,7 +112,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
       <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
     </el-dialog>
 
@@ -354,28 +357,105 @@ export default {
 
 <style scoped>
 .system-hardening {
-  padding: 20px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
 
-.page-header-right {
+.header-left {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.filter-bar {
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 10px;
 }
 
 .op-btns {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+}
+
+/* 主按钮 */
+.header-actions .el-button--primary,
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--primary:hover,
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* success 按钮 */
+.header-actions .el-button--success {
+  background: #10b981;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--success:hover {
+  background: #059669;
+  color: #fff;
+}
+
+/* 次要按钮 */
+.header-actions .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+/* 筛选栏搜索按钮白色文字 */
+.filter-bar .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+}
+.filter-bar .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
 }
 </style>

@@ -80,7 +80,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" class="vault-dialog" @closed="clearDocxPreview">
+    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" class="vault-dialog preview-dialog" @closed="clearDocxPreview">
       <!-- 工具栏：搜索 + 下载 -->
       <div class="preview-toolbar" slot="title">
         <span>文件预览</span>

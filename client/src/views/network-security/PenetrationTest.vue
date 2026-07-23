@@ -1,70 +1,73 @@
 <template>
   <div class="penetration-test">
-    <el-card>
-      <!-- Tabs -->
-      <el-tabs v-model="activeTab" @tab-click="handleTabChange" style="margin-bottom: 16px">
-        <el-tab-pane label="内部渗透测试" name="internal" />
-        <el-tab-pane label="外部渗透测试" name="external" />
-      </el-tabs>
-      <div slot="header" class="page-header">
-        <span>渗透测试</span>
-        <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="openUpload">上传报告</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">渗透测试</h2>
+        <p class="page-subtitle">管理内部与外部渗透测试报告，跟踪漏洞利用与修复情况</p>
       </div>
-
-      <!-- 筛选栏 -->
-      <div class="filter-bar">
-        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
-          <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
-        </el-select>
-        <el-input v-model="keyword" placeholder="搜索文件名/日期/描述..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 220px" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+      <div class="header-actions">
+        <el-button type="primary" size="small" icon="el-icon-upload2" @click="openUpload">上传报告</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
       </div>
+    </div>
 
-      <!-- 数据表格 -->
-      <div class="table-card" style="margin-top: 12px">
-        <el-table :data="records" stripe v-loading="loading" >
-          <el-table-column type="index" label="#" width="70" align="center" />
-          <el-table-column prop="year" label="年份" width="85" align="center" />
-          <el-table-column prop="report_date" label="报告日期" width="130" align="center" />
-          <el-table-column label="可渗透漏洞数" width="130" align="center">
-            <template slot-scope="{ row }">
-              <span style="color: #F56C6C; font-weight: bold">{{ row.vuln_count }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="description" label="结果描述" min-width="200" show-overflow-tooltip />
-          <el-table-column label="关联漏洞扫描报告" width="320" align="center">
-            <template slot-scope="{ row }">
-              <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
-                <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark" :enterable="false">
-                  <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
-                  <el-tag size="mini" style="margin: 2px; cursor: pointer;" @click.native="handlePreviewVulnScan(vs)">
-                    {{ formatVulnScanLabel(vs) }}
-                  </el-tag>
-                </el-tooltip>
-              </template>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
-          <el-table-column label="操作" width="300" fixed="right" align="center">
-            <template slot-scope="{ row }">
-              <div class="op-btns">
-                <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-                <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
-                <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-      
+    <!-- Tabs -->
+    <el-tabs v-model="activeTab" @tab-click="handleTabChange" style="margin-bottom: 16px">
+      <el-tab-pane label="内部渗透测试" name="internal" />
+      <el-tab-pane label="外部渗透测试" name="external" />
+    </el-tabs>
 
-      <!-- 分页 -->
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
+        <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
+      </el-select>
+      <el-input v-model="keyword" placeholder="搜索文件名/日期/描述..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 220px" />
+      <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-card" style="margin-top: 12px">
+      <el-table :data="records" stripe v-loading="loading" >
+        <el-table-column type="index" label="#" width="70" align="center" />
+        <el-table-column prop="year" label="年份" width="85" align="center" />
+        <el-table-column prop="report_date" label="报告日期" width="130" align="center" />
+        <el-table-column label="可渗透漏洞数" width="130" align="center">
+          <template slot-scope="{ row }">
+            <span style="color: #F56C6C; font-weight: bold">{{ row.vuln_count }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="description" label="结果描述" min-width="200" show-overflow-tooltip />
+        <el-table-column label="关联漏洞扫描报告" width="320" align="center">
+          <template slot-scope="{ row }">
+            <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
+              <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark" :enterable="false">
+                <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
+                <el-tag size="mini" style="margin: 2px; cursor: pointer;" @click.native="handlePreviewVulnScan(vs)">
+                  {{ formatVulnScanLabel(vs) }}
+                </el-tag>
+              </el-tooltip>
+            </template>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
+        <el-table-column label="操作" width="300" fixed="right" align="center">
+          <template slot-scope="{ row }">
+            <div class="op-btns">
+              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
+              <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
+              <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination-wrap">
       <el-pagination
-        style="margin-top: 16px; text-align: right"
         background
         layout="total, sizes, prev, pager, next, jumper"
         :total="total"
@@ -74,10 +77,10 @@
         @size-change="handleSizeChange"
         @current-change="fetchData"
       />
-    </el-card>
+    </div>
 
     <!-- 上传/编辑弹窗 -->
-    <el-dialog :title="isEdit ? '编辑渗透测试报告' : '上传渗透测试报告'" :visible.sync="showUpload" width="680px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑渗透测试报告' : '上传渗透测试报告'" :visible.sync="showUpload" width="680px" :close-on-click-modal="false">
       <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="120px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -128,7 +131,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
+    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
       <iframe v-if="previewUrl && isPdf && pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
         <div ref="docxContainer" class="docx-preview-container"></div>
@@ -468,29 +471,81 @@ export default {
 
 <style scoped>
 .penetration-test {
-  margin: 0;
-  padding: 0;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
 }
+
+/* --- 页面头部 --- */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
-.page-header-right {
-  display: flex;
-  gap: 8px;
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
 }
-.filter-bar {
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+.header-actions {
   display: flex;
-  gap: 10px;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 10px;
 }
+
+/* --- 主按钮 --- */
+.header-actions .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.header-actions .el-button--primary:hover {
+  background: #2563eb;
+}
+
+/* --- 次要按钮 --- */
+.header-actions .el-button--default,
+.filter-bar .el-button {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover,
+.filter-bar .el-button:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+.filter-bar .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+}
+.filter-bar .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* --- 操作按钮间距 --- */
 .op-btns {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
 }
+
 /* 漏洞扫描报告选择器 tag 样式 */
 .vuln-scan-select ::v-deep .el-tag {
   max-width: 280px !important;

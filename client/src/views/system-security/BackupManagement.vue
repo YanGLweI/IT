@@ -2,10 +2,13 @@
   <div class="backup-management">
 
     <!-- ==================== 区块一：模板管理 ==================== -->
-    <el-card style="margin-bottom: 20px">
-      <div slot="header" class="page-header">
-        <span>备份与恢复记录表模板</span>
-        <div class="page-header-right">
+    <div class="section-block">
+      <div class="page-header">
+        <div class="header-left">
+          <h2 class="page-title">备份与恢复记录表模板</h2>
+          <p class="page-subtitle">管理备份记录表模板版本</p>
+        </div>
+        <div class="header-actions">
           <el-button type="primary" size="small" icon="el-icon-upload2" @click="showTemplateUpload = true">上传新版本</el-button>
         </div>
       </div>
@@ -47,19 +50,22 @@
               <template slot-scope="{ row }">
                 <el-button size="mini" type="text" icon="el-icon-view" @click="previewTemplate(row)">预览</el-button>
                 <el-button size="mini" type="text" icon="el-icon-download" @click="downloadTemplate(row)">下载</el-button>
-                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="deleteTemplate(row)">删除</el-button>
+                <el-button size="mini" type="text" icon="el-icon-delete" style="color: #dd6161" @click="deleteTemplate(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-collapse-item>
       </el-collapse>
-    </el-card>
+    </div>
 
     <!-- ==================== 区块二：备份管理 ==================== -->
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>备份管理</span>
-        <div class="page-header-right">
+    <div class="section-block">
+      <div class="page-header">
+        <div class="header-left">
+          <h2 class="page-title">备份管理</h2>
+          <p class="page-subtitle">管理备份记录与恢复测试</p>
+        </div>
+        <div class="header-actions">
           <el-button type="primary" size="small" icon="el-icon-plus" @click="openCreate">新增备份记录</el-button>
           <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
         </div>
@@ -81,83 +87,89 @@
       </div>
 
       <!-- 数据表格 -->
-      <el-table :data="records" border stripe v-loading="loading" style="margin-top: 12px">
+      <div class="table-card" style="margin-top: 12px">
+      <el-table :data="records" stripe v-loading="loading">
         <el-table-column type="expand">
           <template slot-scope="{ row }">
             <div style="padding: 8px 20px">
               <div style="margin-bottom: 8px">
                 <el-button size="mini" type="primary" icon="el-icon-plus" @click="openRecoveryForm(row)">添加恢复记录</el-button>
               </div>
-              <el-table :data="row.recoveries || []" border size="small">
-                <el-table-column type="index" label="#" width="50" align="center" />
+              <div class="table-card" style="margin-top: 12px">
+                <el-table :data="row.recoveries || []" size="small">
+                <el-table-column type="index" label="#" width="75" align="center" />
                 <el-table-column prop="recovery_type" label="恢复类型" width="100" align="center" />
-                <el-table-column label="恢复结果" width="80" align="center">
+                <el-table-column label="恢复结果" width="100" align="center">
                   <template slot-scope="{ row: r }">
                     <el-tag :type="r.recovery_result === '成功' ? 'success' : 'danger'" size="small">{{ r.recovery_result }}</el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column prop="recovery_date" label="恢复日期" width="110" align="center" />
+                <el-table-column prop="recovery_date" label="恢复日期" width="150" align="center" />
                 <el-table-column prop="file_name" label="恢复与还原记录表" show-overflow-tooltip />
-                <el-table-column label="操作" width="300" align="center">
+                <el-table-column label="操作" width="385" align="center">
                   <template slot-scope="{ row: r }">
                     <div class="op-btns">
                       <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRecovery(r)">预览</el-button>
                       <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownloadRecovery(r)">下载</el-button>
                       <el-button size="mini" type="text" icon="el-icon-edit" @click="openRecoveryEdit(r, row)">编辑</el-button>
-                      <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDeleteRecovery(r)">删除</el-button>
+                      <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDeleteRecovery(r)">删除</el-button>
                     </div>
                   </template>
                 </el-table-column>
               </el-table>
+              </div>
+              
             </div>
           </template>
         </el-table-column>
-        <el-table-column type="index" label="#" width="50" align="center" />
-        <el-table-column prop="application_date" label="申请日期" width="110" align="center" />
+        <el-table-column type="index" label="#" width="75" align="center" />
+        <el-table-column prop="application_date" label="申请日期" width="130" align="center" />
         <el-table-column label="备份源" width="150" show-overflow-tooltip>
           <template slot-scope="{ row }">{{ row.backup_source_asset ? row.backup_source_asset.computer_name : '-' }}</template>
         </el-table-column>
-        <el-table-column prop="backup_target" label="备份对象" width="150" show-overflow-tooltip/>
-        <el-table-column prop="backup_tool" label="备份工具" width="120" align="center" show-overflow-tooltip/>
+        <el-table-column prop="backup_target" label="备份对象" width="100" show-overflow-tooltip/>
+        <el-table-column prop="backup_tool" label="备份工具" width="150" align="center" show-overflow-tooltip/>
         <el-table-column label="备份介质" width="150" show-overflow-tooltip>
           <template slot-scope="{ row }">{{ row.backup_medium_asset ? row.backup_medium_asset.computer_name : '-' }}</template>
         </el-table-column>
-        <el-table-column prop="backup_frequency" label="备份频率" width="80" align="center" />
-        <el-table-column prop="retention_policy" label="保留策略" width="90" align="center" show-overflow-tooltip />
-        <el-table-column prop="full_backup_strategy" label="全量备份" width="80" align="center" />
+        <el-table-column prop="backup_frequency" label="备份频率" width="100" align="center" />
+        <el-table-column prop="retention_policy" label="保留策略" width="100" align="center" show-overflow-tooltip />
+        <el-table-column prop="full_backup_strategy" label="全量备份" width="100" align="center" />
         <el-table-column label="所属部门" width="100" align="center">
           <template slot-scope="{ row }">{{ row.department ? row.department.name : '-' }}</template>
         </el-table-column>
-        <el-table-column prop="file_name" label="申请表" min-width="150" show-overflow-tooltip />
-        <el-table-column label="操作" width="320" fixed="right" align="center">
+
+        <el-table-column label="操作" width="420" align="center">
           <template slot-scope="{ row }">
             <div class="op-btns">
               <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
               <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
               <el-button size="mini" type="text" icon="el-icon-edit" @click="openEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
+              <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
               <el-button size="mini" type="text" icon="el-icon-refresh-right" style="color: #409EFF" @click="openRecoveryForm(row)">恢复</el-button>
             </div>
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <!-- 分页 -->
-      <el-pagination
-        style="margin-top: 16px; text-align: right"
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        :page-size.sync="pageSize"
-        :current-page.sync="page"
-        :page-sizes="[10, 20, 50]"
-        @size-change="handleSizeChange"
-        @current-change="fetchData"
-      />
-    </el-card>
+      <div class="pagination-wrap">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          :page-size.sync="pageSize"
+          :current-page.sync="page"
+          :page-sizes="[10, 20, 50]"
+          @size-change="handleSizeChange"
+          @current-change="fetchData"
+        />
+      </div>
+    </div>
 
     <!-- 新增/编辑备份记录弹窗 -->
-    <el-dialog :title="isEdit ? '编辑备份记录' : '新增备份记录'" :visible.sync="showForm" width="650px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑备份记录' : '新增备份记录'" :visible.sync="showForm" width="650px" :close-on-click-modal="false">
       <el-form :model="form" ref="formRef" :rules="formRules" label-width="110px">
         <el-form-item label="申请日期" prop="application_date">
           <el-date-picker v-model="form.application_date" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" style="width: 100%" />
@@ -243,7 +255,7 @@
     </el-dialog>
 
     <!-- 恢复记录弹窗 -->
-    <el-dialog :title="isRecoveryEdit ? '编辑恢复记录' : '新增恢复记录'" :visible.sync="showRecoveryForm" width="500px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="isRecoveryEdit ? '编辑恢复记录' : '新增恢复记录'" :visible.sync="showRecoveryForm" width="500px" :close-on-click-modal="false">
       <el-form :model="recoveryForm" ref="recoveryFormRef" :rules="recoveryFormRules" label-width="90px">
         <el-form-item label="恢复类型" prop="recovery_type">
           <el-radio-group v-model="recoveryForm.recovery_type">
@@ -276,7 +288,7 @@
     </el-dialog>
 
     <!-- 申请表预览弹窗 -->
-    <el-dialog title="申请表预览" :visible.sync="previewVisible" width="80%" top="3vh" @close="clearPreview">
+    <el-dialog class="vault-dialog preview-dialog" title="申请表预览" :visible.sync="previewVisible" width="80%" top="3vh" @close="clearPreview">
       <iframe v-if="pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <span slot="footer">
         <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
@@ -284,7 +296,7 @@
     </el-dialog>
 
     <!-- 恢复记录预览弹窗 -->
-    <el-dialog title="恢复记录预览" :visible.sync="recoveryPreviewVisible" width="80%" top="3vh" @close="clearRecoveryPreview">
+    <el-dialog class="vault-dialog preview-dialog" title="恢复记录预览" :visible.sync="recoveryPreviewVisible" width="80%" top="3vh" @close="clearRecoveryPreview">
       <iframe v-if="recoveryPdfBlobUrl" :src="recoveryPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
       <span slot="footer">
         <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadRecoveryFromPreview">下载</el-button>
@@ -295,7 +307,7 @@
     <DualControlDialog ref="dualControl" />
 
     <!-- 模板上传弹窗 -->
-    <el-dialog title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="templateForm" ref="templateFormRef" :rules="templateRules" label-width="90px">
         <el-form-item label="版本号" prop="version">
           <el-input v-model="templateForm.version" placeholder="如：IT12-1.0" />
@@ -319,7 +331,7 @@
     </el-dialog>
 
     <!-- 模板预览弹窗 -->
-    <el-dialog :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
+    <el-dialog class="vault-dialog preview-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
       <div slot="title">
         <span>模板预览</span>
       </div>
@@ -1011,44 +1023,121 @@ export default {
 
 <style scoped>
 .backup-management {
-  margin: 0;
-  padding: 0;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
 }
+
+.section-block {
+  margin-bottom: 24px;
+}
+.section-block:last-child {
+  margin-bottom: 0;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
-.page-header-right {
+
+.header-left {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
-.filter-bar {
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
   display: flex;
   gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
 }
+
 .op-btns {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   justify-content: center;
 }
+
+/* 当前模板信息区 */
 .current-template-info {
-  background: #f0f9eb;
-  border: 1px solid #e1f3d8;
-  border-radius: 4px;
-  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 18px;
 }
 .current-template-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
 }
 .current-template-row .label {
-  font-size: 14px;
-  color: #606266;
-  font-weight: bold;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+.current-template-row .el-button {
+  border-radius: 10px;
+}
+
+/* 主按钮 */
+.header-actions .el-button--primary,
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--primary:hover,
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* 次要按钮 */
+.header-actions .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+/* 筛选栏搜索按钮白色文字 */
+.filter-bar .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+}
+.filter-bar .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
 }
 </style>

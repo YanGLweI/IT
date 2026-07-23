@@ -115,6 +115,18 @@
 - 透明背景 + `1px solid #e2e8f0`，圆角 `10px`，文字 `#64748b`
 - Hover：边框 `#94a3b8`，文字 `#1e293b`
 
+### 筛选栏搜索按钮（`.filter-bar .el-button--primary`）
+
+- 背景 `#3b82f6`，白字，无边框，圆角 `10px`
+- Hover：背景 `#2563eb`，白字
+- 需在组件 scoped 中显式声明 `color: #fff`（含 hover），防止被全局 `.filter-bar .el-button` 规则覆盖
+
+### 内容区操作按钮（如模板信息区、卡片内按钮）
+
+- 统一圆角 `10px`（覆盖 Element UI 默认的 `3px`/`4px`）
+- 主按钮：背景 `#3b82f6`，白字
+- 次要按钮：透明 + 边框 `#e2e8f0`，文字 `#64748b`
+
 ### 表格行内按钮（全局 `.table-card` 控制）
 
 - 透明背景 + `1px solid #e2e8f0`，圆角 `8px`，padding `5px 12px`，`12px`
@@ -189,6 +201,19 @@
 └──────────────────────────────────────────────────────────────┘
 ```
 
+### 预览类弹窗（class="preview-dialog"）
+
+```
+─ 弹窗 (16px圆角, 更高, 便于查看文件内容) ────────────────────┐
+│  [Header] 标题 (下划线 #f1f5f9)                              │
+│  [Body] 可滚动 max-height: 82vh (普通弹窗 65vh)              │
+│    iframe / 图片预览 / docx-preview                          │
+│  [Footer] 下载按钮                                           │
+└──────────────────────────────────────────────────────────────
+```
+
+> 用法：`el-dialog` 同时加 `class="vault-dialog preview-dialog"`，与 `vault-dialog` 叠加使用
+
 ### 公共端
 
 ```
@@ -205,7 +230,7 @@
 
 ## 八、关键约束
 
-1. 弹窗统一 `class="vault-dialog"` 覆盖全局样式
+1. 弹窗统一 `class="vault-dialog"` 覆盖全局样式；预览类弹窗额外加 `class="preview-dialog"`（body max-height 82vh，更大可视区域）
 2. 表格必须 `.table-card` 包裹，分页必须 `.pagination-wrap` 包裹
 3. 筛选栏使用全局 `.filter-bar`（`styles/filter-bar.css`），输入框 `36px` 高、`10px` 圆角、focus 蓝色边框，无需在组件内重复定义
 4. 操作列 `fixed="right"` 实现 sticky

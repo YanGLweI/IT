@@ -1,11 +1,12 @@
 <template>
   <div class="virus-control">
-    <el-card>
-      <div slot="header">
-        <span>病毒控制</span>
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">病毒控制</h2>
+        <p class="page-subtitle">管理病毒防护策略与查杀记录</p>
       </div>
-      <el-empty description="功能开发中，敬请期待..."></el-empty>
-    </el-card>
+    </div>
+    <el-empty description="功能开发中，敬请期待..."></el-empty>
   </div>
 </template>
 
@@ -17,6 +18,37 @@ export default {
 
 <style scoped>
 .virus-control {
-  padding: 20px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
 }
 </style>

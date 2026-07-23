@@ -218,7 +218,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" @closed="clearDocxPreview">
+    <el-dialog class="preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" @closed="clearDocxPreview">
       <div class="preview-toolbar" slot="title">
         <span>文件预览</span>
         <div class="preview-toolbar-right">

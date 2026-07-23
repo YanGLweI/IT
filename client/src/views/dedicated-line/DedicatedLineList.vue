@@ -111,7 +111,7 @@
     <DualControlDialog ref="dualControl" />
 
     <!-- 图片预览弹窗 -->
-    <el-dialog title="图片预览" :visible.sync="previewVisible" width="700px" append-to-body :close-on-click-modal="true">
+    <el-dialog class="preview-dialog" title="图片预览" :visible.sync="previewVisible" width="700px" append-to-body :close-on-click-modal="true">
       <div class="preview-gallery">
         <img v-for="(img, idx) in previewList" :key="idx" :src="'/' + img" class="preview-img" />
       </div>

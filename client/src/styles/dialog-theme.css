@@ -712,3 +712,16 @@
     margin: 8vh auto !important;
   }
 }
+
+/* ============================================
+   预览类弹窗（更大高度，便于查看文件内容）
+   用法：el-dialog 加 class="preview-dialog"
+   ============================================ */
+.preview-dialog .el-dialog {
+  max-height: 92vh !important;
+}
+
+.preview-dialog .el-dialog__body {
+  max-height: 82vh !important;
+  padding: 12px !important;
+}
