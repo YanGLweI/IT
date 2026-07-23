@@ -10,6 +10,11 @@
   backdrop-filter: blur(4px);
 }
 
+/* --- 弹窗包裹层：禁止外层滚动，由 dialog__body 内部滚动 --- */
+.el-dialog__wrapper {
+  overflow: hidden !important;
+}
+
 /* --- 弹窗容器 --- */
 .el-dialog {
   border-radius: 16px !important;
@@ -57,7 +62,7 @@
 /* --- 主体 --- */
 .el-dialog__body {
   padding: 20px 24px !important;
-  max-height: 80vh;
+  max-height: 65vh;
   overflow-y: auto;
   background: #ffffff !important;
   color: #1e293b !important;
@@ -279,6 +284,11 @@
   backdrop-filter: blur(6px);
 }
 
+/* --- 弹窗包裹层：禁止外层滚动，由 dialog__body 内部滚动 --- */
+.el-dialog__wrapper {
+  overflow: hidden !important;
+}
+
 /* --- Dialog Container --- */
 .el-dialog {
   border-radius: 8px;
@@ -424,6 +434,8 @@
   padding: 24px 20px !important;
   font-size: 14px;
   line-height: 1.6;
+  max-height: 65vh;
+  overflow-y: auto;
 }
 
 /* --- Footer --- */
