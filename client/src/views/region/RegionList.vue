@@ -1,27 +1,31 @@
 <template>
   <div class="region-list">
-    <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
-        <span>区域列表</span>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">区域管理</h2>
+        <p class="page-subtitle">管理公司资产区域划分，支持按区域分类资产</p>
+      </div>
+      <div class="header-actions">
         <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增区域</el-button>
       </div>
-      <div class="table-card">
-        <el-table :data="regions" stripe>
-          <el-table-column type="index" label="#" width="70" align="center" />
-          <el-table-column prop="name" label="区域名称" />
-          <el-table-column prop="description" label="描述" />
-          <el-table-column label="操作" width="200" align="center">
-            <template slot-scope="scope">
-              <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-              <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-      
-    </el-card>
+    </div>
 
-    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="500px" :close-on-click-modal="false">
+    <div class="table-card">
+      <el-table :data="regions" stripe>
+        <el-table-column type="index" label="#" width="70" align="center" />
+        <el-table-column prop="name" label="区域名称" />
+        <el-table-column prop="description" label="描述" />
+        <el-table-column label="操作" width="200" align="center" fixed="right">
+          <template slot-scope="scope">
+            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <el-dialog class="vault-dialog" :title="dialogTitle" :visible.sync="dialogVisible" width="500px" :close-on-click-modal="false">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
         <el-form-item label="区域名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入区域名称" />
@@ -116,3 +120,52 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.region-list {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
+}
+
+/* --- 页面头部 --- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- 主按钮 --- */
+.header-actions .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.header-actions .el-button--primary:hover {
+  background: #2563eb;
+}
+</style>

@@ -1,11 +1,18 @@
 <template>
   <div class="change-management">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">变更管理</h2>
+        <p class="page-subtitle">管理变更记录表模板与扫描件存档</p>
+      </div>
+    </div>
 
     <!-- ==================== 区块一：模板管理 ==================== -->
-    <el-card style="margin-bottom: 20px">
-      <div slot="header" class="page-header">
-        <span>变更记录表模板</span>
-        <div class="page-header-right">
+    <div class="section-block">
+      <div class="section-header">
+        <h3 class="section-title">变更记录表模板</h3>
+        <div class="section-actions">
           <el-button type="primary" size="small" icon="el-icon-upload2" @click="showTemplateUpload = true">上传新版本</el-button>
         </div>
       </div>
@@ -53,13 +60,13 @@
           </el-table>
         </el-collapse-item>
       </el-collapse>
-    </el-card>
+    </div>
 
     <!-- ==================== 区块二：扫描件存档 ==================== -->
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>变更记录扫描件</span>
-        <div class="page-header-right">
+    <div class="section-block">
+      <div class="section-header">
+        <h3 class="section-title">变更记录扫描件</h3>
+        <div class="section-actions">
           <el-button type="default" size="small" icon="el-icon-s-operation" @click="showTypeManager = true">类型管理</el-button>
           <el-button type="primary" size="small" icon="el-icon-upload2" @click="openRecordUpload">上传记录</el-button>
           <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchRecords" :loading="recordsLoading">刷新</el-button>
@@ -115,21 +122,22 @@
       
 
       <!-- 分页 -->
-      <el-pagination
-        style="margin-top: 16px; text-align: right"
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="recordsTotal"
-        :page-size.sync="recordsPageSize"
-        :current-page.sync="recordsPage"
-        :page-sizes="[10, 20, 50]"
-        @size-change="handleRecordSizeChange"
-        @current-change="fetchRecords"
-      />
-    </el-card>
+      <div class="pagination-wrap">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="recordsTotal"
+          :page-size.sync="recordsPageSize"
+          :current-page.sync="recordsPage"
+          :page-sizes="[10, 20, 50]"
+          @size-change="handleRecordSizeChange"
+          @current-change="fetchRecords"
+        />
+      </div>
+    </div>
 
     <!-- ==================== 弹窗：上传新版本模板 ==================== -->
-    <el-dialog title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" title="上传新版本模板" :visible.sync="showTemplateUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="templateForm" ref="templateFormRef" :rules="templateRules" label-width="90px">
         <el-form-item label="版本号" prop="version">
           <el-input v-model="templateForm.version" placeholder="如：IT02-3.0" />
@@ -153,7 +161,7 @@
     </el-dialog>
 
     <!-- ==================== 弹窗：上传/编辑扫描件 ==================== -->
-    <el-dialog :title="recordIsEdit ? '编辑变更记录' : '上传变更记录'" :visible.sync="showRecordUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="recordIsEdit ? '编辑变更记录' : '上传变更记录'" :visible.sync="showRecordUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="recordForm" ref="recordFormRef" :rules="recordRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -206,7 +214,7 @@
     </el-dialog>
 
     <!-- ==================== 弹窗：类型管理 ==================== -->
-    <el-dialog title="变更类型管理" :visible.sync="showTypeManager" width="600px">
+    <el-dialog class="vault-dialog" title="变更类型管理" :visible.sync="showTypeManager" width="600px">
       <div style="margin-bottom: 12px">
         <el-button type="primary" size="small" icon="el-icon-plus" @click="openTypeDialog()">新增类型</el-button>
       </div>
@@ -232,7 +240,7 @@
     </el-dialog>
 
     <!-- ==================== 弹窗：新增/编辑类型 ==================== -->
-    <el-dialog :title="typeIsEdit ? '编辑变更类型' : '新增变更类型'" :visible.sync="showTypeDialog" width="420px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="typeIsEdit ? '编辑变更类型' : '新增变更类型'" :visible.sync="showTypeDialog" width="420px" :close-on-click-modal="false">
       <el-form :model="typeForm" ref="typeFormRef" :rules="typeRules" label-width="80px">
         <el-form-item label="类型名称" prop="name">
           <el-input v-model="typeForm.name" placeholder="请输入类型名称" />
@@ -245,7 +253,7 @@
     </el-dialog>
 
     <!-- ==================== 弹窗：模板预览（支持docx/pdf） ==================== -->
-    <el-dialog :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
+    <el-dialog class="vault-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
       <div class="preview-toolbar" slot="title">
         <span>模板预览</span>
         <div class="preview-toolbar-right">
@@ -265,7 +273,7 @@
     </el-dialog>
 
     <!-- ==================== 弹窗：PDF预览 ==================== -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+    <el-dialog class="vault-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
       <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
     </el-dialog>
 
@@ -750,33 +758,124 @@ export default {
 </script>
 
 <style scoped>
+.change-management {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
+}
+
+/* --- 页面头部 --- */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
-.page-header-right {
-  display: flex;
-  gap: 8px;
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
 }
-.filter-bar {
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+/* --- 区块 --- */
+.section-block {
+  margin-bottom: 24px;
+}
+.section-header {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
 }
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+.section-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* --- 主按钮 --- */
+.section-actions .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.section-actions .el-button--primary:hover {
+  background: #2563eb;
+}
+
+/* --- 次要按钮 --- */
+.section-actions .el-button--default,
+.current-template-row .el-button,
+.filter-bar .el-button {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+.section-actions .el-button--default:hover,
+.current-template-row .el-button:hover,
+.filter-bar .el-button:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+/* --- 当前版本行内主按钮 --- */
+.current-template-row .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+}
+.current-template-row .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* --- 筛选栏搜索按钮 --- */
+.filter-bar .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+}
+.filter-bar .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* --- 操作按钮 --- */
 .op-btns {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 .sort-btns {
   display: flex;
   gap: 2px;
   justify-content: center;
 }
+
+/* --- 当前版本提示 --- */
 .current-template-info {
   background: #f0f9eb;
   border: 1px solid #e1f3d8;
-  border-radius: 4px;
+  border-radius: 10px;
   padding: 12px 16px;
 }
 .current-template-row {
@@ -790,6 +889,8 @@ export default {
   color: #606266;
   font-weight: bold;
 }
+
+/* --- 预览工具栏 --- */
 .preview-toolbar {
   display: flex;
   justify-content: space-between;
@@ -801,6 +902,8 @@ export default {
   align-items: center;
   margin-right: 30px;
 }
+
+/* --- DOCX 预览 --- */
 .docx-preview-container {
   background: #fff;
 }

@@ -1,39 +1,44 @@
 <template>
   <div class="asset-list">
-    <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
-        <span>IT资产管理</span>
-        <div style="display: flex; align-items: center; gap: 10px">
-          <el-input
-            v-model="search"
-            placeholder="计算机名或IP地址"
-            size="small"
-            clearable
-            style="width: 220px"
-            @clear="handleSearch"
-            @keyup.enter.native="handleSearch"
-          >
-            <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
-          </el-input>
-          <el-button size="small" @click="handleReset">重置</el-button>
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增资产</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">IT资产管理</h2>
+        <p class="page-subtitle">管理公司IT资产信息，支持按区域分类与状态筛选</p>
       </div>
-
-      <div v-if="statusFilter" style="margin-bottom: 10px">
-        <el-tag closable @close="clearStatusFilter" type="warning">状态筛选: {{ statusFilter }}</el-tag>
+      <div class="header-actions">
+        <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增资产</el-button>
       </div>
+    </div>
 
-      <el-tabs v-model="activeTab" @tab-click="handleTabClick">
-        <el-tab-pane label="全部" name="all" />
-        <el-tab-pane
-          v-for="region in regions"
-          :key="region.id"
-          :label="region.name"
-          :name="String(region.id)"
-        />
-      </el-tabs>
-      <div class="table-card">
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-input
+        v-model="search"
+        placeholder="计算机名或IP地址"
+        size="small"
+        clearable
+        prefix-icon="el-icon-search"
+        @clear="handleSearch"
+        @keyup.enter.native="handleSearch"
+      />
+    </div>
+
+    <div v-if="statusFilter" class="status-filter-tag">
+      <el-tag closable @close="clearStatusFilter" type="warning">状态筛选: {{ statusFilter }}</el-tag>
+    </div>
+
+    <el-tabs v-model="activeTab" @tab-click="handleTabClick">
+      <el-tab-pane label="全部" name="all" />
+      <el-tab-pane
+        v-for="region in regions"
+        :key="region.id"
+        :label="region.name"
+        :name="String(region.id)"
+      />
+    </el-tabs>
+
+    <div class="table-card">
         <el-table
           :data="assets"
           stripe
@@ -51,16 +56,16 @@
           <el-table-column prop="purpose" label="用途" show-overflow-tooltip/>
           <el-table-column prop="asset_level" label="资产等级" width="100" sortable="custom">
             <template slot-scope="scope">
-              <el-tag v-if="scope.row.asset_level" size="small">{{ scope.row.asset_level }}</el-tag>
+              <el-tag v-if="scope.row.asset_level" size="mini">{{ scope.row.asset_level }}</el-tag>
               <span v-else>-</span>
             </template>
           </el-table-column>
           <el-table-column prop="status" label="状态" width="80" sortable="custom">
             <template slot-scope="scope">
-              <el-tag :type="statusType(scope.row.status)" size="small">{{ scope.row.status }}</el-tag>
+              <el-tag :type="statusType(scope.row.status)" size="mini">{{ scope.row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" align="center">
+          <el-table-column label="操作" width="200" align="center" fixed="right">
             <template slot-scope="scope">
               <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
               <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
@@ -69,19 +74,18 @@
         </el-table>
       </div>
 
-
-      <el-pagination
-        style="margin-top: 15px; text-align: right"
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        :page-size.sync="pageSize"
-        :current-page.sync="currentPage"
-        :page-sizes="[10, 20, 50, 100]"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </el-card>
+      <div class="pagination-wrap">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          :page-size.sync="pageSize"
+          :current-page.sync="currentPage"
+          :page-sizes="[10, 20, 50, 100]"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
 
     <asset-form
       :visible.sync="formVisible"
@@ -226,12 +230,6 @@ export default {
       this.currentPage = 1
       this.fetchData()
     },
-    handleReset() {
-      this.search = ''
-      this.statusFilter = ''
-      this.currentPage = 1
-      this.fetchData()
-    },
     clearStatusFilter() {
       this.statusFilter = ''
       this.currentPage = 1
@@ -240,3 +238,67 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.asset-list {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
+}
+
+/* --- 页面头部 --- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- 主按钮 --- */
+.header-actions .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.header-actions .el-button--primary:hover {
+  background: #2563eb;
+}
+
+/* --- 状态筛选标签 --- */
+.status-filter-tag {
+  margin-bottom: 12px;
+}
+
+/* --- 筛选栏输入框宽度 --- */
+.asset-list .filter-bar .el-input {
+  width: 260px;
+}
+
+/* --- Tabs 间距 --- */
+.asset-list .el-tabs {
+  margin-bottom: 16px;
+}
+</style>

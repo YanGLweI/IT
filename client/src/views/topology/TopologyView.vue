@@ -1,13 +1,18 @@
 <template>
   <div class="topology-view">
-    <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
-        <span>网络拓扑图</span>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">网络拓扑图</h2>
+        <p class="page-subtitle">管理公司网络拓扑图，支持在线预览与下载</p>
+      </div>
+      <div class="header-actions">
         <el-button type="primary" size="small" icon="el-icon-upload2" @click="uploadVisible = true">上传拓扑图</el-button>
       </div>
+    </div>
 
-      <el-row :gutter="20">
-        <el-col :span="8" v-for="item in topologies" :key="item.id" style="margin-bottom: 20px">
+    <el-row :gutter="20">
+        <el-col :span="6" v-for="item in topologies" :key="item.id" style="margin-bottom: 20px">
           <el-card shadow="hover">
             <div class="topo-card">
               <div class="topo-thumb" @click="handlePreview(item)">
@@ -32,10 +37,9 @@
       </el-row>
 
       <el-empty v-if="topologies.length === 0" description="暂无拓扑图" />
-    </el-card>
 
     <!-- 上传弹窗 -->
-    <el-dialog title="上传拓扑图" :visible.sync="uploadVisible" width="550px">
+    <el-dialog class="vault-dialog" title="上传拓扑图" :visible.sync="uploadVisible" width="550px">
       <el-form :model="uploadForm" :rules="uploadRules" ref="uploadFormRef" label-width="80px">
         <el-form-item label="名称" prop="name">
           <el-input v-model="uploadForm.name" placeholder="请输入拓扑图名称" />
@@ -66,7 +70,7 @@
     </el-dialog>
 
     <!-- 编辑弹窗 -->
-    <el-dialog title="编辑拓扑图" :visible.sync="editVisible" width="500px">
+    <el-dialog class="vault-dialog" title="编辑拓扑图" :visible.sync="editVisible" width="500px">
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="名称">
           <el-input v-model="editForm.name" />
@@ -82,7 +86,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog :visible.sync="previewVisible" width="90%" top="3vh" @closed="clearPreview">
+    <el-dialog class="vault-dialog" :visible.sync="previewVisible" width="90%" top="3vh" @closed="clearPreview">
       <div slot="title" class="preview-toolbar">
         <span>拓扑图预览</span>
         <div class="preview-toolbar-right">
@@ -293,6 +297,54 @@ export default {
 </script>
 
 <style scoped>
+.topology-view {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
+}
+
+/* --- 页面头部 --- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- 主按钮 --- */
+.header-actions .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.header-actions .el-button--primary:hover {
+  background: #2563eb;
+}
+
+/* --- 卡片 --- */
 .topo-card {
   display: flex;
   flex-direction: column;
@@ -300,9 +352,9 @@ export default {
 .topo-thumb {
   height: 180px;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: 12px;
   cursor: pointer;
-  background: #f5f7fa;
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -317,11 +369,13 @@ export default {
 }
 .topo-info h4 {
   margin: 0 0 5px 0;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
 }
 .topo-info p {
   margin: 0 0 8px 0;
-  color: #999;
+  color: #64748b;
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -330,14 +384,14 @@ export default {
 .topo-meta {
   display: flex;
   justify-content: space-between;
-  color: #bbb;
+  color: #94a3b8;
   font-size: 12px;
   margin-bottom: 8px;
 }
 .topo-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 5px;
+  gap: 6px;
 }
 .preview-toolbar {
   display: flex;

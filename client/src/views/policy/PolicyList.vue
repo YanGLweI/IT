@@ -1,10 +1,16 @@
 <template>
   <div class="policy-list">
-    <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
-        <span>IT政策管理</span>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">IT政策管理</h2>
+        <p class="page-subtitle">管理公司IT政策文件，支持在线预览与下载</p>
+      </div>
+      <div class="header-actions">
         <el-button type="primary" size="small" icon="el-icon-upload2" @click="uploadVisible = true">上传政策</el-button>
       </div>
+    </div>
+
       <div class="table-card">
         <el-table :data="policies"  stripe>
           <el-table-column prop="title" label="标题" />
@@ -16,7 +22,7 @@
           <el-table-column label="上传时间" width="180">
             <template slot-scope="scope">{{ formatDate(scope.row.created_at) }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="280" align="center">
+          <el-table-column label="操作" width="280" align="center" fixed="right">
             <template slot-scope="scope">
               <el-button size="mini" @click="handlePreview(scope.row)">预览</el-button>
               <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
@@ -25,11 +31,9 @@
           </el-table-column>
         </el-table>
       </div>
-      
-    </el-card>
 
     <!-- 上传弹窗 -->
-    <el-dialog title="上传政策文件" :visible.sync="uploadVisible" width="500px">
+    <el-dialog title="上传政策文件" :visible.sync="uploadVisible" width="500px" class="vault-dialog">
       <el-form :model="uploadForm" :rules="uploadRules" ref="uploadFormRef" label-width="80px">
         <el-form-item label="标题" prop="title">
           <el-input v-model="uploadForm.title" placeholder="请输入政策标题" />
@@ -60,7 +64,7 @@
     </el-dialog>
 
     <!-- 编辑弹窗 -->
-    <el-dialog title="编辑政策" :visible.sync="editVisible" width="500px">
+    <el-dialog title="编辑政策" :visible.sync="editVisible" width="500px" class="vault-dialog">
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="标题">
           <el-input v-model="editForm.title" />
@@ -76,7 +80,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" @closed="clearDocxPreview">
+    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" class="vault-dialog" @closed="clearDocxPreview">
       <!-- 工具栏：搜索 + 下载 -->
       <div class="preview-toolbar" slot="title">
         <span>文件预览</span>
@@ -87,12 +91,12 @@
             size="small"
             prefix-icon="el-icon-search"
             clearable
-            style="width: 320px; margin-right: 10px"
+            style="width: 320px"
             @keyup.enter.native="searchNext"
             @clear="clearSearch"
           >
           </el-input>
-          <el-button icon="el-icon-bottom" @click="searchNext" size="small" style="margin-right: 10px">下一个</el-button>
+          <el-button icon="el-icon-bottom" @click="searchNext" size="small">下一个</el-button>
           <span v-if="searchKeyword" class="search-info">{{ searchIndex + 1 }} / {{ searchTotal }}</span>
           <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFile">下载</el-button>
         </div>
@@ -455,21 +459,88 @@ export default {
 </script>
 
 <style scoped>
+/* ========== 页面容器 ========== */
+.policy-list {
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  margin: 20px;
+}
+
+/* ========== 页面头部 ========== */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* 头部按钮 */
+.page-header ::v-deep .el-button--primary {
+  padding: 9px 18px;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.page-header ::v-deep .el-button--primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* ========== 预览弹窗 ========== */
 .preview-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
 }
+.preview-toolbar > span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
 .preview-toolbar-right {
   display: flex;
   align-items: center;
+  gap: 10px;
   margin-right: 30px;
+}
+.preview-toolbar-right ::v-deep .el-button--primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.preview-toolbar-right ::v-deep .el-button--primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
 }
 .search-info {
   font-size: 12px;
-  color: #909399;
-  margin-right: 10px;
+  color: #94a3b8;
   white-space: nowrap;
 }
 .docx-preview-container {
