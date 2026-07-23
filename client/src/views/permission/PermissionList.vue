@@ -1,24 +1,27 @@
 <template>
   <div class="permission-page">
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>岗位权限设置规则</span>
-        <div class="page-header-right">
-          <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExportChangeRecord">导出变更记录表</el-button>
-          <el-button type="primary" size="small" icon="el-icon-setting" @click="showManagement = true">管理配置</el-button>
-          <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">岗位权限设置规则</h2>
+        <p class="page-subtitle">配置各岗位在不同系统中的角色权限</p>
       </div>
+      <div class="header-actions">
+        <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExportChangeRecord">导出变更记录表</el-button>
+        <el-button type="primary" size="small" icon="el-icon-setting" @click="showManagement = true">管理配置</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+      </div>
+    </div>
 
-      <div class="table-wrapper" ref="tableWrapper">
-        <el-table
-          :data="rules"
-          border
-          stripe
-          style="width: 100%"
-          v-loading="loading"
-          :max-height="tableMaxHeight"
-        >
+    <div class="table-card">
+    <div class="table-wrapper">
+      <el-table
+        :data="rules"
+        stripe
+        style="width: 100%"
+        v-loading="loading"
+        :max-height="tableMaxHeight"
+      >
           <el-table-column label="岗位" width="200" fixed>
             <template slot-scope="{ row }">
               <strong>{{ row.position_name }}</strong>
@@ -48,12 +51,12 @@
               </div>
             </template>
           </el-table-column>
-        </el-table>
-      </div>
-    </el-card>
+      </el-table>
+    </div>
+    </div>
 
     <!-- 角色授权/取消授权确认弹窗 -->
-    <el-dialog title="保存确认" :visible.sync="dialogVisible" width="400px">
+    <el-dialog class="vault-dialog" title="保存确认" :visible.sync="dialogVisible" width="400px">
       <div>
         <p><strong>岗位：</strong>{{ editingPosition }}</p>
         <p><strong>系统：</strong>{{ editingSystem }}</p>
@@ -67,7 +70,7 @@
     </el-dialog>
 
     <!-- ==================== 管理配置弹窗 ==================== -->
-    <el-dialog title="管理配置" :visible.sync="showManagement" width="750px" top="5vh">
+    <el-dialog class="vault-dialog" title="管理配置" :visible.sync="showManagement" width="750px" top="5vh">
       <el-tabs v-model="activeTab">
         <!-- Tab 1: 岗位管理 -->
         <el-tab-pane label="岗位管理" name="position">
@@ -151,7 +154,7 @@
     </el-dialog>
 
     <!-- 重命名弹窗（复用：岗位/系统/角色） -->
-    <el-dialog :title="renameTitle" :visible.sync="renameDialogVisible" width="400px">
+    <el-dialog class="vault-dialog" :title="renameTitle" :visible.sync="renameDialogVisible" width="400px">
       <el-form>
         <el-form-item :label="renameLabel" required>
           <el-input v-model="renameValue" @keyup.enter="confirmRename" />
@@ -200,8 +203,7 @@ export default {
       renameDialogVisible: false,
       renameTarget: null, // { type: 'position'|'system'|'role', id?, oldName?, systemName? }
       renameValue: '',
-      // 表格最大高度（动态按页面剩余空间计算，使横向滚动条始终可见）
-      tableMaxHeight: null,
+      tableMaxHeight: 500,
       // 导出
       exporting: false
     }
@@ -235,9 +237,13 @@ export default {
     },
     calcTableHeight() {
       this.$nextTick(() => {
-        if (this.$refs.tableWrapper) {
-          const top = this.$refs.tableWrapper.getBoundingClientRect().top
-          this.tableMaxHeight = window.innerHeight - top - 20
+        const page = this.$el
+        if (page) {
+          const pageRect = page.getBoundingClientRect()
+          const header = page.querySelector('.page-header')
+          const headerHeight = header ? header.getBoundingClientRect().height : 0
+          // 容器总高 - header - 上下padding(48) - 间距(20) - 边框(2) - 底部留白(8)
+          this.tableMaxHeight = pageRect.height - headerHeight - 78
         }
       })
     },
@@ -535,32 +541,78 @@ export default {
 </script>
 
 <style scoped>
+.permission-page {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
 
-.page-header-right {
+.header-left {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.table-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .table-wrapper {
   overflow-x: auto;
+  overflow-y: visible;
   padding-bottom: 8px;
+  border-radius: 14px;
+  flex: 1;
+  min-height: 0;
 }
 
 .sort-btns {
   display: flex;
-  gap: 2px;
+  gap: 6px;
   justify-content: center;
 }
 
 .cell-roles {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
   padding: 4px 0;
 }
 
@@ -575,7 +627,7 @@ export default {
 }
 
 .empty-role {
-  color: #ccc;
+  color: #94a3b8;
   font-size: 12px;
 }
 
@@ -597,7 +649,54 @@ export default {
 
 .mgmt-label {
   white-space: nowrap;
-  color: #606266;
-  font-size: 14px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 主按钮 */
+.header-actions .el-button--primary,
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--primary:hover,
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* success 按钮 */
+.header-actions .el-button--success {
+  background: #10b981;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--success:hover {
+  background: #059669;
+  color: #fff;
+}
+
+/* 次要按钮 */
+.header-actions .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
 }
 </style>
