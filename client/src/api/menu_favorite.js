@@ -9,3 +9,8 @@ export function getMenuFavorites() {
 export function toggleMenuFavorite(data) {
   return request.put('/menu-favorites/toggle', data)
 }
+
+// 批量更新收藏排序
+export function reorderMenuFavorites(menuIndices) {
+  return request.put('/menu-favorites/reorder', { menu_indices: menuIndices })
+}

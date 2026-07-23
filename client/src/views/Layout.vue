@@ -21,7 +21,17 @@
             <i class="el-icon-star-on fav-section-icon"></i>
             <span>我的收藏</span>
           </template>
-          <el-menu-item v-for="fav in favorites" :key="'fav-' + fav.menu_index" :index="'fav-' + fav.menu_index">
+          <el-menu-item v-for="(fav, idx) in favorites" :key="'fav-' + fav.menu_index" :index="'fav-' + fav.menu_index">
+            <span class="fav-drag-handle" draggable="true"
+                  @dragstart="onFavDragStart($event, idx)"
+                  @dragend="onFavDragEnd"
+                  @mousedown.stop>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+                <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+              </svg>
+            </span>
             <svg-icon :name="fav.icon" />
             <span>{{ fav.title }}</span>
             <i
@@ -93,7 +103,7 @@
 
 <script>
 import { logout } from '@/api/audit_log'
-import { getMenuFavorites, toggleMenuFavorite } from '@/api/menu_favorite'
+import { getMenuFavorites, toggleMenuFavorite, reorderMenuFavorites } from '@/api/menu_favorite'
 import { animate, scrambleText } from 'animejs'
 import SvgIcon from '@/components/SvgIcon.vue'
 import NotificationBell from '@/components/NotificationBell.vue'
@@ -108,6 +118,8 @@ export default {
       titleTypingTimer: null,
       favorites: [],
       favActiveIndex: null,
+      dragFavIndex: -1,
+      dragOverInsertIdx: -1,
       menuConfig: [
         { type: 'item', index: '/dashboard', icon: 'bar-chart-2', title: '数据看板' },
         { type: 'item', index: '/policies', icon: 'file-text', title: 'IT政策' },
@@ -176,6 +188,14 @@ export default {
   },
   mounted() {
     this.loadFavorites()
+    // 容器级绑定收藏拖拽排序事件（整个收藏分组作为放置区）
+    const menuEl = this.$refs.sidebarMenu && this.$refs.sidebarMenu.$el
+    if (menuEl) {
+      this._onFavDragOver = (e) => this.onFavDragOverContainer(e)
+      this._onFavDrop = (e) => this.onFavDropContainer(e)
+      menuEl.addEventListener('dragover', this._onFavDragOver)
+      menuEl.addEventListener('drop', this._onFavDrop)
+    }
     this.$nextTick(() => {
       this.startSubtitleAnimation()
       this.startTitleTypingAnimation()
@@ -197,6 +217,11 @@ export default {
     }
     if (this.titleTypingTimer) {
       clearTimeout(this.titleTypingTimer)
+    }
+    const menuEl = this.$refs.sidebarMenu && this.$refs.sidebarMenu.$el
+    if (menuEl) {
+      if (this._onFavDragOver) menuEl.removeEventListener('dragover', this._onFavDragOver)
+      if (this._onFavDrop) menuEl.removeEventListener('drop', this._onFavDrop)
     }
   },
   methods: {
@@ -273,7 +298,93 @@ export default {
         this.$nextTick(restoreRollback)
       })
     },
-    // 菜单点击导航（收藏项 index 带 fav- 前缀，与原始菜单项独立控制手风琴）
+    // ============ 收藏拖动排序 ============
+    onFavDragStart(e, idx) {
+      this.dragFavIndex = idx
+      e.dataTransfer.effectAllowed = 'move'
+      const menuItemEl = e.target.closest('.el-menu-item')
+      if (menuItemEl) {
+        const rect = menuItemEl.getBoundingClientRect()
+        // 先设置悬浮阴影，再把整个菜单项设为拖拽影像（快照会带上阴影）
+        menuItemEl.style.boxShadow = '0 8px 20px rgba(64, 158, 255, 0.4)'
+        e.dataTransfer.setDragImage(menuItemEl, e.clientX - rect.left, e.clientY - rect.top)
+        // 快照后再把原元素置暗，表示正在被拖动
+        menuItemEl.classList.add('fav-dragging')
+      }
+    },
+    onFavDragEnd() {
+      this.clearFavDragState()
+    },
+    onFavDragOverContainer(e) {
+      if (this.dragFavIndex < 0) return
+      const submenu = this.$el.querySelector('.fav-submenu')
+      if (!submenu) return
+      const subRect = submenu.getBoundingClientRect()
+      // 仅当鼠标位于收藏分组内才处理
+      if (e.clientY < subRect.top || e.clientY > subRect.bottom ||
+          e.clientX < subRect.left || e.clientX > subRect.right) {
+        this.clearDropIndicator()
+        this.dragOverInsertIdx = -1
+        return
+      }
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      const items = Array.from(submenu.querySelectorAll('.el-menu--inline .el-menu-item'))
+      // 根据鼠标垂直位置判断插入点：在项中点上方 = 插到该项之前，否则插到该项之后
+      let insertIdx = items.length
+      let beforeEl = null
+      for (let i = 0; i < items.length; i++) {
+        const rect = items[i].getBoundingClientRect()
+        if (e.clientY < rect.top + rect.height / 2) {
+          insertIdx = i
+          beforeEl = items[i]
+          break
+        }
+      }
+      this.dragOverInsertIdx = insertIdx
+      this.clearDropIndicator()
+      if (beforeEl) {
+        beforeEl.classList.add('fav-drop-before')
+      } else if (items.length) {
+        items[items.length - 1].classList.add('fav-drop-after')
+      }
+    },
+    onFavDropContainer(e) {
+      if (this.dragFavIndex < 0 || this.dragOverInsertIdx < 0) return
+      e.preventDefault()
+      const fromIdx = this.dragFavIndex
+      let targetIdx = this.dragOverInsertIdx
+      if (fromIdx < targetIdx) targetIdx--
+      if (fromIdx !== targetIdx) {
+        const item = this.favorites.splice(fromIdx, 1)[0]
+        this.favorites.splice(targetIdx, 0, item)
+        this.persistFavOrder()
+      }
+      this.clearFavDragState()
+    },
+    clearDropIndicator() {
+      const submenu = this.$el.querySelector('.fav-submenu')
+      if (!submenu) return
+      submenu.querySelectorAll('.fav-drop-before, .fav-drop-after').forEach(el => {
+        el.classList.remove('fav-drop-before', 'fav-drop-after')
+      })
+    },
+    clearFavDragState() {
+      this.clearDropIndicator()
+      const submenu = this.$el.querySelector('.fav-submenu')
+      if (submenu) {
+        submenu.querySelectorAll('.fav-dragging').forEach(el => {
+          el.classList.remove('fav-dragging')
+          el.style.boxShadow = ''
+        })
+      }
+      this.dragFavIndex = -1
+      this.dragOverInsertIdx = -1
+    },
+    persistFavOrder() {
+      const indices = this.favorites.map(f => f.menu_index)
+      reorderMenuFavorites(indices).catch(() => {})
+    },
     handleMenuSelect(index) {
       const isFav = index.startsWith('fav-')
       const path = isFav ? index.slice(4) : index
@@ -399,11 +510,60 @@ export default {
   padding: 0;
   background: transparent;
 }
+/* 收藏拖动手柄 */
+.fav-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  cursor: grab;
+  color: #94A3B8;
+  margin-left: -30px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+.fav-drag-handle:hover {
+  opacity: 1 !important;
+  color: #E2E8F0;
+}
+.fav-drag-handle:active {
+  cursor: grabbing;
+}
 </style>
 
 <style>
 /* 非看板、非日历页面恢复默认内边距 */
 .el-main > *:not(.dashboard):not(.calendar-page) {
   padding: 20px;
+}
+/* 收藏项 hover 时显示拖动手柄 */
+.sidebar-aside .el-menu--inline .el-menu-item:hover .fav-drag-handle {
+  opacity: 0.5;
+}
+.sidebar-aside .el-menu--inline .el-menu-item:hover .fav-drag-handle:hover {
+  opacity: 1;
+}
+/* 拖动中的原元素置暗 */
+.sidebar-aside .el-menu-item.fav-dragging {
+  opacity: 0.4;
+}
+/* 拖拽插入位置指示线 */
+.sidebar-aside .el-menu-item.fav-drop-before::after,
+.sidebar-aside .el-menu-item.fav-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: #409EFF;
+  border-radius: 1px;
+  z-index: 10;
+}
+.sidebar-aside .el-menu-item.fav-drop-before::after {
+  top: -1px;
+}
+.sidebar-aside .el-menu-item.fav-drop-after::after {
+  bottom: -1px;
 }
 </style>
