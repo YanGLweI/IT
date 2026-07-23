@@ -24,40 +24,43 @@
       </div>
 
       <!-- 数据表格 -->
-      <el-table :data="records" border stripe v-loading="loading" style="margin-top: 12px">
-        <el-table-column type="index" label="#" width="50" align="center" />
-        <el-table-column prop="year" label="年份" width="70" align="center" />
-        <el-table-column prop="report_date" label="报告日期" width="110" align="center" />
-        <el-table-column label="可渗透漏洞数" width="110" align="center">
-          <template slot-scope="{ row }">
-            <span style="color: #F56C6C; font-weight: bold">{{ row.vuln_count }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="description" label="结果描述" min-width="200" show-overflow-tooltip />
-        <el-table-column label="关联漏洞扫描报告" width="320" align="center">
-          <template slot-scope="{ row }">
-            <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
-              <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark" :enterable="false">
-                <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
-                <el-tag size="mini" style="margin: 2px; cursor: pointer;" @click.native="handlePreviewVulnScan(vs)">
-                  {{ formatVulnScanLabel(vs) }}
-                </el-tag>
-              </el-tooltip>
+      <div class="table-card" style="margin-top: 12px">
+        <el-table :data="records" stripe v-loading="loading" >
+          <el-table-column type="index" label="#" width="70" align="center" />
+          <el-table-column prop="year" label="年份" width="85" align="center" />
+          <el-table-column prop="report_date" label="报告日期" width="130" align="center" />
+          <el-table-column label="可渗透漏洞数" width="130" align="center">
+            <template slot-scope="{ row }">
+              <span style="color: #F56C6C; font-weight: bold">{{ row.vuln_count }}</span>
             </template>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
-        <el-table-column label="操作" width="180" fixed="right" align="center">
-          <template slot-scope="{ row }">
-            <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+          </el-table-column>
+          <el-table-column prop="description" label="结果描述" min-width="200" show-overflow-tooltip />
+          <el-table-column label="关联漏洞扫描报告" width="320" align="center">
+            <template slot-scope="{ row }">
+              <template v-if="row.vulnerability_scans && row.vulnerability_scans.length > 0">
+                <el-tooltip v-for="vs in row.vulnerability_scans" :key="vs.id" placement="top" effect="dark" :enterable="false">
+                  <div slot="content">{{ formatVulnScanTooltip(vs) }}</div>
+                  <el-tag size="mini" style="margin: 2px; cursor: pointer;" @click.native="handlePreviewVulnScan(vs)">
+                    {{ formatVulnScanLabel(vs) }}
+                  </el-tag>
+                </el-tooltip>
+              </template>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
+          <el-table-column label="操作" width="300" fixed="right" align="center">
+            <template slot-scope="{ row }">
+              <div class="op-btns">
+                <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
+                <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
+                <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      
 
       <!-- 分页 -->
       <el-pagination
@@ -465,7 +468,7 @@ export default {
 
 <style scoped>
 .penetration-test {
-  margin: 20px;
+  margin: 0;
   padding: 0;
 }
 .page-header {

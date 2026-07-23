@@ -864,31 +864,6 @@ export default {
   color: #1e293b;
 }
 
-/* ========== 工具栏 ========== */
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.filter-bar ::v-deep .el-input__inner {
-  border-radius: 10px;
-  border-color: #e2e8f0;
-  font-size: 13px;
-  height: 36px;
-  line-height: 36px;
-  transition: border-color 0.2s;
-}
-.filter-bar ::v-deep .el-input__inner:focus {
-  border-color: #3b82f6;
-}
-.filter-bar ::v-deep .el-input__prefix {
-  color: #94a3b8;
-}
-.filter-bar ::v-deep .el-select .el-input.is-focus .el-input__inner {
-  border-color: #3b82f6;
-}
 
 /* ========== 预览弹窗 ========== */
 .preview-toolbar {

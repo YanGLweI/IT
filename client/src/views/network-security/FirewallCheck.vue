@@ -25,57 +25,60 @@
       </div>
 
       <!-- 数据表格 -->
-      <el-table :data="records" border stripe v-loading="loading" style="margin-top: 12px">
-        <el-table-column type="index" label="#" width="50" align="center" />
-        <el-table-column prop="year" label="年份" width="70" align="center" />
-        <el-table-column label="季度" width="70" align="center">
-          <template slot-scope="{ row }">Q{{ row.quarter }}</template>
-        </el-table-column>
-        <el-table-column prop="report_date" label="报告日期" width="110" align="center" />
-        <el-table-column label="防火墙" min-width="150" show-overflow-tooltip>
-          <template slot-scope="{ row }">
-            <span v-if="row.asset">{{ row.asset.computer_name }}</span>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="检查结果" width="100" align="center">
-          <template slot-scope="{ row }">
-            <el-tag :type="row.check_result === 'compliant' ? 'success' : 'danger'" size="small">
-              {{ row.check_result === 'compliant' ? '合规' : '不合规' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="file_name" label="检查报告" min-width="180" show-overflow-tooltip>
-          <template slot-scope="{ row }">
-            <span v-if="row.file_name">{{ row.file_name }}</span>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="整改报告" width="140" align="center">
-          <template slot-scope="{ row }">
-            <template v-if="row.check_result === 'non_compliant'">
-              <template v-if="row.rect_file_name">
-                <div class="op-btns" style="justify-content: center">
-                  <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRect(row)">预览</el-button>
-                  <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDeleteRect(row)">删除</el-button>
-                </div>
-              </template>
-              <el-button v-else size="mini" type="text" icon="el-icon-document-checked" style="color: #E6A23C" @click="openRectUpload(row)">整改</el-button>
+      <div class="table-card" style="margin-top: 12px">
+        <el-table :data="records" stripe v-loading="loading">
+          <el-table-column type="index" label="#" width="70" align="center" />
+          <el-table-column prop="year" label="年份" width="85" align="center" />
+          <el-table-column label="季度" width="85" align="center">
+            <template slot-scope="{ row }">Q{{ row.quarter }}</template>
+          </el-table-column>
+          <el-table-column prop="report_date" label="报告日期" width="150" align="center" />
+          <el-table-column label="防火墙" min-width="150" show-overflow-tooltip>
+            <template slot-scope="{ row }">
+              <span v-if="row.asset">{{ row.asset.computer_name }}</span>
+              <span v-else>-</span>
             </template>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right" align="center">
-          <template slot-scope="{ row }">
-            <div class="op-btns">
-              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
-              <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
-              <el-button size="mini" type="text" icon="el-icon-edit" @click="openEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+          </el-table-column>
+          <el-table-column label="检查结果" width="150" align="center">
+            <template slot-scope="{ row }">
+              <el-tag :type="row.check_result === 'compliant' ? 'success' : 'danger'" size="small">
+                {{ row.check_result === 'compliant' ? '合规' : '不合规' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="file_name" label="检查报告" min-width="150" show-overflow-tooltip>
+            <template slot-scope="{ row }">
+              <span v-if="row.file_name">{{ row.file_name }}</span>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="整改报告" width="250" align="center">
+            <template slot-scope="{ row }">
+              <template v-if="row.check_result === 'non_compliant'">
+                <template v-if="row.rect_file_name">
+                  <div class="op-btns" style="justify-content: center">
+                    <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreviewRect(row)">预览</el-button>
+                    <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDeleteRect(row)">删除</el-button>
+                  </div>
+                </template>
+                <el-button v-else size="mini" type="text" icon="el-icon-document-checked" style="color: #E6A23C" @click="openRectUpload(row)">整改</el-button>
+              </template>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="350" fixed="right" align="center">
+            <template slot-scope="{ row }">
+              <div class="op-btns">
+                <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
+                <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
+                <el-button size="mini" type="text" icon="el-icon-edit" @click="openEdit(row)">编辑</el-button>
+                <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      
 
       <!-- 分页 -->
       <el-pagination

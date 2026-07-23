@@ -1,0 +1,55 @@
+/* ============================================
+   Global Filter Bar — Light Tech Style
+   基于 STYLE_GUIDE.md 统一设计规范
+   用法：<div class="filter-bar"> 包裹搜索框和筛选下拉
+   ============================================ */
+
+/* --- 筛选栏容器 --- */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* --- 输入框 --- */
+.filter-bar .el-input__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+  height: 36px;
+  line-height: 36px;
+  transition: border-color 0.2s;
+}
+.filter-bar .el-input__inner:focus {
+  border-color: #3b82f6;
+}
+.filter-bar .el-input__inner::placeholder {
+  color: #94a3b8;
+}
+
+/* --- 搜索图标 --- */
+.filter-bar .el-input__prefix {
+  color: #94a3b8;
+}
+.filter-bar .el-input__icon {
+  line-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- 下拉框 focus 态 --- */
+.filter-bar .el-select .el-input.is-focus .el-input__inner {
+  border-color: #3b82f6;
+}
+
+/* --- 清除按钮 --- */
+.filter-bar .el-input__clear {
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+.filter-bar .el-input__clear:hover {
+  color: #64748b;
+}
