@@ -5,24 +5,27 @@
         <span>IT政策管理</span>
         <el-button type="primary" size="small" icon="el-icon-upload2" @click="uploadVisible = true">上传政策</el-button>
       </div>
-      <el-table :data="policies" border stripe>
-        <el-table-column prop="title" label="标题" />
-        <el-table-column prop="description" label="描述" show-overflow-tooltip />
-        <el-table-column prop="file_name" label="文件名" />
-        <el-table-column label="文件大小" width="120">
-          <template slot-scope="scope">{{ formatSize(scope.row.file_size) }}</template>
-        </el-table-column>
-        <el-table-column label="上传时间" width="180">
-          <template slot-scope="scope">{{ formatDate(scope.row.created_at) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="280" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handlePreview(scope.row)">预览</el-button>
-            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="table-card">
+        <el-table :data="policies"  stripe>
+          <el-table-column prop="title" label="标题" />
+          <el-table-column prop="description" label="描述" show-overflow-tooltip />
+          <el-table-column prop="file_name" label="文件名" />
+          <el-table-column label="文件大小" width="120">
+            <template slot-scope="scope">{{ formatSize(scope.row.file_size) }}</template>
+          </el-table-column>
+          <el-table-column label="上传时间" width="180">
+            <template slot-scope="scope">{{ formatDate(scope.row.created_at) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="280" align="center">
+            <template slot-scope="scope">
+              <el-button size="mini" @click="handlePreview(scope.row)">预览</el-button>
+              <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
+              <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      
     </el-card>
 
     <!-- 上传弹窗 -->

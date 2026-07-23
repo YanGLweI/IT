@@ -1011,7 +1011,7 @@ export default {
 
 <style scoped>
 .backup-management {
-  margin: 20px;
+  margin: 0;
   padding: 0;
 }
 .page-header {

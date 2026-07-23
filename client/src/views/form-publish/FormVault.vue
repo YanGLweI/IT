@@ -1,17 +1,20 @@
 <template>
   <div class="form-vault-page">
-    <el-card>
-      <div slot="header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <span>表单发布 — 保管区</span>
-        <div style="display: flex; gap: 8px;">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUploadDialog">上传表单</el-button>
-          <el-button size="small" icon="el-icon-link" @click="showCrossModuleDialog">跨模块引用</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">表单发布</h2>
+        <p class="page-subtitle">保管区 — 管理已上传与跨模块引用的表单</p>
       </div>
+      <div class="header-actions">
+        <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUploadDialog">上传表单</el-button>
+        <el-button size="small" icon="el-icon-link" @click="showCrossModuleDialog">跨模块引用</el-button>
+      </div>
+    </div>
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
-        <el-input v-model="filters.keyword" placeholder="搜索标题或描述..." prefix-icon="el-icon-search" clearable style="width: 220px;" @input="fetchItems" />
+        <el-input v-model="filters.keyword" placeholder="搜索标题或描述..." prefix-icon="el-icon-search" clearable style="width: 240px;" @input="fetchItems" />
         <el-select v-model="filters.category" placeholder="全部分类" clearable style="width: 130px;" @change="fetchItems">
           <el-option v-for="cat in categoryList" :key="cat" :label="cat" :value="cat" />
         </el-select>
@@ -27,7 +30,8 @@
       </div>
 
       <!-- 表格 -->
-      <el-table :data="items" border stripe v-loading="loading">
+      <div class="table-card">
+      <el-table :data="items" stripe v-loading="loading">
         <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
         <el-table-column prop="category" label="分类" width="100" />
         <el-table-column label="来源" width="90" align="center">
@@ -37,7 +41,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="80" align="center">
+        <el-table-column label="状态" width="120" align="center">
           <template slot-scope="scope">
             <el-tag :type="scope.row.is_published ? 'success' : 'info'" size="mini">
               {{ scope.row.is_published ? '已发布' : '未发布' }}
@@ -69,6 +73,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <!-- 分页 -->
       <div class="pagination-wrap" v-if="total > pageSize">
@@ -81,7 +86,6 @@
           @current-change="fetchItems"
         />
       </div>
-    </el-card>
 
     <!-- 上传弹窗 -->
     <el-dialog title="上传新表单" :visible.sync="uploadVisible" width="520px">
@@ -798,54 +802,143 @@ export default {
 </script>
 
 <style scoped>
+/* ========== 页面容器 ========== */
 .form-vault-page {
-  /* 使用全局 padding */
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  margin: 20px;
 }
 
-.filter-bar {
+/* ========== 页面头部 ========== */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+.header-actions {
   display: flex;
   gap: 10px;
+}
+
+/* 头部按钮 */
+.page-header ::v-deep .el-button--primary {
+  padding: 9px 18px;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.page-header ::v-deep .el-button--primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+.page-header ::v-deep .el-button--default {
+  padding: 9px 18px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #64748b;
+  transition: all 0.2s;
+}
+.page-header ::v-deep .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+/* ========== 工具栏 ========== */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
-
-.pagination-wrap {
-  margin-top: 16px;
-  text-align: right;
+.filter-bar ::v-deep .el-input__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+  height: 36px;
+  line-height: 36px;
+  transition: border-color 0.2s;
+}
+.filter-bar ::v-deep .el-input__inner:focus {
+  border-color: #3b82f6;
+}
+.filter-bar ::v-deep .el-input__prefix {
+  color: #94a3b8;
+}
+.filter-bar ::v-deep .el-select .el-input.is-focus .el-input__inner {
+  border-color: #3b82f6;
 }
 
-/* 预览弹窗 */
+/* ========== 预览弹窗 ========== */
 .preview-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
 }
+.preview-toolbar > span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
 .preview-toolbar-right {
   display: flex;
   align-items: center;
   margin-right: 30px;
 }
+.preview-toolbar-right ::v-deep .el-button--primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.preview-toolbar-right ::v-deep .el-button--primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
 .docx-preview-container {
   background: #fff;
 }
-.docx-preview-container >>> .docx-wrapper {
+.docx-preview-container ::v-deep .docx-wrapper {
   background: #fff;
   padding: 0;
   width: 100%;
   min-width: 100%;
   overflow-x: auto;
 }
-.docx-preview-container >>> .docx {
+.docx-preview-container ::v-deep .docx {
   width: 100%;
   overflow-x: auto;
 }
-.docx-preview-container >>> .docx table {
+.docx-preview-container ::v-deep .docx table {
   width: 100% !important;
   table-layout: auto;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
+.docx-preview-container ::v-deep .docx table td,
+.docx-preview-container ::v-deep .docx table th {
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal !important;
@@ -856,28 +949,184 @@ export default {
 .xlsx-preview-container {
   font-size: 13px;
 }
-.xlsx-preview-container >>> table {
+.xlsx-preview-container ::v-deep table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
-.xlsx-preview-container >>> table td,
-.xlsx-preview-container >>> table th {
-  border: 1px solid #E2E8F0;
+.xlsx-preview-container ::v-deep table td,
+.xlsx-preview-container ::v-deep table th {
+  border: 1px solid #e2e8f0;
   padding: 6px 10px;
   text-align: left;
   white-space: nowrap;
   min-width: 60px;
 }
-.xlsx-preview-container >>> table th {
-  background: #F8FAFC;
+.xlsx-preview-container ::v-deep table th {
+  background: #f8fafc;
   font-weight: 600;
   color: #334155;
   position: sticky;
   top: 0;
   z-index: 1;
 }
-.xlsx-preview-container >>> table tr:hover td {
-  background: #F1F5F9;
+.xlsx-preview-container ::v-deep table tr:hover td {
+  background: #f1f5f9;
+}
+</style>
+
+<style>
+/* 弹窗全局样式覆盖（vault-dialog） */
+.vault-dialog {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+.vault-dialog .el-dialog__header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.vault-dialog .el-dialog__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.vault-dialog .el-dialog__body {
+  padding: 20px 24px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+.vault-dialog .el-dialog__footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+}
+/* 弹窗内输入控件 */
+.vault-dialog .el-input__inner,
+.vault-dialog .el-select .el-input__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+  height: 36px;
+  line-height: 36px;
+  transition: border-color 0.2s;
+}
+.vault-dialog .el-textarea__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+.vault-dialog .el-input__inner:focus,
+.vault-dialog .el-textarea__inner:focus,
+.vault-dialog .el-select .el-input.is-focus .el-input__inner {
+  border-color: #3b82f6;
+}
+/* 弹窗内表单 label */
+.vault-dialog .el-form-item__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+}
+/* 弹窗底部按钮 */
+.vault-dialog .el-dialog__footer .el-button {
+  border-radius: 10px;
+  font-size: 13px;
+  padding: 9px 18px;
+  transition: all 0.2s;
+}
+.vault-dialog .el-dialog__footer .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+.vault-dialog .el-dialog__footer .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+.vault-dialog .el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+  font-weight: 500;
+}
+.vault-dialog .el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+.vault-dialog .el-dialog__footer .el-button.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* 上传拖拽区 */
+.vault-dialog .el-upload-dragger {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  transition: border-color 0.2s;
+}
+.vault-dialog .el-upload-dragger:hover {
+  border-color: #3b82f6;
+}
+.vault-dialog .el-upload-dragger .el-icon-upload {
+  color: #94a3b8;
+}
+.vault-dialog .el-upload__text {
+  font-size: 13px;
+  color: #64748b;
+}
+.vault-dialog .el-upload__text em {
+  color: #3b82f6;
+}
+.vault-dialog .el-upload__tip {
+  font-size: 12px;
+  color: #94a3b8;
+}
+/* 单选框 */
+.vault-dialog .el-radio__input.is-checked .el-radio__inner {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+.vault-dialog .el-radio__input.is-checked + .el-radio__label {
+  color: #3b82f6;
+}
+.vault-dialog .el-radio__inner {
+  border-color: #e2e8f0;
+  transition: all 0.2s;
+}
+.vault-dialog .el-radio__label {
+  font-size: 13px;
+  color: #1e293b;
+}
+/* 分割线 */
+.vault-dialog .el-divider--horizontal {
+  margin: 20px 0 12px;
+}
+.vault-dialog .el-divider__text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  background: #fff;
+}
+.vault-dialog .el-divider {
+  background-color: #f1f5f9;
+}
+/* 弹窗内文件选择表格 */
+.vault-dialog .el-table th.el-table__cell {
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.vault-dialog .el-table td.el-table__cell {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+}
+.vault-dialog .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background: #f1f5f9;
+}
+.vault-dialog .el-table__body tr.current-row > td {
+  background: rgba(59, 130, 246, 0.06);
 }
 </style>

@@ -33,41 +33,42 @@
           :name="String(region.id)"
         />
       </el-tabs>
+      <div class="table-card">
+        <el-table
+          :data="assets"
+          stripe
+          @sort-change="handleSortChange"
+          v-loading="loading"
+        >
+          <el-table-column type="index" label="序号" width="70" align="center" :index="indexMethod" />
+          <el-table-column prop="computer_name" label="计算机名" sortable="custom" />
+          <el-table-column prop="ip_address" label="IP地址" sortable="custom" />
+          <el-table-column prop="os_type" label="操作系统" sortable="custom">
+            <template slot-scope="scope">
+              {{ scope.row.os_type ? scope.row.os_type.name : '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="purpose" label="用途" show-overflow-tooltip/>
+          <el-table-column prop="asset_level" label="资产等级" width="100" sortable="custom">
+            <template slot-scope="scope">
+              <el-tag v-if="scope.row.asset_level" size="small">{{ scope.row.asset_level }}</el-tag>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="80" sortable="custom">
+            <template slot-scope="scope">
+              <el-tag :type="statusType(scope.row.status)" size="small">{{ scope.row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="200" align="center">
+            <template slot-scope="scope">
+              <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
+              <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
-      <el-table
-        :data="assets"
-        border
-        stripe
-        @sort-change="handleSortChange"
-        v-loading="loading"
-      >
-        <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
-        <el-table-column prop="computer_name" label="计算机名" sortable="custom" />
-        <el-table-column prop="ip_address" label="IP地址" sortable="custom" />
-        <el-table-column prop="os_type" label="操作系统" sortable="custom">
-          <template slot-scope="scope">
-            {{ scope.row.os_type ? scope.row.os_type.name : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="purpose" label="用途" show-overflow-tooltip/>
-        <el-table-column prop="asset_level" label="资产等级" width="100" sortable="custom">
-          <template slot-scope="scope">
-            <el-tag v-if="scope.row.asset_level" size="small">{{ scope.row.asset_level }}</el-tag>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="80" sortable="custom">
-          <template slot-scope="scope">
-            <el-tag :type="statusType(scope.row.status)" size="small">{{ scope.row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
 
       <el-pagination
         style="margin-top: 15px; text-align: right"

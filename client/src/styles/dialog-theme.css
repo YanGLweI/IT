@@ -1,5 +1,275 @@
 /* ============================================
    Global El-Dialog Theme — Light Tech Style
+   基于 STYLE_GUIDE.md 统一设计规范
+   ============================================ */
+
+/* --- 遮罩层 --- */
+.v-modal {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* --- 弹窗容器 --- */
+.el-dialog {
+  border-radius: 16px !important;
+  overflow: hidden;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+}
+
+/* --- 头部 --- */
+.el-dialog__header {
+  padding: 20px 24px 16px !important;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.el-dialog__title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+}
+
+.el-dialog__headerbtn {
+  top: 20px !important;
+  right: 20px !important;
+  font-size: 18px !important;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.el-dialog__headerbtn:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+.el-dialog__headerbtn .el-dialog__close {
+  color: #94a3b8 !important;
+  transition: color 0.2s;
+}
+.el-dialog__headerbtn:hover .el-dialog__close {
+  color: #ef4444 !important;
+}
+
+/* --- 主体 --- */
+.el-dialog__body {
+  padding: 20px 24px !important;
+  max-height: 65vh;
+  overflow-y: auto;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* --- 底部 --- */
+.el-dialog__footer {
+  padding: 16px 24px !important;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+/* ============================================
+   弹窗内表单组件
+   ============================================ */
+
+/* 表单 Label */
+.el-dialog .el-form-item__label {
+  font-size: 12px !important;
+  font-weight: 500;
+  color: #64748b !important;
+}
+
+/* 输入框 / 下拉 */
+.el-dialog .el-input__inner,
+.el-dialog .el-select .el-input__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+  height: 36px;
+  line-height: 36px;
+  color: #1e293b;
+  transition: border-color 0.2s;
+}
+.el-dialog .el-input__inner:focus,
+.el-dialog .el-select .el-input.is-focus .el-input__inner {
+  border-color: #3b82f6;
+}
+.el-dialog .el-input__inner::placeholder {
+  color: #94a3b8;
+}
+
+/* 文本域 */
+.el-dialog .el-textarea__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  font-size: 13px;
+  color: #1e293b;
+  transition: border-color 0.2s;
+}
+.el-dialog .el-textarea__inner:focus {
+  border-color: #3b82f6;
+}
+
+/* 日期选择器 */
+.el-dialog .el-date-editor .el-input__inner {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+}
+
+/* 单选框 */
+.el-dialog .el-radio__inner {
+  border-color: #e2e8f0;
+  transition: all 0.2s;
+}
+.el-dialog .el-radio__input.is-checked .el-radio__inner {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+.el-dialog .el-radio__input.is-checked + .el-radio__label {
+  color: #3b82f6;
+}
+.el-dialog .el-radio__label {
+  font-size: 13px;
+  color: #1e293b;
+}
+
+/* 分割线（分组标题） */
+.el-dialog .el-divider--horizontal {
+  margin: 20px 0 12px;
+}
+.el-dialog .el-divider {
+  background-color: #f1f5f9;
+}
+.el-dialog .el-divider__text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  background: #fff;
+}
+
+/* 上传拖拽区 */
+.el-dialog .el-upload-dragger {
+  border-radius: 10px;
+  border-color: #e2e8f0;
+  transition: border-color 0.2s;
+}
+.el-dialog .el-upload-dragger:hover {
+  border-color: #3b82f6;
+}
+.el-dialog .el-upload-dragger .el-icon-upload {
+  color: #94a3b8;
+}
+.el-dialog .el-upload__text {
+  font-size: 13px;
+  color: #64748b;
+}
+.el-dialog .el-upload__text em {
+  color: #3b82f6;
+}
+.el-dialog .el-upload__tip {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ============================================
+   弹窗内表格
+   ============================================ */
+.el-dialog .el-table th.el-table__cell {
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.el-dialog .el-table td.el-table__cell {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+}
+.el-dialog .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background: #f1f5f9;
+}
+.el-dialog .el-table__body tr.current-row > td {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+/* ============================================
+   底部按钮
+   ============================================ */
+.el-dialog__footer .el-button {
+  border-radius: 10px;
+  font-size: 13px;
+  padding: 9px 18px;
+  transition: all 0.2s;
+}
+.el-dialog__footer .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+.el-dialog__footer .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+  font-weight: 500;
+}
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+.el-dialog__footer .el-button--danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  font-weight: 500;
+}
+.el-dialog__footer .el-button--danger:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+.el-dialog__footer .el-button.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   弹窗内滚动条
+   ============================================ */
+.el-dialog__body::-webkit-scrollbar {
+  width: 6px;
+}
+.el-dialog__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.el-dialog__body::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+.el-dialog__body::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* ============================================
+   响应式
+   ============================================ */
+@media (max-width: 768px) {
+  .el-dialog {
+    width: 92% !important;
+    margin: 8vh auto !important;
+  }
+}
+/* ============================================
+   Global El-Dialog Theme — Light Tech Style
    ============================================ */
 
 /* --- Overlay --- */
