@@ -132,15 +132,15 @@ export default {
       search: ''
     }
   },
-  mounted() {
+  async mounted() {
     // 如果URL带有status参数，应用状态筛选
     const statusFilter = this.$route.query.status
     if (statusFilter) {
       this.activeTab = 'all'
       this.statusFilter = statusFilter
     }
+    await this.fetchRegions()
     this.fetchData()
-    this.fetchRegions()
   },
   methods: {
     async fetchData() {

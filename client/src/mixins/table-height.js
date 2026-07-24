@@ -41,7 +41,10 @@ export default {
         this.tableMaxHeight = Math.max(available - cardMarginH, 200)
         const wrapper = this.$refs.tableCard ? this.$refs.tableCard.querySelector('.table-wrapper') : null
         if (wrapper) {
-          wrapper.style.setProperty('--table-body-max-height', (this.tableMaxHeight - 48) + 'px')
+          // 动态测量实际表头高度（含可排序列图标等额外空间），避免硬编码
+          const headerEl = wrapper.querySelector('.el-table__header-wrapper')
+          const headerH = headerEl ? headerEl.offsetHeight : 48
+          wrapper.style.setProperty('--table-body-max-height', (this.tableMaxHeight - headerH) + 'px')
         }
       })
     }
