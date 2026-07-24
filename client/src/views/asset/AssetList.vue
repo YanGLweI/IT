@@ -38,12 +38,14 @@
       />
     </el-tabs>
 
-    <div class="table-card">
+    <div class="table-card" ref="tableCard">
+      <div class="table-wrapper">
         <el-table
           :data="assets"
           stripe
           @sort-change="handleSortChange"
           v-loading="loading"
+          :max-height="tableMaxHeight"
         >
           <el-table-column type="index" label="#" width="70" align="center" :index="indexMethod" />
           <el-table-column prop="computer_name" label="计算机名" sortable="custom" />
@@ -73,6 +75,7 @@
           </el-table-column>
         </el-table>
       </div>
+    </div>
 
       <div class="pagination-wrap">
         <el-pagination
@@ -104,10 +107,12 @@ import { getAssets, deleteAsset } from '@/api/asset'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import { getRegions } from '@/api/region'
 import AssetForm from './AssetForm.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'AssetList',
   components: { AssetForm, DualControlDialog },
+  mixins: [tableHeightMixin],
   data() {
     return {
       assets: [],
@@ -163,6 +168,7 @@ export default {
         console.error(e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     async fetchRegions() {
@@ -247,7 +253,9 @@ export default {
   margin: 20px;
   padding: 24px;
   height: calc(100% - 85px);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- 页面头部 --- */
@@ -272,6 +280,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.table-card {
+}
+
+.table-wrapper {
 }
 
 /* --- 主按钮 --- */

@@ -11,8 +11,9 @@
       </div>
     </div>
 
-    <div class="table-card">
-      <el-table :data="osTypes" stripe>
+    <div class="table-card" ref="tableCard">
+      <div class="table-wrapper">
+      <el-table :data="osTypes" stripe :max-height="tableMaxHeight">
         <el-table-column type="index" label="#" width="70" align="center" />
         <el-table-column prop="name" label="操作系统类型" />
         <el-table-column label="操作" width="200" align="center" fixed="right">
@@ -22,6 +23,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </div>
 
     <el-dialog class="vault-dialog" :title="dialogTitle" :visible.sync="dialogVisible" width="500px">
@@ -44,10 +46,12 @@
 <script>
 import { getOSTypes, createOSType, updateOSType, deleteOSType } from '@/api/os_type'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'OSTypeList',
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   data() {
     return {
       osTypes: [],
@@ -69,6 +73,8 @@ export default {
         this.osTypes = res.data || []
       } catch (e) {
         console.error(e)
+      } finally {
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     handleAdd() {
@@ -124,7 +130,9 @@ export default {
   margin: 20px;
   padding: 24px;
   height: calc(100% - 85px);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- 页面头部 --- */
@@ -149,6 +157,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.table-card {
+}
+
+.table-wrapper {
 }
 
 /* --- 主按钮 --- */
