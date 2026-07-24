@@ -12,18 +12,9 @@
       </button>
     </div>
 
-    <!-- 工具栏 -->
-    <div class="toolbar">
-      <div class="search-wrap">
-        <i class="el-icon-search search-icon"></i>
-        <input
-          v-model="keyword"
-          class="search-input"
-          placeholder="搜索隧道名、IP、负责人..."
-          @input="handleSearch"
-        />
-        <i v-if="keyword" class="el-icon-close clear-icon" @click="keyword = ''; handleSearch()"></i>
-      </div>
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-input v-model="keyword" placeholder="搜索隧道名、IP、负责人..." prefix-icon="el-icon-search" clearable style="width: 240px;" @input="handleSearch" />
     </div>
 
     <!-- 表格 -->
@@ -82,17 +73,18 @@
     </div>
 
     <!-- 分页 -->
-    <el-pagination
-      class="page-pagination"
-      background
-      layout="total, sizes, prev, pager, next, jumper"
-      :total="total"
-      :page-size.sync="pageSize"
-      :current-page.sync="page"
-      :page-sizes="[10, 20, 50]"
-      @size-change="handleSizeChange"
-      @current-change="fetchList"
-    />
+    <div class="pagination-wrap">
+      <el-pagination
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+        :page-size.sync="pageSize"
+        :current-page.sync="page"
+        :page-sizes="[10, 20, 50]"
+        @size-change="handleSizeChange"
+        @current-change="fetchList"
+      />
+    </div>
 
     <!-- 新增/编辑弹窗 -->
     <IPsecVpnDialog ref="vpnDialog" @saved="fetchList" />
@@ -419,58 +411,14 @@ export default {
   padding: 6px 14px;
   font-size: 12px;
 }
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.search-wrap {
-  position: relative;
-  width: 280px;
-}
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 14px;
-}
-.search-input {
-  width: 100%;
-  padding: 8px 32px 8px 34px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 13px;
-  background: #fff;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.search-input:focus {
-  border-color: #3b82f6;
-}
-.clear-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  cursor: pointer;
-}
-.clear-icon:hover {
-  color: #64748b;
-}
+
 .table-card {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   overflow-x: auto;
 }
-.page-pagination {
-  margin-top: 16px;
-  text-align: right;
-}
+
 .loading-wrap, .empty-wrap {
   text-align: center;
   padding: 60px 20px;
