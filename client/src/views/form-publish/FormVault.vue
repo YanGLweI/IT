@@ -30,8 +30,9 @@
       </div>
 
       <!-- 表格 -->
-      <div class="table-card">
-      <el-table :data="items" stripe v-loading="loading">
+      <div class="table-card" ref="tableCard">
+        <div class="table-wrapper">
+        <el-table :data="items" stripe v-loading="loading" :max-height="tableMaxHeight">
         <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
         <el-table-column prop="category" label="分类" width="100" />
         <el-table-column label="来源" width="90" align="center">
@@ -72,7 +73,8 @@
             <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
-      </el-table>
+        </el-table>
+        </div>
       </div>
 
       <!-- 分页 -->
@@ -88,7 +90,7 @@
       </div>
 
     <!-- 上传弹窗 -->
-    <el-dialog title="上传新表单" :visible.sync="uploadVisible" width="520px">
+    <el-dialog class="vault-dialog" title="上传新表单" :visible.sync="uploadVisible" width="520px">
       <el-form :model="uploadForm" :rules="uploadRules" ref="uploadFormRef" label-width="80px">
         <el-form-item label="标题" prop="title">
           <el-input v-model="uploadForm.title" placeholder="请输入表单标题" />
@@ -124,7 +126,7 @@
     </el-dialog>
 
     <!-- 编辑弹窗 -->
-    <el-dialog title="编辑表单信息" :visible.sync="editVisible" width="500px">
+    <el-dialog class="vault-dialog" title="编辑表单信息" :visible.sync="editVisible" width="500px">
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="标题">
           <el-input v-model="editForm.title" />
@@ -143,7 +145,7 @@
     </el-dialog>
 
     <!-- 跨模块引用弹窗 -->
-    <el-dialog title="从其他模块引用" :visible.sync="crossModuleVisible" width="560px">
+    <el-dialog class="vault-dialog" title="从其他模块引用" :visible.sync="crossModuleVisible" width="560px">
       <el-form :model="crossForm" label-width="90px">
         <el-form-item label="引用方式">
           <el-radio-group v-model="crossForm.source_type" @change="onCrossSourceTypeChange">
@@ -218,7 +220,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog class="preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" @closed="clearDocxPreview">
+    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" @closed="clearDocxPreview">
       <div class="preview-toolbar" slot="title">
         <span>文件预览</span>
         <div class="preview-toolbar-right">
@@ -265,10 +267,12 @@ import { getDepartments } from '@/api/department'
 import { renderAsync } from 'docx-preview'
 import * as XLSX from 'xlsx'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'FormVault',
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   data() {
     return {
       items: [],
@@ -413,6 +417,7 @@ export default {
         console.error('获取表单列表失败:', e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     async fetchCrossSources() {
@@ -806,11 +811,13 @@ export default {
 .form-vault-page {
   padding: 24px;
   height: calc(100% - 85px);
-  overflow-y: auto;
+  overflow: hidden;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   margin: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ========== 页面头部 ========== */
@@ -834,6 +841,12 @@ export default {
 .header-actions {
   display: flex;
   gap: 10px;
+}
+
+.table-card {
+}
+
+.table-wrapper {
 }
 
 /* 头部按钮 */

@@ -12,25 +12,16 @@
       </button>
     </div>
 
-    <!-- 工具栏 -->
-    <div class="toolbar">
-      <div class="search-wrap">
-        <i class="el-icon-search search-icon"></i>
-        <input
-          v-model="keyword"
-          class="search-input"
-          placeholder="搜索厂区、运营商、IP..."
-          @input="handleSearch"
-        />
-        <i v-if="keyword" class="el-icon-close clear-icon" @click="keyword = ''; handleSearch()"></i>
-      </div>
-      <el-select v-model="filterCarrier" placeholder="全部运营商" clearable size="small" class="filter-select" @change="handleFilterChange">
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-input v-model="keyword" placeholder="搜索厂区、运营商、IP..." prefix-icon="el-icon-search" clearable style="width: 240px;" @input="handleSearch" />
+      <el-select v-model="filterCarrier" placeholder="全部运营商" clearable class="filter-select" @change="handleFilterChange">
         <el-option label="电信" value="电信" />
         <el-option label="联通" value="联通" />
         <el-option label="移动" value="移动" />
         <el-option label="广电" value="广电" />
       </el-select>
-      <el-select v-model="filterFactory" placeholder="全部厂区" clearable size="small" class="filter-select" @change="handleFilterChange">
+      <el-select v-model="filterFactory" placeholder="全部厂区" clearable class="filter-select" @change="handleFilterChange">
         <el-option v-for="f in factoryOptions" :key="f" :label="f" :value="f" />
       </el-select>
     </div>
@@ -92,17 +83,18 @@
     </div>
 
     <!-- 分页 -->
-    <el-pagination
-      class="page-pagination"
-      background
-      layout="total, sizes, prev, pager, next, jumper"
-      :total="total"
-      :page-size.sync="pageSize"
-      :current-page.sync="page"
-      :page-sizes="[10, 20, 50]"
-      @size-change="handleSizeChange"
-      @current-change="fetchList"
-    />
+    <div class="pagination-wrap">
+      <el-pagination
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+        :page-size.sync="pageSize"
+        :current-page.sync="page"
+        :page-sizes="[10, 20, 50]"
+        @size-change="handleSizeChange"
+        @current-change="fetchList"
+      />
+    </div>
 
     <!-- 新增/编辑弹窗 -->
     <DedicatedLineDialog ref="lineDialog" @saved="fetchList" />
@@ -393,75 +385,10 @@ export default {
   font-size: 12px;
 }
 
-/* 工具栏 */
-.toolbar {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.search-wrap {
-  position: relative;
-  width: 240px;
-  flex-shrink: 0;
-}
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 14px;
-}
-.search-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 9px 32px 9px 34px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #1e293b;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.search-input:focus {
-  border-color: #3b82f6;
-}
-.search-input::placeholder {
-  color: #94a3b8;
-}
-.clear-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  cursor: pointer;
-  font-size: 13px;
-}
-.clear-icon:hover {
-  color: #64748b;
-}
+/* 筛选栏 */
 .filter-select {
   width: 130px;
   flex-shrink: 0;
-}
-.search-wrap + .filter-select,
-.filter-select + .filter-select {
-  margin-left: 16px;
-}
-.filter-select .el-input__inner {
-  border-radius: 10px;
-  border-color: #e2e8f0;
-  font-size: 13px;
-  height: 36px;
-  line-height: 36px;
-}
-.filter-select .el-input__inner:focus {
-  border-color: #3b82f6;
-}
-.filter-select .el-input.is-focus .el-input__inner {
-  border-color: #3b82f6;
 }
 
 /* 表格卡片 */
@@ -471,10 +398,7 @@ export default {
   border-radius: 14px;
   overflow-x: auto;
 }
-.page-pagination {
-  margin-top: 16px;
-  text-align: right;
-}
+
 .loading-wrap, .empty-wrap {
   display: flex;
   flex-direction: column;

@@ -77,7 +77,7 @@
     </div>
 
     <!-- 创建/编辑弹窗 -->
-    <el-dialog :title="dialogMode === 'create' ? '新建IT指南' : '编辑IT指南'" :visible.sync="dialogVisible" width="720px" :close-on-click-modal="false" @closed="resetDialog">
+    <el-dialog class="vault-dialog" :title="dialogMode === 'create' ? '新建IT指南' : '编辑IT指南'" :visible.sync="dialogVisible" width="720px" :close-on-click-modal="false" @closed="resetDialog">
       <!-- 步骤1: 基本信息 -->
       <div v-if="dialogStep === 1">
         <div class="type-selector">
@@ -233,7 +233,7 @@
     </el-dialog>
 
     <!-- 附件管理弹窗 -->
-    <el-dialog :title="'附件关联 - ' + attachGuideTitle" :visible.sync="attachDialogVisible" width="600px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="'附件关联 - ' + attachGuideTitle" :visible.sync="attachDialogVisible" width="600px" :close-on-click-modal="false">
       <div v-loading="attachLoading">
         <!-- 下载链接区域 -->
         <div class="attach-section">
@@ -925,10 +925,11 @@ export default {
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
 .page-title { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 700; color: #1E293B; margin: 0; }
 .filter-bar { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
-.search-wrap { flex: 1; min-width: 200px; }
+.search-wrap { width: 140px; flex: none; }
 .search-wrap ::v-deep .el-input__inner { border-radius: 8px; height: 40px; line-height: 40px; }
 .filter-select { width: 140px; }
 .filter-select ::v-deep .el-input__inner { border-radius: 8px; height: 40px; line-height: 40px; }
+.page-header .el-button { border-radius: 10px; }
 .loading-wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 .guide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 .guide-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; transition: all 0.25s ease; }

@@ -1,89 +1,97 @@
 <template>
   <div class="operation-log-list">
-    <el-card>
-      <div slot="header">
-        <span>操作日志</span>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">操作日志</h2>
+        <p class="page-subtitle">查看系统操作记录与变更审计</p>
       </div>
-      
-      <!-- 筛选区 -->
-      <el-form :inline="true" :model="filters" class="filter-form">
-        <el-form-item label="日期范围">
-          <el-date-picker
-            v-model="dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="yyyy-MM-dd"
-            @change="handleDateChange"
-          />
-        </el-form-item>
-        <el-form-item label="用户名">
-          <el-input v-model="filters.username" placeholder="请输入用户名" clearable @clear="handleSearch" />
-        </el-form-item>
-        <el-form-item label="操作类型">
-          <el-select v-model="filters.action" placeholder="请选择" clearable @change="handleSearch">
-            <el-option label="创建" value="创建" />
-            <el-option label="更新" value="更新" />
-            <el-option label="删除" value="删除" />
-            <el-option label="上传" value="上传" />
-            <el-option label="替换" value="替换" />
-            <el-option label="发布" value="发布" />
-            <el-option label="取消发布" value="取消发布" />
-            <el-option label="管理" value="管理" />
-            <el-option label="排序" value="排序" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="资源类型">
-          <el-select v-model="filters.resource_type" placeholder="请选择" clearable @change="handleSearch">
-            <el-option v-for="(label, key) in resourceTypeLabels" :key="key" :label="label" :value="key" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-        </el-form-item>
-      </el-form>
+    </div>
 
-      <!-- 表格 -->
-      <el-table :data="logs" border stripe v-loading="loading">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="created_at" label="时间" width="180" align="center">
-          <template slot-scope="scope">
-            {{ formatDate(scope.row.created_at) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="username" label="用户名" width="120" align="center" />
-        <el-table-column prop="display_name" label="姓名" width="120" align="center" />
-        <el-table-column prop="action" label="操作" width="200" align="center" show-overflow-tooltip/>
-        <el-table-column prop="resource_type" label="资源类型" width="120" align="center">
-          <template slot-scope="scope">
-            {{ resourceTypeLabels[scope.row.resource_type] || scope.row.resource_type }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="resource_name" label="资源名称" show-overflow-tooltip />
-        <el-table-column prop="approver" label="审批人" width="120" align="center" />
-        <el-table-column label="操作" width="100" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handleViewDetail(scope.row)">详情</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-date-picker
+        v-model="dateRange"
+        type="daterange"
+        range-separator="至"
+        start-placeholder="开始日期"
+        end-placeholder="结束日期"
+        value-format="yyyy-MM-dd"
+        size="small"
+        @change="handleDateChange"
+      />
+      <el-input v-model="filters.username" placeholder="搜索用户名..." size="small" clearable style="width: 160px" @clear="handleSearch" @keyup.enter.native="handleSearch" />
+      <el-select v-model="filters.action" placeholder="操作类型" size="small" clearable @change="handleSearch" style="width: 120px">
+        <el-option label="创建" value="创建" />
+        <el-option label="更新" value="更新" />
+        <el-option label="删除" value="删除" />
+        <el-option label="上传" value="上传" />
+        <el-option label="替换" value="替换" />
+        <el-option label="发布" value="发布" />
+        <el-option label="取消发布" value="取消发布" />
+        <el-option label="管理" value="管理" />
+        <el-option label="排序" value="排序" />
+      </el-select>
+      <el-select v-model="filters.resource_type" placeholder="资源类型" size="small" clearable @change="handleSearch" style="width: 140px">
+        <el-option v-for="(label, key) in resourceTypeLabels" :key="key" :label="label" :value="key" />
+      </el-select>
+      <el-button size="small" type="primary" icon="el-icon-search" @click="handleSearch">搜索</el-button>
+    </div>
 
-      <!-- 分页 -->
+    <!-- 表格 -->
+    <div class="table-card" ref="tableCard">
+      <div class="table-wrapper">
+        <el-table :data="logs" stripe v-loading="loading" :max-height="tableMaxHeight">
+          <el-table-column type="index" label="序号" width="75" align="center" />
+          <el-table-column prop="created_at" label="时间" width="220" align="center">
+            <template slot-scope="scope">
+              {{ formatDate(scope.row.created_at) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="username" label="用户名" width="120" align="center">
+            <template slot-scope="scope">
+              <el-tag size="small">{{ scope.row.username }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="display_name" label="姓名" width="120" align="center" />
+          <el-table-column prop="action" label="操作" width="200" align="center" show-overflow-tooltip/>
+          <el-table-column prop="resource_type" label="资源类型" width="120" align="center">
+            <template slot-scope="scope">
+              {{ resourceTypeLabels[scope.row.resource_type] || scope.row.resource_type }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="resource_name" label="资源名称" show-overflow-tooltip />
+          <el-table-column prop="approver" label="审批人" width="120" align="center">
+            <template slot-scope="scope">
+              <el-tag v-if="scope.row.approver" size="small" type="info">{{ scope.row.approver }}</el-tag>
+              <span v-else style="color: #909399">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" fixed="right" align="center">
+            <template slot-scope="scope">
+              <el-button size="mini" @click="handleViewDetail(scope.row)">详情</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination-wrap">
       <el-pagination
-        style="margin-top: 20px; text-align: right"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page="pagination.page"
-        :page-sizes="[10, 20, 50, 100]"
-        :page-size="pagination.pageSize"
+        background
         layout="total, sizes, prev, pager, next, jumper"
         :total="pagination.total"
+        :page-size.sync="pagination.pageSize"
+        :current-page.sync="pagination.page"
+        :page-sizes="[10, 20, 50, 100]"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
       />
-    </el-card>
+    </div>
 
     <!-- 详情弹窗 -->
-    <el-dialog title="操作日志详情" :visible.sync="detailDialogVisible" width="700px">
+    <el-dialog class="vault-dialog" title="操作日志详情" :visible.sync="detailDialogVisible" width="700px">
       <div v-if="currentLog">
         <el-descriptions :column="2" border size="medium">
           <el-descriptions-item label="操作时间">{{ formatDate(currentLog.created_at) }}</el-descriptions-item>
@@ -123,9 +131,11 @@ import { getOperationLogs, getOperationLogDetails } from '@/api/audit_log'
 import { getRegions } from '@/api/region'
 import { getVulnerabilityScans } from '@/api/vulnerability_scan'
 import { getApprovedSoftware } from '@/api/approved_software'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'OperationLogList',
+  mixins: [tableHeightMixin],
   data() {
     return {
       logs: [],
@@ -278,6 +288,7 @@ export default {
         this.$message.error('获取操作日志失败')
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     handleDateChange(val) {
@@ -447,9 +458,46 @@ export default {
 </script>
 
 <style scoped>
-.filter-form {
-  margin-bottom: 16px;
+.operation-log-list {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+.table-card {
+}
+
+.table-wrapper {
+}
+
+.filter-bar .el-button {
+  border-radius: 10px;
+}
+
 .json-display {
   margin: 0;
   padding: 8px;
