@@ -1,14 +1,17 @@
 <template>
   <div class="sftp-page">
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>SFTP账号一览</span>
-        <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-setting" @click="showServerManage = true">配置管理</el-button>
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openAccountForm()" :disabled="servers.length === 0">新增账号</el-button>
-          <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">SFTP账号一览</h2>
+        <p class="page-subtitle">管理各SFTP服务器的账号权限与白名单配置</p>
       </div>
+      <div class="header-actions">
+        <el-button type="primary" size="small" icon="el-icon-setting" @click="showServerManage = true">配置管理</el-button>
+        <el-button type="primary" size="small" icon="el-icon-plus" @click="openAccountForm()" :disabled="servers.length === 0">新增账号</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+      </div>
+    </div>
 
       <!-- 服务器 Tabs -->
       <el-tabs v-model="activeServerId" @tab-click="handleTabClick">
@@ -38,18 +41,20 @@
       </div>
 
       <!-- 账号表格 -->
-      <el-table
-        :data="accounts"
-        border
-        stripe
-        style="width: 100%"
-        v-loading="loading"
-      >
-        <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
-        <el-table-column prop="account_name" label="账号名" width="150" />
-        <el-table-column prop="created_time" label="创建时间" width="120" />
+      <div class="table-card" ref="tableCard">
+      <div class="table-wrapper">
+        <el-table
+          :data="accounts"
+          stripe
+          style="width: 100%"
+          v-loading="loading"
+          :max-height="tableMaxHeight"
+        >
+        <el-table-column type="index" label="序号" width="75" align="center" :index="indexMethod" />
+        <el-table-column prop="account_name" label="账号名" width="180" />
+        <el-table-column prop="created_time" label="创建时间" width="140" />
         <el-table-column prop="validity" label="有效期" width="120" />
-        <el-table-column label="权限" width="100">
+        <el-table-column label="权限" width="140">
           <template slot-scope="{ row }">
             <template v-if="parsePermissions(row.permissions_json).length > 0">
               <el-tag
@@ -83,29 +88,31 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right" align="center">
+        <el-table-column label="操作" width="200" fixed="right" align="center">
           <template slot-scope="{ row }">
             <el-button size="mini" type="text" @click="openAccountForm(row)">编辑</el-button>
             <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDelete(row)">删除</el-button>
           </template>
         </el-table-column>
-      </el-table>
+        </el-table>
+      </div>
+      </div>
 
-      <el-pagination
-        style="margin-top: 15px; text-align: right"
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        :page-size.sync="pageSize"
-        :current-page.sync="currentPage"
-        :page-sizes="[10, 20, 50, 100]"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </el-card>
+      <div class="pagination-wrap">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          :page-size.sync="pageSize"
+          :current-page.sync="currentPage"
+          :page-sizes="[10, 20, 50, 100]"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
 
     <!-- 服务器配置管理弹窗 -->
-    <el-dialog title="SFTP服务器配置" :visible.sync="showServerManage" width="500px" @close="fetchData">
+    <el-dialog class="vault-dialog" title="SFTP服务器配置" :visible.sync="showServerManage" width="500px" @close="fetchData">
       <div class="server-list">
         <div v-for="server in servers" :key="server.id" class="server-item">
           <span>{{ server.name }}</span>
@@ -123,7 +130,7 @@
     </el-dialog>
 
     <!-- 账号表单弹窗 -->
-    <el-dialog :title="isEdit ? '编辑账号' : '新增账号'" :visible.sync="accountFormVisible" width="600px" @close="resetAccountForm">
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑账号' : '新增账号'" :visible.sync="accountFormVisible" width="600px" @close="resetAccountForm">
       <el-form :model="accountForm" :rules="accountRules" ref="accountForm" label-width="100px">
         <el-form-item label="所属服务器" prop="server_id">
           <el-select v-model="accountForm.server_id" placeholder="请选择所属服务器" style="width:100%">
@@ -185,9 +192,11 @@
 <script>
 import { getSftpServers, createSftpServer, updateSftpServer, deleteSftpServer, getSftpAccounts, createSftpAccount, updateSftpAccount, deleteSftpAccount, exportSftpConfirmation } from '@/api/sftp'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   name: 'SftpAccountList',
   data() {
     return {
@@ -275,6 +284,7 @@ export default {
         console.error('获取账号列表失败:', e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
 
@@ -604,52 +614,144 @@ export default {
 
 <style scoped>
 .sftp-page {
-  height: 100%;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
-.page-header-right {
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
 }
+
+.table-card {
+}
+
+.table-wrapper {
+}
+
 .toolbar-bar {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
 }
+
 .server-list {
   max-height: 300px;
   overflow-y: auto;
   margin-bottom: 15px;
 }
+
 .server-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #e2e8f0;
 }
+
 .server-item:last-child {
   border-bottom: none;
 }
+
 .server-add {
   display: flex;
   align-items: center;
   padding-top: 10px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #e2e8f0;
 }
+
 .empty-text {
   text-align: center;
-  color: #999;
+  color: #94a3b8;
   padding: 20px;
 }
+
 .field-hint {
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
   line-height: 1.4;
   margin-top: 4px;
+}
+
+/* 主按钮 */
+.header-actions .el-button--primary,
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--primary:hover,
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* success 按钮 */
+.header-actions .el-button--success,
+.toolbar-bar .el-button--success {
+  background: #10b981;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--success:hover,
+.toolbar-bar .el-button--success:hover {
+  background: #059669;
+  color: #fff;
+}
+
+/* 次要按钮 */
+.header-actions .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
 }
 </style>

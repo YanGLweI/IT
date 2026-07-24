@@ -28,8 +28,9 @@
     </div>
 
     <!-- 数据表格 -->
-    <div class="table-card" style="margin-top: 12px">
-      <el-table :data="records" stripe v-loading="loading" >
+    <div class="table-card" ref="tableCard" style="margin-top: 12px">
+      <div class="table-wrapper">
+      <el-table :data="records" stripe v-loading="loading" :max-height="tableMaxHeight">
         <el-table-column type="index" label="#" width="70" align="center" />
         <el-table-column prop="year" label="年份" width="85" align="center" />
         <el-table-column prop="report_date" label="报告日期" width="130" align="center" />
@@ -63,6 +64,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </div>
 
     <!-- 分页 -->
@@ -154,10 +156,12 @@ import {
 import { getVulnerabilityScans, getVulnerabilityScanPreviewUrl, getVulnerabilityScanDownloadUrl } from '@/api/vulnerability_scan'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import { renderAsync } from 'docx-preview'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'PenetrationTest',
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   data() {
     const now = new Date()
     return {
@@ -217,6 +221,7 @@ export default {
         console.error(e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     async fetchVulnScans() {
@@ -477,7 +482,9 @@ export default {
   margin: 20px;
   padding: 24px;
   height: calc(100% - 85px);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- 页面头部 --- */
@@ -502,6 +509,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.table-card {
+}
+
+.table-wrapper {
 }
 
 /* --- 主按钮 --- */

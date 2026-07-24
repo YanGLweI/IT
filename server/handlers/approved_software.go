@@ -22,12 +22,40 @@ import (
 
 // ListApprovedSoftware 获取核准软件列表
 func ListApprovedSoftware(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	keyword := c.Query("keyword")
+	licenseType := c.Query("license_type")
+	needUpdate := c.Query("need_update")
+
+	db := database.GetDB()
+	if keyword != "" {
+		db = db.Where("name LIKE ?", "%"+keyword+"%")
+	}
+	if licenseType != "" {
+		db = db.Where("license_type = ?", licenseType)
+	}
+	if needUpdate != "" {
+		db = db.Where("need_update = ?", needUpdate == "true")
+	}
+
+	var total int64
+	db.Model(&models.ApprovedSoftware{}).Count(&total)
+
 	var list []models.ApprovedSoftware
-	if err := database.GetDB().Order("id desc").Find(&list).Error; err != nil {
+	offset := (page - 1) * pageSize
+	if err := db.Order("id desc").Offset(offset).Limit(pageSize).Find(&list).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 200, "data": list})
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": list, "total": total, "page": page, "page_size": pageSize})
 }
 
 // ListApprovedSoftwareNeedUpdate 获取需要更新的核准软件

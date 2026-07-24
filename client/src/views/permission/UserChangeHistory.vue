@@ -1,35 +1,40 @@
 <template>
   <div class="user-change-history">
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>用户变更记录</span>
-        <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUpload = true">上传记录</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">用户变更记录</h2>
+        <p class="page-subtitle">查看和管理用户变更历史记录</p>
       </div>
-
-      <!-- 筛选栏 -->
-      <div class="filter-bar">
-        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
-          <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
-        </el-select>
-        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
-        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+      <div class="header-actions">
+        <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUpload = true">上传记录</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
       </div>
+    </div>
 
-      <!-- 数据表格 -->
-      <el-table :data="records" border stripe v-loading="loading" style="margin-top: 12px">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="year" label="年份" width="80" align="center" />
-        <el-table-column prop="month" label="月份" width="80" align="center">
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
+        <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
+      </el-select>
+      <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
+      <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-card" ref="tableCard">
+    <div class="table-wrapper">
+      <el-table :data="records" stripe v-loading="loading" :max-height="tableMaxHeight">
+        <el-table-column type="index" label="序号" width="75" align="center" />
+        <el-table-column prop="year" label="年份" width="85" align="center" />
+        <el-table-column prop="month" label="月份" width="85" align="center">
           <template slot-scope="{ row }">{{ row.month }}月</template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column label="申请日期" width="120" align="center">
+        <el-table-column label="申请日期" width="130" align="center">
           <template slot-scope="{ row }">{{ formatDate(row.apply_date) }}</template>
         </el-table-column>
-        <el-table-column label="实施日期" width="120" align="center">
+        <el-table-column label="实施日期" width="130" align="center">
           <template slot-scope="{ row }">{{ formatDate(row.implement_date) }}</template>
         </el-table-column>
         <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
@@ -39,21 +44,23 @@
         <el-table-column label="上传时间" width="180" align="center">
           <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right" align="center">
+        <el-table-column label="操作" width="350" fixed="right" align="center">
           <template slot-scope="{ row }">
             <div class="op-btns">
               <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
               <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
               <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
+              <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
-      </el-table>
+    </el-table>
+    </div>
+    </div>
 
-      <!-- 分页 -->
+    <!-- 分页 -->
+    <div class="pagination-wrap">
       <el-pagination
-        style="margin-top: 16px; text-align: right"
         background
         layout="total, sizes, prev, pager, next, jumper"
         :total="total"
@@ -63,10 +70,10 @@
         @size-change="handleSizeChange"
         @current-change="fetchData"
       />
-    </el-card>
+    </div>
 
     <!-- 上传/编辑弹窗 -->
-    <el-dialog :title="isEdit ? '编辑变更记录' : '上传变更记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑变更记录' : '上传变更记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -123,7 +130,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog class="preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
       <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
     </el-dialog>
 
@@ -135,10 +142,12 @@
 <script>
 import { getUserChangeHistories, createUserChangeHistory, updateUserChangeHistory, deleteUserChangeHistory, getUserChangePreviewUrl, getUserChangeDownloadUrl } from '@/api/user_change'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'UserChangeHistory',
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   data() {
     const now = new Date()
     return {
@@ -222,6 +231,7 @@ export default {
         console.error(e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     handleSizeChange() {
@@ -395,25 +405,98 @@ export default {
 </script>
 
 <style scoped>
+.user-change-history {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
 
-.page-header-right {
+.header-left {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.filter-bar {
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
 .op-btns {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+}
+
+/* 按钮样式 */
+.header-actions .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+}
+.header-actions .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.header-actions .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+/* 筛选栏搜索按钮 */
+.filter-bar .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+}
+.filter-bar .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* 弹窗底部按钮 */
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+}
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
 }
 </style>

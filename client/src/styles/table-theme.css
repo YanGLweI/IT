@@ -185,3 +185,18 @@
   font-size: 12px;
   color: #64748b;
 }
+
+/* ============================================
+   表格高度适配（内容撑开 + 动态最大高度 + 表头固定）
+   配合 mixin: src/mixins/table-height.js 使用
+   ============================================ */
+.table-wrapper {
+  overflow-x: auto;
+  padding-bottom: 8px;
+  border-radius: 14px;
+}
+.table-wrapper .el-table__body-wrapper {
+  height: auto !important;
+  max-height: var(--table-body-max-height, 550px) !important;
+  overflow-y: auto !important;
+}

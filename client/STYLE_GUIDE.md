@@ -185,10 +185,67 @@
 ┌─ 页面容器 (白底, 14px圆角, 1px边框, margin 20px) ─────────┐
 │  [头部] 标题+副标题 ←→ 按钮组 (flex, gap 10px)              │
 │  [工具栏] 搜索框 + 筛选下拉 (flex, gap 16px, wrap)          │
-│  [表格] .table-card 包裹 (14px圆角, 横向可滚动)              │
+│  [表格] .table-card > .table-wrapper > el-table              │
 │  [分页] .pagination-wrap 右对齐                              │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+### 管理端表格高度规范（重要）
+
+**核心原则：页面不滚动，表格内容撑开 + 动态最大高度 + 表头固定 + 内部滚动**
+
+#### 行为要求
+
+| 场景 | 行为 |
+|------|------|
+| 数据少（如 10 行） | 表格高度由内容自然撑开，无滚动条 |
+| 数据多（超出可用空间） | 表格 body 内部出现垂直滚动条，表头固定 |
+| 窗口缩小 | `tableMaxHeight` 自动减小，表格收缩，body 内部滚动 |
+| 页面级 | 容器 `overflow: hidden`，禁止页面滚动 |
+
+#### 实现方式（全局 mixin + 全局 CSS，无需组件内重复）
+
+1. **引入 mixin**：
+
+```js
+import tableHeightMixin from '@/mixins/table-height'
+export default {
+  mixins: [tableHeightMixin]
+}
+```
+
+2. **模板结构**：
+
+```html
+<div class="table-card" ref="tableCard">
+  <div class="table-wrapper">
+    <el-table :data="list" :max-height="tableMaxHeight">...</el-table>
+  </div>
+</div>
+```
+
+3. **fetchData 的 `finally` 中调用**：
+
+```js
+finally {
+  this.loading = false
+  this.$nextTick(() => this.calcTableHeight())
+}
+```
+
+4. **全局 CSS 已内置**（`styles/table-theme.css`），无需组件内写任何表格高度相关样式
+
+> mixin 自动处理：`tableMaxHeight` 数据、`calcTableHeight` 计算、`resize` 监听、`beforeDestroy` 清理
+
+#### 常见错误
+
+| 错误 | 后果 | 正确做法 |
+|------|------|----------|
+| 使用 `container.clientHeight` 不减 padding | tableMaxHeight 偏大，底部被裁剪 | 减去 `paddingTop + paddingBottom` |
+| 只减元素 `offsetHeight` 不含 margin | 计算偏大，表格溢出 | 加上对应的 margin 值 |
+| 用固定值（如 600px）不做动态计算 | 窗口缩小时表格溢出不可见 | 必须动态计算 + resize 监听 |
+| 不用 el-table `:max-height`，只靠外部 CSS | 表头无法固定 | 必须用 `:max-height` 属性 |
+| `.table-card` 使用 `flex: 1` | 卡片撑满容器，表格无法收缩 | 不使用 flex: 1 |
 
 ### 管理端弹窗（class="vault-dialog"）
 
@@ -231,9 +288,10 @@
 ## 八、关键约束
 
 1. 弹窗统一 `class="vault-dialog"` 覆盖全局样式；预览类弹窗额外加 `class="preview-dialog"`（body max-height 82vh，更大可视区域）
-2. 表格必须 `.table-card` 包裹，分页必须 `.pagination-wrap` 包裹
-3. 筛选栏使用全局 `.filter-bar`（`styles/filter-bar.css`），输入框 `36px` 高、`10px` 圆角、focus 蓝色边框，无需在组件内重复定义
-4. 操作列 `fixed="right"` 实现 sticky
-5. 所有写操作需通过 `DualControlDialog` 双控验证
-6. 文件预览：PDF(iframe)、DOCX(docx-preview)、XLSX(xlsx→html)、图片(img)
-7. 公共端 `@media (max-width: 640px)` 卡片单列，标题缩至 `20px`
+2. 表格必须 `.table-card > .table-wrapper > el-table` 三层包裹，分页必须 `.pagination-wrap` 包裹
+3. **表格高度必须动态计算**（`calcTableHeight`），禁止使用固定 max-height 值；必须监听 `resize` 事件；el-table 必须使用 `:max-height` 属性保证表头固定
+4. 筛选栏使用全局 `.filter-bar`（`styles/filter-bar.css`），输入框 `36px` 高、`10px` 圆角、focus 蓝色边框，无需在组件内重复定义
+5. 操作列 `fixed="right"` 实现 sticky
+6. 所有写操作需通过 `DualControlDialog` 双控验证
+7. 文件预览：PDF(iframe)、DOCX(docx-preview)、XLSX(xlsx→html)、图片(img)
+8. 公共端 `@media (max-width: 640px)` 卡片单列，标题缩至 `20px`

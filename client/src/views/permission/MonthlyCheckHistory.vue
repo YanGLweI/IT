@@ -1,13 +1,16 @@
 <template>
   <div class="monthly-check-history">
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>月度检查历史</span>
-        <div class="page-header-right">
-          <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUpload = true">上传记录</el-button>
-          <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">月度检查历史</h2>
+        <p class="page-subtitle">查看和管理月度检查记录文件</p>
       </div>
+      <div class="header-actions">
+        <el-button type="primary" size="small" icon="el-icon-upload2" @click="showUpload = true">上传记录</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+      </div>
+    </div>
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
@@ -19,10 +22,12 @@
       </div>
 
       <!-- 数据表格 -->
-      <el-table :data="records" border stripe v-loading="loading" style="margin-top: 12px">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="year" label="年份" width="80" align="center" />
-        <el-table-column prop="month" label="月份" width="80" align="center">
+      <div class="table-card" ref="tableCard">
+      <div class="table-wrapper">
+        <el-table :data="records" stripe v-loading="loading" :max-height="tableMaxHeight">
+        <el-table-column type="index" label="序号" width="75" align="center" />
+        <el-table-column prop="year" label="年份" width="85" align="center" />
+        <el-table-column prop="month" label="月份" width="85" align="center">
           <template slot-scope="{ row }">{{ row.month }}月</template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
@@ -30,37 +35,39 @@
         <el-table-column label="文件大小" width="100" align="center">
           <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
         </el-table-column>
-        <el-table-column label="上传时间" width="180" align="center">
+        <el-table-column label="上传时间" width="250" align="center">
           <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right" align="center">
+        <el-table-column label="操作" width="350" fixed="right" align="center">
           <template slot-scope="{ row }">
             <div class="op-btns">
               <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
               <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
               <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
-              <el-button size="mini" type="text" icon="el-icon-delete" style="color: #F56C6C" @click="handleDelete(row)">删除</el-button>
+              <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
-      </el-table>
+        </el-table>
+      </div>
+      </div>
 
       <!-- 分页 -->
-      <el-pagination
-        style="margin-top: 16px; text-align: right"
-        background
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        :page-size.sync="pageSize"
-        :current-page.sync="page"
-        :page-sizes="[10, 20, 50]"
-        @size-change="handleSizeChange"
-        @current-change="fetchData"
-      />
-    </el-card>
+      <div class="pagination-wrap">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          :page-size.sync="pageSize"
+          :current-page.sync="page"
+          :page-sizes="[10, 20, 50]"
+          @size-change="handleSizeChange"
+          @current-change="fetchData"
+        />
+      </div>
 
     <!-- 上传弹窗 -->
-    <el-dialog :title="isEdit ? '编辑月度检查记录' : '上传月度检查记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑月度检查记录' : '上传月度检查记录'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
       <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -105,7 +112,7 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog class="preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
       <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
     </el-dialog>
 
@@ -117,10 +124,12 @@
 <script>
 import { getMonthlyChecks, createMonthlyCheck, updateMonthlyCheck, deleteMonthlyCheck, getMonthlyCheckPreviewUrl, getMonthlyCheckDownloadUrl } from '@/api/monthly_check'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'MonthlyCheckHistory',
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   data() {
     const now = new Date()
     return {
@@ -170,6 +179,7 @@ export default {
         console.error(e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     handleSizeChange() {
@@ -318,25 +328,95 @@ export default {
 </script>
 
 <style scoped>
+.monthly-check-history {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
 
-.page-header-right {
+.header-left {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.filter-bar {
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
 .op-btns {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+}
+
+/* 主按钮 */
+.header-actions .el-button--primary,
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--primary:hover,
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* 筛选栏搜索按钮 */
+.filter-bar .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+}
+.filter-bar .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* 次要按钮 */
+.header-actions .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
 }
 </style>

@@ -26,8 +26,9 @@
       </div>
 
       <!-- 数据表格 -->
-      <div class="table-card" style="margin-top: 12px">
-      <el-table :data="records" stripe v-loading="loading">
+      <div class="table-card" ref="tableCard" style="margin-top: 12px">
+      <div class="table-wrapper">
+      <el-table :data="records" stripe v-loading="loading" :max-height="tableMaxHeight">
         <el-table-column type="index" label="#" width="70" align="center" />
         <el-table-column prop="year" label="年份" width="85" align="center" />
         <el-table-column prop="month" label="月份" width="85" align="center">
@@ -70,6 +71,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
       </div>
 
     <!-- 分页 -->
@@ -186,10 +188,12 @@ import {
   getPatchFixPreviewUrl, getPatchFixDownloadUrl
 } from '@/api/patch_update'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'PatchUpdate',
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   data() {
     const now = new Date()
     return {
@@ -273,6 +277,7 @@ export default {
         console.error(e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     handleSizeChange() {
@@ -498,6 +503,9 @@ export default {
   margin: 20px;
   padding: 24px;
   height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
@@ -529,6 +537,12 @@ export default {
 .header-actions {
   display: flex;
   gap: 10px;
+}
+
+.table-card {
+}
+
+.table-wrapper {
 }
 
 .op-btns {

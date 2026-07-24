@@ -13,7 +13,7 @@
       </div>
     </div>
 
-    <div class="table-card">
+    <div class="table-card" ref="tableCard">
     <div class="table-wrapper">
       <el-table
         :data="rules"
@@ -173,9 +173,11 @@
 <script>
 import { getPermissionRules, createPermissionRule, addSystemToPermissions, updatePermissionRule, deletePermissionRule, removeSystemFromPermissions, renameSystemInPermissions, manageRolesInSystem, reorderPermissionRule, reorderSystemInPermissions, exportChangeRecord } from '@/api/permission'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   name: 'PermissionList',
   data() {
     return {
@@ -203,7 +205,6 @@ export default {
       renameDialogVisible: false,
       renameTarget: null, // { type: 'position'|'system'|'role', id?, oldName?, systemName? }
       renameValue: '',
-      tableMaxHeight: 500,
       // 导出
       exporting: false
     }
@@ -225,28 +226,8 @@ export default {
   },
   mounted() {
     this.fetchData()
-    this.$nextTick(() => this.calcTableHeight())
-    window.addEventListener('resize', this.handleResize)
-  },
-  beforeDestroy() {
-    window.removeEventListener('resize', this.handleResize)
   },
   methods: {
-    handleResize() {
-      this.calcTableHeight()
-    },
-    calcTableHeight() {
-      this.$nextTick(() => {
-        const page = this.$el
-        if (page) {
-          const pageRect = page.getBoundingClientRect()
-          const header = page.querySelector('.page-header')
-          const headerHeight = header ? header.getBoundingClientRect().height : 0
-          // 容器总高 - header - 上下padding(48) - 间距(20) - 边框(2) - 底部留白(8)
-          this.tableMaxHeight = pageRect.height - headerHeight - 78
-        }
-      })
-    },
     async fetchData() {
       this.loading = true
       try {
@@ -588,19 +569,9 @@ export default {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .table-wrapper {
-  overflow-x: auto;
-  overflow-y: visible;
-  padding-bottom: 8px;
-  border-radius: 14px;
-  flex: 1;
-  min-height: 0;
 }
 
 .sort-btns {

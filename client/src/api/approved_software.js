@@ -1,8 +1,8 @@
 import request from './request'
 
 // 核准软件目录
-export function getApprovedSoftware() {
-  return request.get('/approved-software')
+export function getApprovedSoftware(params) {
+  return request.get('/approved-software', { params })
 }
 
 // 获取需要更新的核准软件

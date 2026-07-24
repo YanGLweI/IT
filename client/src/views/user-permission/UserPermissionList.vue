@@ -1,22 +1,25 @@
 <template>
   <div class="user-permission-page">
-    <el-card>
-      <div slot="header" class="page-header">
-        <span>用户权限一览</span>
-        <div class="page-header-right">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索姓名"
-            prefix-icon="el-icon-search"
-            clearable
-            size="small"
-            style="width: 220px; margin-right: 8px"
-          />
-          <el-button type="primary" size="small" icon="el-icon-setting" @click="showDeptManage = true">管理配置</el-button>
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openUserForm">新增用户</el-button>
-          <el-button type="primary" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">用户权限一览</h2>
+        <p class="page-subtitle">查看和管理各部门用户的系统角色权限</p>
       </div>
+      <div class="header-actions">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索姓名"
+          prefix-icon="el-icon-search"
+          clearable
+          size="small"
+          style="width: 220px"
+        />
+        <el-button type="primary" size="small" icon="el-icon-setting" @click="showDeptManage = true">管理配置</el-button>
+        <el-button type="primary" size="small" icon="el-icon-plus" @click="openUserForm">新增用户</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+      </div>
+    </div>
 
       <!-- 部门 Tabs -->
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
@@ -35,10 +38,10 @@
       </div>
 
       <!-- 用户表格 -->
-      <div class="table-wrapper" ref="tableWrapper">
+      <div class="table-card" ref="tableCard">
+      <div class="table-wrapper">
         <el-table
           :data="filteredUsers"
-          border
           stripe
           style="width: 100%"
           v-loading="loading"
@@ -81,7 +84,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150" fixed="right" align="center">
+          <el-table-column label="操作" width="200" fixed="right" align="center">
             <template slot-scope="{ row }">
               <el-button size="mini" type="text" @click="openUserForm(row)">编辑</el-button>
               <el-button size="mini" type="text" style="color:#F56C6C" @click="confirmDelete(row)">删除</el-button>
@@ -89,10 +92,10 @@
           </el-table-column>
         </el-table>
       </div>
-    </el-card>
+      </div>
 
     <!-- 新增/编辑用户弹窗 -->
-    <el-dialog :title="isEdit ? '编辑用户' : '新增用户'" :visible.sync="userFormVisible" width="650px" top="5vh" @close="resetUserForm">
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑用户' : '新增用户'" :visible.sync="userFormVisible" width="650px" top="5vh" @close="resetUserForm">
       <el-form :model="userForm" :rules="userRules" ref="userForm" label-width="100px">
         <el-form-item label="姓名" prop="name">
           <el-input v-model="userForm.name" placeholder="请输入姓名" />
@@ -161,9 +164,11 @@ import { getUserPermissions, createUserPermission, updateUserPermission, deleteU
 import { getPermissionRules, getPositionPermissions } from '@/api/permission'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import DepartmentManage from './DepartmentManage.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   components: { DualControlDialog, DepartmentManage },
+  mixins: [tableHeightMixin],
   name: 'UserPermissionList',
   data() {
     return {
@@ -199,8 +204,6 @@ export default {
       showDeptManage: false,
       // 导出
       exporting: false,
-      // 表格高度
-      tableMaxHeight: null,
       // 当前岗位的权限规则（合并所有岗位）
       positionPermissionsMap: {} // { positionName: { system: [role1, role2] } }
     }
@@ -256,24 +259,8 @@ export default {
   mounted() {
     this.fetchData()
     this.fetchPermissionRules()
-    this.$nextTick(() => this.calcTableHeight())
-    window.addEventListener('resize', this.handleResize)
-  },
-  beforeDestroy() {
-    window.removeEventListener('resize', this.handleResize)
   },
   methods: {
-    handleResize() {
-      this.calcTableHeight()
-    },
-    calcTableHeight() {
-      this.$nextTick(() => {
-        if (this.$refs.tableWrapper) {
-          const top = this.$refs.tableWrapper.getBoundingClientRect().top
-          this.tableMaxHeight = window.innerHeight - top - 20
-        }
-      })
-    },
     async fetchData() {
       this.loading = true
       try {
@@ -399,6 +386,7 @@ export default {
     },
     handleTabClick() {
       // tab 切换后自动过滤
+      this.$nextTick(() => this.calcTableHeight())
     },
     resetUserForm() {
       // 重置表单状态
@@ -544,55 +532,147 @@ export default {
 </script>
 
 <style scoped>
+.user-permission-page {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
 }
-.page-header-right {
+
+.header-left {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.table-card {
+}
+
 .table-wrapper {
-  overflow-x: auto;
-  padding-bottom: 8px;
 }
+
 .cell-roles {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
   padding: 4px 0;
 }
+
 .role-tag {
   margin: 2px;
 }
+
 .empty-role {
-  color: #ccc;
+  color: #94a3b8;
   font-size: 12px;
 }
+
 .role-select-area {
   width: 100%;
 }
+
 .selected-roles {
   margin-bottom: 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
 }
+
 .add-role-row {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
+
 .role-checkboxes {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 4px;
 }
+
 .export-bar {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 10px;
+}
+
+/* 主按钮 */
+.header-actions .el-button--primary,
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--primary:hover,
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* success 按钮 */
+.header-actions .el-button--success,
+.export-bar .el-button--success {
+  background: #10b981;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--success:hover,
+.export-bar .el-button--success:hover {
+  background: #059669;
+  color: #fff;
+}
+
+/* 次要按钮 */
+.header-actions .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
 }
 </style>
