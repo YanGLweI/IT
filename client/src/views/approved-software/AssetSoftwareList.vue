@@ -1,69 +1,78 @@
 <template>
   <div class="asset-software-list">
-    <el-card>
-      <div slot="header">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
-          <span>第三方软件与资产关联表</span>
-          <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出补丁更新记录表</el-button>
-        </div>
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
-          <el-input
-            v-model="search"
-            placeholder="计算机名或IP地址"
-            size="small"
-            clearable
-            style="width: 240px"
-            @clear="handleSearch"
-            @keyup.enter.native="handleSearch"
-          >
-            <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
-          </el-input>
-          <el-select
-            v-model="selectedSoftwareFilter"
-            multiple
-            filterable
-            collapse-tags
-            size="small"
-            placeholder="按软件筛选"
-            style="flex: 1; min-width: 200px; max-width: 400px"
-            @change="handleSearch"
-          >
-            <el-option
-              v-for="sw in allSoftware"
-              :key="sw.id"
-              :label="sw.name + (sw.version ? ' (' + sw.version + ')' : '')"
-              :value="sw.id"
-            />
-          </el-select>
-          <el-button size="small" @click="handleResetFilter">重置</el-button>
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">资产对应表</h2>
+        <p class="page-subtitle">第三方软件与资产关联管理</p>
       </div>
-      <el-table :data="list" border stripe v-loading="loading">
-        <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
-        <el-table-column prop="computer_name" label="计算机名" min-width="150" />
-        <el-table-column prop="ip_address" label="IP地址" width="150" />
-        <el-table-column label="第三方软件" min-width="250">
-          <template slot-scope="scope">
-            <template v-if="scope.row.software_list && scope.row.software_list.length > 0">
-              <el-tag
-                v-for="sw in scope.row.software_list"
-                :key="sw.id"
-                size="small"
-                style="margin: 2px 4px 2px 0"
-              >{{ sw.name }} {{ sw.version ? '(' + sw.version + ')' : '' }}</el-tag>
-            </template>
-            <span v-else style="color: #999">未关联</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right" align="center">
-          <template slot-scope="scope">
-            <el-button size="mini" @click="handleEdit(scope.row)">关联</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="header-actions">
+        <el-button type="success" size="small" icon="el-icon-download" :loading="exporting" @click="handleExport">导出补丁更新记录表</el-button>
+      </div>
+    </div>
 
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-input
+        v-model="search"
+        placeholder="计算机名或IP地址"
+        size="small"
+        clearable
+        style="width: 240px"
+        @clear="handleSearch"
+        @keyup.enter.native="handleSearch"
+      />
+      <el-select
+        v-model="selectedSoftwareFilter"
+        multiple
+        filterable
+        collapse-tags
+        size="small"
+        placeholder="按软件筛选"
+        style="flex: 1; min-width: 200px; max-width: 400px"
+        @change="handleSearch"
+      >
+        <el-option
+          v-for="sw in allSoftware"
+          :key="sw.id"
+          :label="sw.name + (sw.version ? ' (' + sw.version + ')' : '')"
+          :value="sw.id"
+        />
+      </el-select>
+    </div>
+
+    <!-- 数据表格 -->
+    <div class="table-card" ref="tableCard">
+      <div class="table-wrapper">
+        <el-table :data="list" stripe v-loading="loading" :max-height="tableMaxHeight">
+          <el-table-column type="index" label="序号" width="75" align="center" :index="indexMethod" />
+          <el-table-column prop="computer_name" label="计算机名" width="200" />
+          <el-table-column prop="ip_address" label="IP地址" width="150" />
+          <el-table-column label="第三方软件" min-width="250">
+            <template slot-scope="scope">
+              <template v-if="scope.row.software_list && scope.row.software_list.length > 0">
+                <el-tag
+                  v-for="sw in scope.row.software_list"
+                  :key="sw.id"
+                  size="small"
+                  style="margin: 2px 4px 2px 0"
+                >{{ sw.name }} {{ sw.version ? '(' + sw.version + ')' : '' }}</el-tag>
+              </template>
+              <span v-else style="color: #999">未关联</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="150" fixed="right" align="center">
+            <template slot-scope="scope">
+              <el-button size="mini" @click="handleEdit(scope.row)">关联</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination-wrap">
       <el-pagination
-        style="margin-top: 15px; text-align: right"
         background
         layout="total, sizes, prev, pager, next, jumper"
         :total="total"
@@ -73,10 +82,10 @@
         @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
-    </el-card>
+    </div>
 
     <!-- 编辑关联软件弹窗 -->
-    <el-dialog title="关联核准软件" :visible.sync="editDialogVisible" width="560px" :close-on-click-modal="false">
+    <el-dialog class="vault-dialog" title="关联核准软件" :visible.sync="editDialogVisible" width="560px" :close-on-click-modal="false">
       <div style="margin-bottom: 12px; color: #606266; font-size: 14px">
         资产：<strong>{{ editRow ? editRow.computer_name : '' }}</strong>（{{ editRow ? editRow.ip_address : '' }}）
       </div>
@@ -116,10 +125,12 @@ import {
   exportPatchUpdateRecord
 } from '@/api/approved_software'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
 
 export default {
   name: 'AssetSoftwareList',
   components: { DualControlDialog },
+  mixins: [tableHeightMixin],
   data() {
     return {
       list: [],
@@ -160,6 +171,7 @@ export default {
         console.error(e)
       } finally {
         this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
       }
     },
     async fetchAllSoftware() {
@@ -243,3 +255,54 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.asset-software-list {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-card {
+}
+
+.table-wrapper {
+}
+
+.filter-bar .el-button {
+  border-radius: 10px;
+}
+
+.header-actions .el-button--success {
+  border-radius: 10px;
+}
+</style>
