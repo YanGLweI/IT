@@ -45,9 +45,6 @@
             </template>
           </el-table-column>
           <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
-          <el-table-column label="文件大小" width="100" align="center">
-            <template slot-scope="{ row }">{{ formatSize(row.file_size) }}</template>
-          </el-table-column>
           <el-table-column label="上传时间" width="180" align="center">
             <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
           </el-table-column>
