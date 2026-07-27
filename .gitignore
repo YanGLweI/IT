@@ -36,3 +36,5 @@ server/certificate/*.pem
 server/certificate/*.key
 server/certificate/*.crt
 key/*.pem
+
+DEPLOY.md
