@@ -1,5 +1,5 @@
 <template>
-  <div class="it-guide-detail-page">
+  <div class="it-guide-detail-page" :class="{ 'animate-in': animationReady }">
     <!-- 返回链接 -->
     <div class="back-bar">
       <a class="back-link" @click="$router.push('/public/it-guides')">
@@ -13,7 +13,7 @@
 
     <template v-else-if="guide">
       <!-- 页面头部 -->
-      <div class="detail-header">
+      <div class="detail-header animate-item">
         <h1 class="detail-title">{{ guide.title }}</h1>
         <!-- 点赞按钮 -->
         <button class="like-btn" :class="{ liked: isLiked }"
@@ -42,7 +42,7 @@
 
       <!-- 步骤指南 -->
       <div v-if="guide.guide_type === 'step'" class="steps-timeline">
-        <div v-for="(step, idx) in steps" :key="step.id" class="timeline-item">
+        <div v-for="(step, idx) in steps" :key="step.id" class="timeline-item animate-item" :style="{ '--animate-index': idx + 1 }">
           <div class="timeline-dot">
             <span class="dot-badge">{{ idx + 1 }}</span>
           </div>
@@ -75,7 +75,7 @@
       </div>
 
       <!-- 视频指南 -->
-      <div v-if="guide.guide_type === 'video'" class="video-guide">
+      <div v-if="guide.guide_type === 'video'" class="video-guide animate-item" :style="{ '--animate-index': 1 }">
         <div class="video-guide-text" v-if="guide.description">
           <p style="white-space: pre-wrap;">{{ guide.description }}</p>
         </div>
@@ -141,7 +141,7 @@ export default {
       guide: null,
       steps: [],
       media: [],
-      loading: false,
+      loading: true,
       imageViewer: { visible: false, url: '', currentIndex: 0, stepId: null },
       isLiked: false,
       likeCount: 0,
@@ -157,7 +157,8 @@ export default {
       // 资源下载面板
       attachments: [],
       resourcePanelCollapsed: false,
-      resourcePanelExpanded: false
+      resourcePanelExpanded: false,
+      animationReady: false
     }
   },
   computed: {
@@ -207,7 +208,10 @@ export default {
         this.guide = null
       } finally {
         this.loading = false
-        this.$nextTick(() => { this.initHeartParticles() })
+        this.$nextTick(() => {
+          this.initHeartParticles()
+          this.triggerEntranceAnimation()
+        })
       }
     },
     getStepImages(stepId) {
@@ -360,6 +364,11 @@ export default {
       if (bytes < 1024) return bytes + ' B'
       if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
       return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+    },
+    triggerEntranceAnimation() {
+      this.$nextTick(() => {
+        this.animationReady = true
+      })
     },
     _debounce(fn, delay) {
       let timer = null
@@ -980,6 +989,27 @@ export default {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 2px;
+}
+
+/* 入场过渡动画 */
+.animate-item {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+
+.animate-in .animate-item {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: calc(var(--animate-index, 0) * 80ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-item {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 /* 面板展开/收起动画 */
