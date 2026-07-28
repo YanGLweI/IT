@@ -993,4 +993,5 @@ export default {
   opacity: 0;
   transform: translateY(-50%) translateX(12px);
 }
+
 </style>

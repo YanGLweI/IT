@@ -32,6 +32,18 @@
     </header>
 
     <main class="public-main">
+      <!-- 视差背景（仅 IT 指南详情页） -->
+      <div v-if="$route.name === 'PublicITGuideDetail'" class="parallax-bg-layer">
+        <div class="parallax-bg-base"></div>
+        <div class="parallax-bg">
+          <div class="p-shape p-circle-1"></div>
+          <div class="p-shape p-circle-2"></div>
+          <div class="p-shape p-ring"></div>
+          <div class="p-shape p-rect"></div>
+          <div class="p-shape p-line-1"></div>
+          <div class="p-shape p-line-2"></div>
+        </div>
+      </div>
       <div class="main-inner">
         <router-view />
       </div>
@@ -74,6 +86,8 @@ export default {
   height: 60px;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1;
 }
 
 .header-inner {
@@ -168,6 +182,8 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .public-footer {
@@ -176,6 +192,8 @@ export default {
   text-align: center;
   border-top: 1px solid #E2E8F0;
   background: #fff;
+  position: relative;
+  z-index: 1;
 }
 
 .public-footer p {
@@ -258,5 +276,146 @@ export default {
   .public-main {
     padding: 20px 0;
   }
+}
+
+/* ========== 视差背景（Tech Blueprint） ========== */
+.parallax-bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Layer 0: 底色 + dot grid */
+.parallax-bg-base {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle, rgba(59,130,246,0.18) 1.2px, transparent 1.2px),
+    linear-gradient(135deg, #EFF6FF 0%, #F8FAFC 40%, #F0F9FF 100%);
+  background-size: 20px 20px, 100% 100%;
+  z-index: 0;
+}
+
+/* Layer 1: 几何装饰容器（无动画，仅定位） */
+.parallax-bg {
+  position: absolute;
+  inset: -30% 0;
+  z-index: 1;
+}
+
+/* 几何装饰元素 - 各自独立动画 */
+.p-shape {
+  position: absolute;
+  will-change: transform;
+}
+
+/* 慢速层 (±10%) */
+.p-circle-1 {
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  background: rgba(59,130,246,0.10);
+  top: 2%; left: -8%;
+  animation: parallaxSlow 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+@keyframes parallaxSlow {
+  from { transform: translateY(10%); }
+  to   { transform: translateY(-10%); }
+}
+
+/* 中速层 (±15%) */
+.p-circle-2 {
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: rgba(64,158,255,0.08);
+  bottom: 8%; right: -6%;
+  animation: parallaxMedium 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+@keyframes parallaxMedium {
+  from { transform: translateY(15%); }
+  to   { transform: translateY(-15%); }
+}
+
+/* 快速层 (±20%) */
+.p-ring {
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  border: 3px solid rgba(64,158,255,0.15);
+  top: 18%; right: 12%;
+  animation: parallaxFast 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+@keyframes parallaxFast {
+  from { transform: translateY(20%); }
+  to   { transform: translateY(-20%); }
+}
+
+/* 慢速层 (±12%) */
+.p-rect {
+  width: 160px; height: 100px;
+  border-radius: 20px;
+  background: rgba(103,194,58,0.10);
+  bottom: 18%; left: 10%;
+  animation: parallaxSlow2 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+@keyframes parallaxSlow2 {
+  from { transform: translateY(12%); }
+  to   { transform: translateY(-12%); }
+}
+
+/* 中快速层 (±18%) */
+.p-line-1 {
+  width: 220px; height: 100px;
+  border-left: 2px solid rgba(59,130,246,0.12);
+  border-bottom: 2px solid rgba(59,130,246,0.12);
+  border-radius: 0 0 0 16px;
+  top: 28%; left: 22%;
+  animation: parallaxMedium2 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+@keyframes parallaxMedium2 {
+  from { transform: translateY(18%); }
+  to   { transform: translateY(-18%); }
+}
+
+/* 最快速层 (±22%) */
+.p-line-2 {
+  width: 180px; height: 80px;
+  border-right: 2px solid rgba(59,130,246,0.12);
+  border-top: 2px solid rgba(59,130,246,0.12);
+  border-radius: 0 16px 0 0;
+  bottom: 22%; right: 18%;
+  animation: parallaxFastest 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+@keyframes parallaxFastest {
+  from { transform: translateY(22%); }
+  to   { transform: translateY(-22%); }
+}
+
+/* 无障碍降级 */
+@media (prefers-reduced-motion: reduce) {
+  .p-shape {
+    animation: none !important;
+    transform: translateY(0) !important;
+  }
+}
+
+/* 响应式适配 */
+@media (max-width: 640px) {
+  .p-circle-1 { width: 180px; height: 180px; }
+  .p-circle-2 { width: 140px; height: 140px; }
+  .p-ring { width: 130px; height: 130px; }
+  .p-rect { width: 100px; height: 64px; }
 }
 </style>
