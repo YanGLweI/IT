@@ -125,9 +125,11 @@
 
     <!-- 预览弹窗 -->
     <el-dialog
+      class="vault-dialog preview-dialog"
       :visible.sync="previewVisible"
       width="80%"
       top="5vh"
+      append-to-body
       @closed="clearPreview"
       v-loading="previewLoading"
     >
