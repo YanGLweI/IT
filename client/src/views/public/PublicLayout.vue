@@ -35,14 +35,22 @@
       <!-- 视差背景（仅 IT 指南详情页） -->
       <div v-if="$route.name === 'PublicITGuideDetail'" class="parallax-bg-layer">
         <div class="parallax-bg-base"></div>
-        <div class="parallax-bg">
-          <div class="p-shape p-circle-1"></div>
-          <div class="p-shape p-circle-2"></div>
-          <div class="p-shape p-ring"></div>
-          <div class="p-shape p-rect"></div>
-          <div class="p-shape p-line-1"></div>
-          <div class="p-shape p-line-2"></div>
-        </div>
+        <!-- 太阳 -->
+        <div class="sky-sun"></div>
+        <!-- 云朵 -->
+        <div class="sky-cloud cloud-1"></div>
+        <div class="sky-cloud cloud-2"></div>
+        <div class="sky-cloud cloud-3"></div>
+        <!-- 山峦层 5：最远，最浅，最慢 -->
+        <div class="mountain-layer mountain-5"></div>
+        <!-- 山峦层 4 -->
+        <div class="mountain-layer mountain-4"></div>
+        <!-- 山峦层 3 -->
+        <div class="mountain-layer mountain-3"></div>
+        <!-- 山峦层 2 -->
+        <div class="mountain-layer mountain-2"></div>
+        <!-- 山峦层 1：最近，最深，最快 -->
+        <div class="mountain-layer mountain-1"></div>
       </div>
       <div class="main-inner">
         <router-view />
@@ -278,7 +286,7 @@ export default {
   }
 }
 
-/* ========== 视差背景（Tech Blueprint） ========== */
+/* ========== 视差背景（山峦层叠） ========== */
 .parallax-bg-layer {
   position: fixed;
   inset: 0;
@@ -287,135 +295,321 @@ export default {
   pointer-events: none;
 }
 
-/* Layer 0: 底色 + dot grid */
+/* 底色：天空渐变 */
 .parallax-bg-base {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle, rgba(59,130,246,0.18) 1.2px, transparent 1.2px),
-    linear-gradient(135deg, #EFF6FF 0%, #F8FAFC 40%, #F0F9FF 100%);
-  background-size: 20px 20px, 100% 100%;
+  background: linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 40%, #BFDBFE 100%);
   z-index: 0;
 }
 
-/* Layer 1: 几何装饰容器（无动画，仅定位） */
-.parallax-bg {
+/* 太阳 */
+.sky-sun {
   position: absolute;
-  inset: -30% 0;
+  top: 8%;
+  right: 15%;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FDE68A 0%, #FCD34D 60%, rgba(252, 211, 77, 0) 100%);
+  box-shadow: 0 0 60px 20px rgba(253, 224, 71, 0.4);
   z-index: 1;
+  animation: sunMove 1s linear both;
+  animation-timeline: scroll(root);
 }
 
-/* 几何装饰元素 - 各自独立动画 */
-.p-shape {
+@keyframes sunMove {
+  from { transform: translateY(15px); }
+  to   { transform: translateY(-15px); }
+}
+
+/* 云朵基础样式 */
+.sky-cloud {
   position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50px;
+  z-index: 2;
+}
+
+/* 云朵 1：左上 */
+.cloud-1 {
+  top: 12%;
+  left: 8%;
+  width: 120px;
+  height: 40px;
+  border-radius: 40px;
+  animation: cloud1Move 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+.cloud-1::before,
+.cloud-1::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+}
+
+.cloud-1::before {
+  width: 50px;
+  height: 50px;
+  top: -20px;
+  left: 20px;
+}
+
+.cloud-1::after {
+  width: 35px;
+  height: 35px;
+  top: -12px;
+  right: 20px;
+}
+
+@keyframes cloud1Move {
+  from { transform: translateY(10px) translateX(-5px); }
+  to   { transform: translateY(-10px) translateX(5px); }
+}
+
+/* 云朵 2：中上 */
+.cloud-2 {
+  top: 18%;
+  left: 35%;
+  width: 100px;
+  height: 32px;
+  border-radius: 32px;
+  animation: cloud2Move 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+.cloud-2::before,
+.cloud-2::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+}
+
+.cloud-2::before {
+  width: 40px;
+  height: 40px;
+  top: -16px;
+  left: 15px;
+}
+
+.cloud-2::after {
+  width: 28px;
+  height: 28px;
+  top: -10px;
+  right: 15px;
+}
+
+@keyframes cloud2Move {
+  from { transform: translateY(8px) translateX(3px); }
+  to   { transform: translateY(-8px) translateX(-3px); }
+}
+
+/* 云朵 3：右侧 */
+.cloud-3 {
+  top: 10%;
+  right: 30%;
+  width: 90px;
+  height: 28px;
+  border-radius: 28px;
+  animation: cloud3Move 1s linear both;
+  animation-timeline: scroll(root);
+}
+
+.cloud-3::before,
+.cloud-3::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+}
+
+.cloud-3::before {
+  width: 35px;
+  height: 35px;
+  top: -14px;
+  left: 12px;
+}
+
+.cloud-3::after {
+  width: 25px;
+  height: 25px;
+  top: -8px;
+  right: 12px;
+}
+
+@keyframes cloud3Move {
+  from { transform: translateY(12px) translateX(4px); }
+  to   { transform: translateY(-12px) translateX(-4px); }
+}
+
+/* 山峦层基础样式 */
+.mountain-layer {
+  position: absolute;
+  left: -5%;
+  width: 110%;
   will-change: transform;
 }
 
-/* 慢速层 (±10%) */
-.p-circle-1 {
-  width: 320px; height: 320px;
-  border-radius: 50%;
-  background: rgba(59,130,246,0.10);
-  top: 2%; left: -8%;
-  animation: parallaxSlow 1s linear both;
+/* 山峦层 5：最远，最浅，最慢 */
+.mountain-5 {
+  bottom: 15%;
+  height: 35%;
+  background: rgba(147, 197, 253, 0.4);
+  clip-path: polygon(
+    0% 100%,
+    0% 65%,
+    8% 45%,
+    18% 55%,
+    28% 30%,
+    38% 50%,
+    48% 20%,
+    58% 40%,
+    68% 25%,
+    78% 45%,
+    88% 35%,
+    100% 55%,
+    100% 100%
+  );
+  animation: mountain5Move 1s linear both;
   animation-timeline: scroll(root);
 }
 
-@keyframes parallaxSlow {
-  from { transform: translateY(10%); }
-  to   { transform: translateY(-10%); }
+@keyframes mountain5Move {
+  from { transform: translateY(5%); }
+  to   { transform: translateY(-5%); }
 }
 
-/* 中速层 (±15%) */
-.p-circle-2 {
-  width: 260px; height: 260px;
-  border-radius: 50%;
-  background: rgba(64,158,255,0.08);
-  bottom: 8%; right: -6%;
-  animation: parallaxMedium 1s linear both;
+/* 山峦层 4 */
+.mountain-4 {
+  bottom: 10%;
+  height: 35%;
+  background: rgba(96, 165, 250, 0.35);
+  clip-path: polygon(
+    0% 100%,
+    0% 70%,
+    10% 50%,
+    20% 60%,
+    32% 35%,
+    42% 55%,
+    55% 25%,
+    65% 45%,
+    75% 30%,
+    85% 50%,
+    95% 40%,
+    100% 60%,
+    100% 100%
+  );
+  animation: mountain4Move 1s linear both;
   animation-timeline: scroll(root);
 }
 
-@keyframes parallaxMedium {
-  from { transform: translateY(15%); }
-  to   { transform: translateY(-15%); }
+@keyframes mountain4Move {
+  from { transform: translateY(8%); }
+  to   { transform: translateY(-8%); }
 }
 
-/* 快速层 (±20%) */
-.p-ring {
-  width: 220px; height: 220px;
-  border-radius: 50%;
-  border: 3px solid rgba(64,158,255,0.15);
-  top: 18%; right: 12%;
-  animation: parallaxFast 1s linear both;
+/* 山峦层 3 */
+.mountain-3 {
+  bottom: 5%;
+  height: 35%;
+  background: rgba(59, 130, 246, 0.3);
+  clip-path: polygon(
+    0% 100%,
+    0% 75%,
+    12% 55%,
+    22% 65%,
+    35% 40%,
+    45% 60%,
+    58% 30%,
+    68% 50%,
+    80% 35%,
+    90% 55%,
+    100% 45%,
+    100% 100%
+  );
+  animation: mountain3Move 1s linear both;
   animation-timeline: scroll(root);
 }
 
-@keyframes parallaxFast {
-  from { transform: translateY(20%); }
-  to   { transform: translateY(-20%); }
-}
-
-/* 慢速层 (±12%) */
-.p-rect {
-  width: 160px; height: 100px;
-  border-radius: 20px;
-  background: rgba(103,194,58,0.10);
-  bottom: 18%; left: 10%;
-  animation: parallaxSlow2 1s linear both;
-  animation-timeline: scroll(root);
-}
-
-@keyframes parallaxSlow2 {
+@keyframes mountain3Move {
   from { transform: translateY(12%); }
   to   { transform: translateY(-12%); }
 }
 
-/* 中快速层 (±18%) */
-.p-line-1 {
-  width: 220px; height: 100px;
-  border-left: 2px solid rgba(59,130,246,0.12);
-  border-bottom: 2px solid rgba(59,130,246,0.12);
-  border-radius: 0 0 0 16px;
-  top: 28%; left: 22%;
-  animation: parallaxMedium2 1s linear both;
+/* 山峦层 2 */
+.mountain-2 {
+  bottom: 0%;
+  height: 32%;
+  background: rgba(37, 99, 235, 0.25);
+  clip-path: polygon(
+    0% 100%,
+    0% 80%,
+    15% 60%,
+    25% 70%,
+    38% 45%,
+    48% 65%,
+    60% 35%,
+    72% 55%,
+    82% 40%,
+    92% 60%,
+    100% 50%,
+    100% 100%
+  );
+  animation: mountain2Move 1s linear both;
   animation-timeline: scroll(root);
 }
 
-@keyframes parallaxMedium2 {
-  from { transform: translateY(18%); }
-  to   { transform: translateY(-18%); }
+@keyframes mountain2Move {
+  from { transform: translateY(16%); }
+  to   { transform: translateY(-16%); }
 }
 
-/* 最快速层 (±22%) */
-.p-line-2 {
-  width: 180px; height: 80px;
-  border-right: 2px solid rgba(59,130,246,0.12);
-  border-top: 2px solid rgba(59,130,246,0.12);
-  border-radius: 0 16px 0 0;
-  bottom: 22%; right: 18%;
-  animation: parallaxFastest 1s linear both;
+/* 山峦层 1：最近，最深，最快 */
+.mountain-1 {
+  bottom: -5%;
+  height: 30%;
+  background: rgba(29, 78, 216, 0.2);
+  clip-path: polygon(
+    0% 100%,
+    0% 85%,
+    18% 65%,
+    28% 75%,
+    42% 50%,
+    52% 70%,
+    65% 40%,
+    75% 60%,
+    85% 45%,
+    95% 65%,
+    100% 55%,
+    100% 100%
+  );
+  animation: mountain1Move 1s linear both;
   animation-timeline: scroll(root);
 }
 
-@keyframes parallaxFastest {
-  from { transform: translateY(22%); }
-  to   { transform: translateY(-22%); }
+@keyframes mountain1Move {
+  from { transform: translateY(20%); }
+  to   { transform: translateY(-20%); }
 }
 
 /* 无障碍降级 */
 @media (prefers-reduced-motion: reduce) {
-  .p-shape {
+  .mountain-layer,
+  .sky-sun,
+  .sky-cloud {
     animation: none !important;
-    transform: translateY(0) !important;
+    transform: none !important;
   }
 }
 
 /* 响应式适配 */
 @media (max-width: 640px) {
-  .p-circle-1 { width: 180px; height: 180px; }
-  .p-circle-2 { width: 140px; height: 140px; }
-  .p-ring { width: 130px; height: 130px; }
-  .p-rect { width: 100px; height: 64px; }
+  .mountain-layer {
+    left: -10%;
+    width: 120%;
+  }
 }
 </style>
