@@ -30,6 +30,10 @@ func SetupRouter() *gin.Engine {
 			public.GET("/public-key", handlers.GetPublicKey)
 			public.POST("/refresh-token", handlers.RefreshToken)
 
+			// 域账号自助平台 - 公开接口
+			public.POST("/domain-account/login", middleware.RateLimit(), handlers.DomainAccountLogin)
+			public.POST("/domain-account/change-password", middleware.RateLimit(), handlers.ChangeDomainPassword)
+
 			// 免登录表单下载（公开接口）
 			public.GET("/public/forms", handlers.ListPublicForms)
 			public.GET("/public/forms/:id/download", handlers.PublicDownloadForm)
@@ -219,6 +223,9 @@ func SetupRouter() *gin.Engine {
 
 			// LDAP用户获取（不需要双控）
 			protected.GET("/ldap/users", handlers.GetLDAPUsers)
+
+			// 域账号自助平台 - 需要JWT
+			protected.GET("/domain-account/info", handlers.GetDomainAccountInfo)
 
 			// 菜单收藏（个人偏好，无需双控）
 			protected.GET("/menu-favorites", handlers.ListMenuFavorites)

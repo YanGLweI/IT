@@ -16,13 +16,14 @@ import (
 
 // Config 配置结构
 type Config struct {
-	Server        ServerConfig        `yaml:"server"`
-	Database      DatabaseConfig      `yaml:"database"`
-	Upload        UploadConfig        `yaml:"upload"`
-	LDAP          LDAPConfig          `yaml:"ldap"`
-	Document      DocumentConfig      `yaml:"document"`
-	RSA           RSAConfig           `yaml:"rsa"`
-	PasswordVault PasswordVaultConfig `yaml:"password_vault"`
+	Server         ServerConfig        `yaml:"server"`
+	Database       DatabaseConfig      `yaml:"database"`
+	Upload         UploadConfig        `yaml:"upload"`
+	LDAP           LDAPConfig          `yaml:"ldap"`
+	Document       DocumentConfig      `yaml:"document"`
+	RSA            RSAConfig           `yaml:"rsa"`
+	PasswordVault  PasswordVaultConfig `yaml:"password_vault"`
+	PasswordPolicy PasswordPolicy      `yaml:"password_policy"`
 }
 
 // PasswordVaultConfig 密码本配置
@@ -94,6 +95,7 @@ type UploadConfig struct {
 type LDAPConfig struct {
 	Server          string `yaml:"server"`
 	BaseDN          string `yaml:"base_dn"`
+	DomainSuffix    string `yaml:"domain_suffix"`    // 域后缀，如 "hot.local"
 	UseTLS          bool   `yaml:"use_tls"`
 	Insecure        bool   `yaml:"insecure"`
 	UserFilter      string `yaml:"user_filter"`
@@ -101,6 +103,16 @@ type LDAPConfig struct {
 	Password        string `yaml:"password"`
 	SecurityGroupDN string `yaml:"security_group_dn"`
 	CertPath        string `yaml:"cert_path"`
+	MaxPwdAgeDays   int    `yaml:"max_pwd_age_days"` // 密码最大使用天数（回退值）
+}
+
+// PasswordPolicy 密码策略配置
+type PasswordPolicy struct {
+	MinLength        int  `yaml:"min_length"`
+	RequireUppercase bool `yaml:"require_uppercase"`
+	RequireLowercase bool `yaml:"require_lowercase"`
+	RequireDigit     bool `yaml:"require_digit"`
+	RequireSpecial   bool `yaml:"require_special"`
 }
 
 // RSAConfig RSA加密配置
@@ -242,6 +254,12 @@ func LoadConfig() error {
 	}
 	if Cfg.Server.TLS.KeyPath == "" {
 		Cfg.Server.TLS.KeyPath = "./certificate/server.key"
+	}
+	if Cfg.LDAP.MaxPwdAgeDays == 0 {
+		Cfg.LDAP.MaxPwdAgeDays = 90
+	}
+	if Cfg.PasswordPolicy.MinLength == 0 {
+		Cfg.PasswordPolicy.MinLength = 14
 	}
 
 	return nil

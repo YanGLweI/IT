@@ -2,6 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Layout from '../views/Layout.vue'
 import PublicLayout from '../views/public/PublicLayout.vue'
+import AccountPortalLayout from '../views/account-portal/AccountPortalLayout.vue'
 
 Vue.use(VueRouter)
 
@@ -38,6 +39,48 @@ const routes = [
         meta: { title: '指南详情', public: true }
       }
     ]
+  },
+
+  // 域账号自助平台 - 登录页
+  {
+    path: '/account-portal',
+    component: AccountPortalLayout,
+    redirect: '/account/login',
+    children: [
+      {
+        path: 'login',
+        name: 'AccountPortalLogin',
+        component: () => import('../views/account-portal/AccountPortalLogin.vue'),
+        meta: { title: '域账号自助', public: true }
+      }
+    ]
+  },
+  // 域账号自助平台 - 兼容旧路由重定向
+  {
+    path: '/account-portal/dashboard',
+    redirect: '/account/dashboard'
+  },
+  {
+    path: '/account-portal/change-password',
+    redirect: '/account/change-password'
+  },
+
+  // 域账号自助平台 - 账号管理（自包含页面，不需要 layout）
+  {
+    path: '/account/login',
+    redirect: '/account-portal/login'
+  },
+  {
+    path: '/account/dashboard',
+    name: 'AccountDashboard',
+    component: () => import('../views/account-portal/AccountDashboard.vue'),
+    meta: { title: '账号管理', public: true }
+  },
+  {
+    path: '/account/change-password',
+    name: 'AccountChangePassword',
+    component: () => import('../views/account-portal/AccountChangePassword.vue'),
+    meta: { title: '修改密码', public: true }
   },
 
   // 管理端

@@ -36,7 +36,7 @@ func VerifyDualControl(c *gin.Context) {
 	}
 
 	// LDAP验证（仅验证账号密码有效性，不检查安全组）
-	_, _, err = ldapAuthenticate(req.Username, password)
+	_, _, _, _, err = ldapAuthenticate(req.Username, password)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "验证失败: " + err.Error()})
 		return

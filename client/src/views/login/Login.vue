@@ -86,6 +86,14 @@
 
       <!-- 免登录入口 -->
       <div class="public-access">
+        <a class="public-access-btn" @click="$router.push('/account-portal/login')">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          域账号自助管理
+        </a>
+        <span class="access-divider">|</span>
         <a class="public-access-btn" @click="$router.push('/public/forms')">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -169,6 +177,25 @@ export default {
             localStorage.setItem('display_name', data.display_name)
             localStorage.setItem('show_login_notifications', 'true')
             this.$message.success('登录成功')
+
+            // 检查密码过期状态
+            if (data.password_expired) {
+              // 保存用户名到 sessionStorage 和 localStorage，供修改密码页使用
+              const username = this.loginForm.username || data.username || ''
+              sessionStorage.setItem('temp_username', username)
+              localStorage.setItem('temp_username', username)
+              this.$message.warning('密码已过期，请修改密码')
+              this.$router.push('/account/change-password?expired=true')
+              return
+            } else if (data.days_remaining !== undefined && data.days_remaining >= 0 && data.days_remaining <= 7 && !data.password_never_expires) {
+              this.$notify({
+                title: `密码将在 ${data.days_remaining} 天后过期`,
+                message: '请及时修改密码',
+                type: 'warning',
+                duration: 8000
+              })
+            }
+
             this.$router.push('/')
           } else {
             this.$message.error('登录失败')
@@ -634,6 +661,11 @@ export default {
 
 .public-access-btn:hover {
   color: #409EFF;
+}
+
+.access-divider {
+  margin: 0 10px;
+  color: rgba(148, 163, 184, 0.3);
 }
 
 /* ===== 底部 ===== */

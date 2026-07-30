@@ -83,6 +83,7 @@ rsa:
 ldap:
   server: "ldaps://10.60.254.252:636"
   base_dn: "dc=hot,dc=local"
+  domain_suffix: "hot.local"
   use_tls: true
   insecure: true
   user_filter: "(sAMAccountName=%s)"
@@ -90,6 +91,15 @@ ldap:
   password: "ENC[g4onpHvNo1rwP42MNNqcDpAK9SOjTfLdW5XP82uAm7/P0LYgMw6nHsWYgbWkm3VvYG9acYNEo5oyMx/ckBc0l1bJs0uIr33FGmZlSlqT6lbCWZjNd2dlXdjJdh/3NkuFEcVpFLiEt6eWVlUo665A6/IPs760Hp/AjKtVJi0Vmrkxvsc64rqAKLMe9ATVlkpQ279CMIMzCKZHLmt3FpIkv6VX3B0mDVziDgCCdefu/RYLEe2AyOgnrPPNZFy08KQAezMNI2d2SEh1EV2RgfLtxQcT+gx49DbPsnkKxSx+BnpyYxvoxvvWQNZlyDvG3aSKfsMFJ4MsBEg+PwVtpvyOeg==]"
   security_group_dn: "CN=IT部,OU=IT部,OU=HOT,DC=hot,DC=local"
   cert_path: "./certificate/ca.crt"
+  max_pwd_age_days: 30
+
+# 密码策略配置
+password_policy:
+  min_length: 14
+  require_uppercase: true
+  require_lowercase: true
+  require_digit: true
+  require_special: true
 
 # 密码本配置
 password_vault:

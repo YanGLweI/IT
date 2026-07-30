@@ -634,7 +634,7 @@ func UnlockPasswordEntry(c *gin.Context) {
 	usernameStr := currentUsername.(string)
 
 	// LDAP 验证身份
-	_, _, err = ldapAuthenticate(usernameStr, ldapPasswordPlain)
+	_, _, _, _, err = ldapAuthenticate(usernameStr, ldapPasswordPlain)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "身份验证失败"})
 		return

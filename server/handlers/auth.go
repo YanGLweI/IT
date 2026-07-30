@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -38,8 +39,8 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// LDAP 认证
-	userDN, displayName, err := ldapAuthenticate(req.Username, password)
+	// LDAP 认证（含密码过期检测）
+	userDN, displayName, passwordExpired, expiryInfo, err := ldapAuthenticate(req.Username, password)
 	if err != nil {
 		// 记录登录失败日志
 		services.LogLogin(req.Username, "", "login_failure", c.ClientIP(), c.Request.UserAgent(), "认证失败: "+err.Error())
@@ -75,32 +76,49 @@ func Login(c *gin.Context) {
 	// 记录登录成功日志
 	services.LogLogin(req.Username, displayName, "login_success", c.ClientIP(), c.Request.UserAgent(), "登录成功")
 
+	// 构建响应数据
+	responseData := gin.H{
+		"token":        accessToken,
+		"username":     req.Username,
+		"display_name": displayName,
+	}
+
+	// 添加密码过期信息
+	if passwordExpired {
+		responseData["password_expired"] = true
+		responseData["password_expires_at"] = "已过期"
+		responseData["days_remaining"] = 0
+		responseData["password_never_expires"] = false
+	} else if expiryInfo != nil {
+		responseData["password_expired"] = false
+		responseData["password_expires_at"] = expiryInfo.PasswordExpiresAt
+		responseData["days_remaining"] = expiryInfo.DaysRemaining
+		responseData["password_never_expires"] = expiryInfo.PasswordNeverExpires
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "登录成功",
-		"data": gin.H{
-			"token":        accessToken,
-			"username":     req.Username,
-			"display_name": displayName,
-		},
+		"data":    responseData,
 	})
 }
 
-// ldapAuthenticate LDAP 认证
-func ldapAuthenticate(username, password string) (string, string, error) {
+// ldapAuthenticate LDAP 认证（含密码过期检测）
+// 返回值: userDN, displayName, passwordExpired, expiryInfo, error
+func ldapAuthenticate(username, password string) (string, string, bool, *services.PasswordExpiryResult, error) {
 	cfg := &config.Cfg.LDAP
 
 	// 创建 LDAP 连接
 	l, err := ldap.DialURL(cfg.Server, ldap.DialWithTLSConfig(getTLSConfig(cfg)))
 	if err != nil {
-		return "", "", fmt.Errorf("连接 LDAP 失败: %v", err)
+		return "", "", false, nil, fmt.Errorf("连接 LDAP 失败: %v", err)
 	}
 	defer l.Close()
 
 	// 使用服务账号绑定
 	err = l.Bind(cfg.Username, cfg.Password)
 	if err != nil {
-		return "", "", fmt.Errorf("LDAP 绑定失败: %v", err)
+		return "", "", false, nil, fmt.Errorf("LDAP 绑定失败: %v", err)
 	}
 
 	// 搜索用户
@@ -114,11 +132,11 @@ func ldapAuthenticate(username, password string) (string, string, error) {
 
 	sr, err := l.Search(searchRequest)
 	if err != nil {
-		return "", "", fmt.Errorf("搜索用户失败: %v", err)
+		return "", "", false, nil, fmt.Errorf("搜索用户失败: %v", err)
 	}
 
 	if len(sr.Entries) == 0 {
-		return "", "", fmt.Errorf("用户不存在")
+		return "", "", false, nil, fmt.Errorf("用户不存在")
 	}
 
 	userEntry := sr.Entries[0]
@@ -134,10 +152,31 @@ func ldapAuthenticate(username, password string) (string, string, error) {
 	// 使用用户密码绑定验证密码
 	err = l.Bind(userDN, password)
 	if err != nil {
-		return "", "", fmt.Errorf("密码错误")
+		// 检测 AD 密码过期错误码 data 773
+		if ldap.IsErrorWithCode(err, ldap.LDAPResultInvalidCredentials) {
+			errStr := err.Error()
+			if strings.Contains(errStr, "773") || strings.Contains(errStr, "data 773") {
+				// 密码已过期，但仍允许登录
+				log.Printf("用户 %s 密码已过期", username)
+				return userDN, displayName, true, nil, nil
+			}
+			// 账号被锁定 data 775
+			if strings.Contains(errStr, "775") || strings.Contains(errStr, "data 775") {
+				return "", "", false, nil, fmt.Errorf("账号已被锁定，请联系管理员")
+			}
+		}
+		return "", "", false, nil, fmt.Errorf("密码错误")
 	}
 
-	return userDN, displayName, nil
+	// 认证成功，查询密码过期信息
+	expiryInfo, err := services.GetPasswordExpiry(username)
+	if err != nil {
+		log.Printf("查询用户 %s 密码过期信息失败: %v", username, err)
+		// 不影响登录，返回空过期信息
+		return userDN, displayName, false, nil, nil
+	}
+
+	return userDN, displayName, false, expiryInfo, nil
 }
 
 // checkSecurityGroup 检查用户是否属于安全组
