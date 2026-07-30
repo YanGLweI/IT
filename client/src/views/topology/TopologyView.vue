@@ -86,16 +86,13 @@
     </el-dialog>
 
     <!-- 预览弹窗 -->
-    <el-dialog class="vault-dialog" :visible.sync="previewVisible" width="90%" top="3vh" @closed="clearPreview">
-      <div slot="title" class="preview-toolbar">
-        <span>拓扑图预览</span>
-        <div class="preview-toolbar-right">
-          <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFile">下载</el-button>
-        </div>
-      </div>
-      <div style="text-align: center; overflow: auto; max-height: 80vh">
+    <el-dialog class="vault-dialog preview-dialog" title="拓扑图预览" :visible.sync="previewVisible" width="90%" top="3vh" @closed="clearPreview">
+      <div style="text-align: center">
         <img :src="previewUrl" style="max-width: 100%" />
       </div>
+      <span slot="footer">
+        <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFile">下载</el-button>
+      </span>
     </el-dialog>
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
@@ -393,15 +390,27 @@ export default {
   justify-content: flex-end;
   gap: 6px;
 }
-.preview-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
+/* 卡片操作按钮 — 符合设计规范 */
+.topo-actions .el-button {
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  padding: 5px 12px;
 }
-.preview-toolbar-right {
-  display: flex;
-  align-items: center;
-  margin-right: 30px;
+.topo-actions .el-button:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+.topo-actions .el-button--danger {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+.topo-actions .el-button--danger:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
 }
 </style>
