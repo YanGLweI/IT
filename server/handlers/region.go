@@ -48,9 +48,11 @@ func CreateRegion(c *gin.Context) {
 
 	// 记录操作日志
 	username, displayName, _ := services.GetUserContext(c)
+	networkLevelText := map[int]string{0: "未设置", 1: "一级（互联网）", 2: "二级", 3: "三级", 4: "四级", 5: "五级（高安全区）"}
 	details := []services.LogDetail{
 		{FieldName: "Name", FieldLabel: "名称", NewValue: region.Name},
 		{FieldName: "Description", FieldLabel: "描述", NewValue: region.Description},
+		{FieldName: "NetworkLevel", FieldLabel: "网络等级", NewValue: networkLevelText[region.NetworkLevel]},
 	}
 	services.LogOperation(username, displayName, "创建区域", "region", region.ID, region.Name, "", c.ClientIP(), details)
 
@@ -70,8 +72,9 @@ func UpdateRegion(c *gin.Context) {
 	oldRegion := region
 
 	var input struct {
-		Name        string `json:"name" binding:"required"`
-		Description string `json:"description"`
+		Name         string `json:"name" binding:"required"`
+		Description  string `json:"description"`
+		NetworkLevel int    `json:"network_level"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
@@ -80,6 +83,7 @@ func UpdateRegion(c *gin.Context) {
 
 	region.Name = strings.TrimSpace(input.Name)
 	region.Description = strings.TrimSpace(input.Description)
+	region.NetworkLevel = input.NetworkLevel
 
 	if err := database.GetDB().Save(&region).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败"})

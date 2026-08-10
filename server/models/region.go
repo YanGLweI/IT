@@ -11,8 +11,9 @@ type Region struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
-	Name        string `gorm:"type:varchar(100);uniqueIndex;not null" json:"name" binding:"required"`
-	Description string `gorm:"type:varchar(500)" json:"description"`
+	Name         string `gorm:"type:varchar(100);uniqueIndex;not null" json:"name" binding:"required"`
+	Description  string `gorm:"type:varchar(500)" json:"description"`
+	NetworkLevel int  `gorm:"type:int;default:0" json:"network_level"`
 }
 
 // TableName 指定表名

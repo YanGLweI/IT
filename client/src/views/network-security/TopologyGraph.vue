@@ -10,6 +10,7 @@
         <el-button size="small" icon="el-icon-rank" @click="expandAll">全部展开</el-button>
         <el-button size="small" icon="el-icon-refresh-left" @click="resetView">重置视图</el-button>
         <el-button size="small" icon="el-icon-refresh" @click="fetchAll" :loading="loading">刷新</el-button>
+        <el-button size="small" icon="el-icon-download" @click="exportPDF" :loading="exporting">导出PDF</el-button>
       </div>
     </div>
 
@@ -17,7 +18,10 @@
     <div class="legend-bar" v-if="hasData">
       <span class="legend-item"><i class="legend-dot" style="background: #ffffff; border: 1.5px solid #334155"></i>互联网</span>
       <span class="legend-item"><i class="legend-dot" style="background: #f87171"></i>防火墙</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #93c5fd"></i>区域</span>
+      <span class="legend-item"><i class="legend-dot" style="background: #86efac"></i>二级区域</span>
+      <span class="legend-item"><i class="legend-dot" style="background: #fde047"></i>三级区域</span>
+      <span class="legend-item"><i class="legend-dot" style="background: #fdba74"></i>四级区域</span>
+      <span class="legend-item"><i class="legend-dot" style="background: #f87171"></i>高安全区域</span>
       <span class="legend-item"><i class="legend-dot" style="background: #64748b"></i>资产</span>
       <span class="legend-tip">提示：点击区域节点可展开/收起其下资产，点击防火墙节点折叠子树，右侧按钮或滚轮缩放、拖动平移</span>
     </div>
@@ -40,6 +44,7 @@
 
 <script>
 import * as echarts from 'echarts'
+import { jsPDF } from 'jspdf'
 import { getFirewallTopologyTree } from '@/api/firewall_topology'
 
 // 互联网云朵形状：经典三瓣云（顶部大包 + 左右两包），Bootstrap Icons cloud 同款 path（16x16 viewBox）
@@ -52,6 +57,7 @@ export default {
   data() {
     return {
       loading: false,
+      exporting: false,
       nodes: [],
       chart: null
     }
@@ -102,6 +108,7 @@ export default {
             id: 'region:' + r.id,
             name: r.name,
             nodeType: 'region',
+            networkLevel: r.network_level || 0,
             tooltip: `区域：${r.name}<br/>资产数：${(r.assets || []).length}`,
             children: (r.assets || []).map(a => ({
               id: 'asset:' + a.id,
@@ -168,17 +175,24 @@ export default {
           padding: [4, 8]
         }
       } else if (data.nodeType === 'region') {
-        // 区域：淡蓝色圆点，淡蓝胶囊标签
+        // 区域：根据网络等级设置不同配色（二级淡绿、三级淡黄、四级淡橙、五级淡红）
+        const levelColors = {
+          2: { dot: '#86efac', border: '#4ade80', label: '#14532d', bg: '#dcfce7', labelBorder: '#86efac' },
+          3: { dot: '#fde047', border: '#facc15', label: '#713f12', bg: '#fef9c3', labelBorder: '#fde047' },
+          4: { dot: '#fdba74', border: '#fb923c', label: '#7c2d12', bg: '#ffedd5', labelBorder: '#fdba74' },
+          5: { dot: '#f87171', border: '#ef4444', label: '#b91c1c', bg: '#fee2e2', labelBorder: '#fca5a5' }
+        }
+        const colors = levelColors[data.networkLevel] || levelColors[2]
         data.symbolSize = 22
-        data.itemStyle = { color: '#93c5fd', borderColor: '#60a5fa' }
+        data.itemStyle = { color: colors.dot, borderColor: colors.border }
         data.label = {
           position: 'bottom',
           distance: 6,
-          color: '#1e3a8a',
+          color: colors.label,
           fontSize: 12,
           fontWeight: 500,
-          backgroundColor: '#dbeafe',
-          borderColor: '#93c5fd',
+          backgroundColor: colors.bg,
+          borderColor: colors.labelBorder,
           borderWidth: 1,
           borderRadius: 4,
           padding: [3, 6]
@@ -208,6 +222,89 @@ export default {
       }
       ;(data.children || []).forEach(c => this.decorateNode(c))
       return data
+    },
+    // 导出拓扑图为 PDF（离屏渲染高清大图，确保全部资产完整显示不遮挡）
+    async exportPDF() {
+      if (!this.treeData || this.exporting) return
+      this.exporting = true
+      try {
+        // 创建离屏容器
+        const container = document.createElement('div')
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;width:3200px;height:2200px;'
+        document.body.appendChild(container)
+
+        // 初始化临时 ECharts 实例
+        const tmpChart = echarts.init(container, null, { renderer: 'canvas' })
+
+        // 深拷贝树数据并重新 decorate（避免修改主图表数据）
+        const exportData = JSON.parse(JSON.stringify(this.treeData))
+        this.decorateNode(exportData)
+
+        // 渲染配置：展开全部层级、关闭动画、放大符号与字体
+        tmpChart.setOption({
+          series: [{
+            type: 'tree',
+            data: [exportData],
+            orient: 'TB',
+            top: '5%',
+            bottom: '5%',
+            left: '3%',
+            right: '3%',
+            roam: false,
+            expandAndCollapse: false,
+            initialTreeDepth: 10,
+            symbol: 'circle',
+            lineStyle: { color: '#cbd5e1', width: 1.5, curveness: 0.3 },
+            emphasis: { focus: 'descendant' },
+            animation: false
+          }]
+        }, true)
+
+        // 等待渲染完成
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // 获取高清 PNG（pixelRatio: 1.5 平衡清晰度与文件大小）
+        const imgData = tmpChart.getDataURL({ type: 'png', pixelRatio: 1.5, backgroundColor: '#fff' })
+
+        // 销毁临时图表和容器
+        tmpChart.dispose()
+        document.body.removeChild(container)
+
+        // 创建横向 A4 PDF
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+        const pageWidth = pdf.internal.pageSize.getWidth()
+        const pageHeight = pdf.internal.pageSize.getHeight()
+        const margin = 10
+        const availWidth = pageWidth - margin * 2
+        const availHeight = pageHeight - margin * 2
+
+        // 解析图片尺寸，等比缩放适配页面
+        const imgProps = pdf.getImageProperties(imgData)
+        const imgRatio = imgProps.width / imgProps.height
+        const pageRatio = availWidth / availHeight
+        let drawWidth, drawHeight
+        if (imgRatio > pageRatio) {
+          drawWidth = availWidth
+          drawHeight = availWidth / imgRatio
+        } else {
+          drawHeight = availHeight
+          drawWidth = availHeight * imgRatio
+        }
+        const x = (pageWidth - drawWidth) / 2
+        const y = (pageHeight - drawHeight) / 2
+
+        pdf.addImage(imgData, 'PNG', x, y, drawWidth, drawHeight)
+
+        // 生成文件名：网络拓扑图-YYYY-MM-DD.pdf
+        const today = new Date()
+        const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+        pdf.save(`网络拓扑图-${dateStr}.pdf`)
+      } catch (e) {
+        console.error('exportPDF error:', e)
+        this.$message.error('导出失败，请重试')
+      } finally {
+        this.exporting = false
+      }
     },
     renderChart() {
       const el = this.$refs.chartRef

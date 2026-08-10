@@ -17,6 +17,16 @@
         <el-table-column type="index" label="#" width="70" align="center" />
         <el-table-column prop="name" label="区域名称" />
         <el-table-column prop="description" label="描述" />
+        <el-table-column label="网络等级" width="150" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.network_level === 1" size="small">一级（互联网）</el-tag>
+            <el-tag v-else-if="scope.row.network_level === 2" type="success" size="small">二级</el-tag>
+            <el-tag v-else-if="scope.row.network_level === 3" type="warning" size="small">三级</el-tag>
+            <el-tag v-else-if="scope.row.network_level === 4" size="small" style="background:#E6A23C;border-color:#E6A23C;color:#fff">四级</el-tag>
+            <el-tag v-else-if="scope.row.network_level === 5" type="danger" size="small">五级（高安全区）</el-tag>
+            <span v-else style="color:#999">未设置</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="200" align="center" fixed="right">
           <template slot-scope="scope">
             <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
@@ -34,6 +44,15 @@
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入描述" />
+        </el-form-item>
+        <el-form-item label="网络等级">
+          <el-select v-model="form.network_level" placeholder="请选择网络等级" style="width: 100%">
+            <el-option label="一级（互联网）" :value="1" />
+            <el-option label="二级" :value="2" />
+            <el-option label="三级" :value="3" />
+            <el-option label="四级" :value="4" />
+            <el-option label="五级（高安全区）" :value="5" />
+          </el-select>
         </el-form-item>
       </el-form>
       <span slot="footer">
@@ -61,7 +80,7 @@ export default {
       regions: [],
       dialogVisible: false,
       dialogTitle: '新增区域',
-      form: { name: '', description: '' },
+      form: { name: '', description: '', network_level: 0 },
       rules: {
         name: [{ required: true, message: '请输入区域名称', trigger: 'blur' }]
       }
@@ -83,12 +102,12 @@ export default {
     },
     handleAdd() {
       this.dialogTitle = '新增区域'
-      this.form = { name: '', description: '' }
+      this.form = { name: '', description: '', network_level: 0 }
       this.dialogVisible = true
     },
     handleEdit(row) {
       this.dialogTitle = '编辑区域'
-      this.form = { name: row.name, description: row.description }
+      this.form = { name: row.name, description: row.description, network_level: row.network_level || 0 }
       this.form.id = row.id
       this.dialogVisible = true
     },
@@ -98,10 +117,10 @@ export default {
         try {
           const dualToken = await this.$refs.dualControl.open()
           if (this.form.id) {
-            await updateRegion(this.form.id, { name: this.form.name, description: this.form.description }, dualToken)
+            await updateRegion(this.form.id, { name: this.form.name, description: this.form.description, network_level: this.form.network_level }, dualToken)
             this.$message.success('更新成功')
           } else {
-            await createRegion({ name: this.form.name, description: this.form.description }, dualToken)
+            await createRegion({ name: this.form.name, description: this.form.description, network_level: this.form.network_level }, dualToken)
             this.$message.success('创建成功')
           }
           this.dialogVisible = false

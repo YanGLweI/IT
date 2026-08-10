@@ -200,8 +200,9 @@ func GetFieldLabels(resourceType string) map[string]string {
 		}
 	case "region":
 		return map[string]string{
-			"Name":        "名称",
-			"Description": "描述",
+			"Name":         "名称",
+			"Description":  "描述",
+			"NetworkLevel": "网络等级",
 		}
 	case "policy":
 		return map[string]string{

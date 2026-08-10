@@ -30,8 +30,9 @@ type firewallNodeVO struct {
 
 // firewallRegionVO 节点下挂靠的区域视图对象
 type firewallRegionVO struct {
-	ID     uint   `json:"id"`
-	Name   string `json:"name"`
+	ID           uint   `json:"id"`
+	Name         string `json:"name"`
+	NetworkLevel int    `json:"network_level"`
 	Assets []struct {
 		ID           uint   `json:"id"`
 		ComputerName string `json:"computer_name"`
@@ -91,7 +92,7 @@ func GetFirewallTopologyTree(c *gin.Context) {
 			vo.Asset.IPAddress = n.Asset.IPAddress
 		}
 		for _, l := range linksByNode[n.ID] {
-			rv := firewallRegionVO{ID: l.RegionID, Name: l.Region.Name, Assets: []struct {
+			rv := firewallRegionVO{ID: l.RegionID, Name: l.Region.Name, NetworkLevel: l.Region.NetworkLevel, Assets: []struct {
 				ID           uint   `json:"id"`
 				ComputerName string `json:"computer_name"`
 				IPAddress    string `json:"ip_address"`
