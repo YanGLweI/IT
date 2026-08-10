@@ -314,6 +314,15 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"Name":      "名称",
 			"SortOrder": "排序",
 		}
+	case "firewall_topology":
+		return map[string]string{
+			"AssetID":        "防火墙设备",
+			"ParentID":       "上级防火墙",
+			"SortOrder":      "排序",
+			"Remark":         "备注",
+			"RegionID":       "区域",
+			"FirewallNodeID": "防火墙节点",
+		}
 	case "change_record_template":
 		return map[string]string{
 			"Version":     "版本号",

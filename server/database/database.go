@@ -74,6 +74,8 @@ func InitDB() {
 		&models.DedicatedLine{},
 		&models.IPsecVpn{},
 		&models.MenuFavorite{},
+		&models.FirewallNode{},
+		&models.RegionFirewall{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

@@ -7,22 +7,22 @@ module.exports = defineConfig({
     port: 8081,
     proxy: {
       '/api': {
-        target: 'https://localhost:8080',
+        target: 'https://localhost:9080',
         changeOrigin: true,
         secure: false
       },
       '/uploads/it_guide_media': {
-        target: 'https://localhost:8080',
+        target: 'https://localhost:9080',
         changeOrigin: true,
         secure: false
       },
       '/uploads/dedicated_lines': {
-        target: 'https://localhost:8080',
+        target: 'https://localhost:9080',
         changeOrigin: true,
         secure: false
       },
       '/uploads/ipsec_vpn': {
-        target: 'https://localhost:8080',
+        target: 'https://localhost:9080',
         changeOrigin: true,
         secure: false
       }

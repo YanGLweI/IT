@@ -78,6 +78,9 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/topologies/:id/preview", handlers.PreviewTopology)
 			protected.GET("/topologies/:id/download", handlers.DownloadTopology)
 
+			// 防火墙拓扑关系 - 查询（不需要双控）
+			protected.GET("/firewall-topology/tree", handlers.GetFirewallTopologyTree)
+
 			// 岗位权限管理 - 查询和排序（不需要双控）
 			protected.GET("/permission-rules", handlers.ListPermissionRules)
 			protected.GET("/permission-rules/position", handlers.GetPositionPermissions)
@@ -265,6 +268,12 @@ func SetupRouter() *gin.Engine {
 				dual.PUT("/topologies/:id", handlers.UpdateTopology)
 				dual.PUT("/topologies/:id/file", handlers.ReplaceTopologyFile)
 				dual.DELETE("/topologies/:id", handlers.DeleteTopology)
+
+				// 防火墙拓扑关系 - 写操作（需要双控）
+				dual.POST("/firewall-topology/nodes", handlers.CreateFirewallNode)
+				dual.PUT("/firewall-topology/nodes/:id", handlers.UpdateFirewallNode)
+				dual.DELETE("/firewall-topology/nodes/:id", handlers.DeleteFirewallNode)
+				dual.PUT("/firewall-topology/regions", handlers.SaveRegionFirewall)
 
 				// 岗位权限管理配置（所有写操作）
 				dual.POST("/permission-rules", handlers.CreatePermissionRule)

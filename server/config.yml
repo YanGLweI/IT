@@ -1,6 +1,6 @@
 # 服务器配置
 server:
-  port: ":8080"
+  port: ":9080"
   jwt_secret: "ENC[QCq+GGLygNJ7b8Ydc57qD9PdRxB34Et/Bw1qyRcq45halhddRqL9zWO0LO1+lbLqOJ6x8j6oKL/fu3WfpJcGoMoOmh3XtIFHvNpegVzcK/UGEDRWOcYu7hW7cpj5ojpojJGq6gfYu9hctn5jdJZeo5tfC1TMGzLaMC0i1ebuJQAPmB263hRuFdw9BFLnZ1g8Viu90naNXh4g5jSkGzP4v5bAWA9um6GsySc6uR0zvfO49aXDz/PWuzZlu/+7qSfBUtMf5CjJFSzi3oNUkNgO4bRACdiP1mxm0Eq33Atd5OSreeFwuXMgqiN8O7eQRbE5uqDrN520uSXrXLPd5vW4Zg==]"
   gin_mode: "debug"  # debug | release | test
   access_token_expiry: 120    # accessToken有效期（分钟）

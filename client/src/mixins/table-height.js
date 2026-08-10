@@ -32,6 +32,8 @@ export default {
         Array.from(container.children).forEach(child => {
           if (child === this.$refs.tableCard) return
           const style = getComputedStyle(child)
+          // 跳过隐藏元素与脱离文档流的元素（如 el-dialog 的 fixed wrapper），避免污染高度计算
+          if (style.display === 'none' || style.position === 'fixed' || style.position === 'absolute') return
           usedH += child.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom)
         })
         const available = containerH - usedH

@@ -130,6 +130,8 @@ export default {
         ]},
         { type: 'submenu', index: 'network-security', icon: 'shield', title: '网络安全', children: [
           { index: '/topology', icon: 'network', title: '网络拓扑图' },
+          { index: '/topology-config', icon: 'router', title: '拓扑关系配置' },
+          { index: '/topology-graph', icon: 'switch', title: '拓扑图生成' },
           { index: '/change-management', icon: 'git-branch', title: '变更管理' },
           { index: '/vulnerability-scan', icon: 'search', title: '漏洞扫描' },
           { index: '/penetration-test', icon: 'crosshair', title: '渗透测试' },
