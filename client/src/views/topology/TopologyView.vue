@@ -4,7 +4,7 @@
     <div class="page-header">
       <div class="header-left">
         <h2 class="page-title">网络拓扑图</h2>
-        <p class="page-subtitle">管理公司网络拓扑图，支持在线预览与下载</p>
+        <p class="page-subtitle">管理公司网络拓扑图，支持图片及PDF格式在线预览与下载</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" size="small" icon="el-icon-upload2" @click="uploadVisible = true">上传拓扑图</el-button>
@@ -16,7 +16,11 @@
           <el-card shadow="hover">
             <div class="topo-card">
               <div class="topo-thumb" @click="handlePreview(item)">
-                <img :src="getThumbUrl(item.id)" :alt="item.name" />
+                <div v-if="isPdfFile(item.file_name)" class="pdf-thumb">
+                  <i class="el-icon-document"></i>
+                  <span>PDF</span>
+                </div>
+                <img v-else :src="getThumbUrl(item.id)" :alt="item.name" />
               </div>
               <div class="topo-info">
                 <h4>{{ item.name }}</h4>
@@ -47,7 +51,7 @@
         <el-form-item label="描述">
           <el-input v-model="uploadForm.description" type="textarea" :rows="2" placeholder="请输入描述" />
         </el-form-item>
-        <el-form-item label="图片">
+        <el-form-item label="文件">
           <el-upload
             drag
             action=""
@@ -55,11 +59,11 @@
             :on-change="handleFileChange"
             :on-remove="handleFileRemove"
             :file-list="fileList"
-            accept=".png,.jpg,.jpeg,.gif,.svg"
+            accept=".png,.jpg,.jpeg,.gif,.svg,.pdf"
           >
             <i class="el-icon-upload"></i>
-            <div class="el-upload__text">将图片拖到此处，或<em>点击选择</em></div>
-            <div class="el-upload__tip" slot="tip">支持 PNG、JPG、GIF、SVG 格式</div>
+            <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+            <div class="el-upload__tip" slot="tip">支持 PNG、JPG、GIF、SVG、PDF 格式</div>
           </el-upload>
         </el-form-item>
       </el-form>
@@ -88,7 +92,8 @@
     <!-- 预览弹窗 -->
     <el-dialog class="vault-dialog preview-dialog" title="拓扑图预览" :visible.sync="previewVisible" width="90%" top="3vh" @closed="clearPreview">
       <div style="text-align: center">
-        <img :src="previewUrl" style="max-width: 100%" />
+        <iframe v-if="previewIsPdf" :src="previewUrl" class="pdf-preview-frame"></iframe>
+        <img v-else :src="previewUrl" style="max-width: 100%" />
       </div>
       <span slot="footer">
         <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFile">下载</el-button>
@@ -123,6 +128,7 @@ export default {
       previewUrl: '',
       previewId: null,
       previewFileName: '',
+      previewIsPdf: false,
       thumbUrls: {} // 存储缩略图的 blob URL
     }
   },
@@ -178,7 +184,7 @@ export default {
           return
         }
         if (!this.selectedFile) {
-          this.$message.warning('请选择图片')
+          this.$message.warning('请选择文件')
           return
         }
         this.uploading = true
@@ -234,6 +240,7 @@ export default {
     async handlePreview(item) {
       this.previewId = item.id
       this.previewFileName = item.file_name || '拓扑图'
+      this.previewIsPdf = this.isPdfFile(item.file_name)
       this.previewVisible = true
       
       // 使用 fetch 带 token 获取文件并创建 blob URL
@@ -247,7 +254,7 @@ export default {
         this.previewUrl = URL.createObjectURL(blob)
       } catch (e) {
         console.error('预览失败:', e)
-        this.$message.error('图片预览失败')
+        this.$message.error('预览失败')
       }
     },
     clearPreview() {
@@ -288,6 +295,10 @@ export default {
     formatDate(dateStr) {
       if (!dateStr) return '-'
       return new Date(dateStr).toLocaleString('zh-CN')
+    },
+    isPdfFile(fileName) {
+      if (!fileName) return false
+      return fileName.toLowerCase().endsWith('.pdf')
     }
   }
 }
@@ -360,6 +371,28 @@ export default {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+.pdf-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #e74c3c;
+}
+.pdf-thumb i {
+  font-size: 48px;
+}
+.pdf-thumb span {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.pdf-preview-frame {
+  width: 100%;
+  height: 75vh;
+  border: none;
+  border-radius: 8px;
 }
 .topo-info {
   margin-top: 10px;

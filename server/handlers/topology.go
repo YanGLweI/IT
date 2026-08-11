@@ -46,9 +46,9 @@ func CreateTopology(c *gin.Context) {
 
 	// 检查文件类型
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowedExts := map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".svg": true}
+	allowedExts := map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".svg": true, ".pdf": true}
 	if !allowedExts[ext] {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "仅支持PNG、JPG、GIF、SVG格式图片"})
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "仅支持PNG、JPG、GIF、SVG、PDF格式"})
 		return
 	}
 
@@ -152,9 +152,9 @@ func ReplaceTopologyFile(c *gin.Context) {
 
 	// 检查文件类型
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowedExts := map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".svg": true}
+	allowedExts := map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".svg": true, ".pdf": true}
 	if !allowedExts[ext] {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "仅支持PNG、JPG、GIF、SVG格式图片"})
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "仅支持PNG、JPG、GIF、SVG、PDF格式"})
 		return
 	}
 
@@ -241,6 +241,8 @@ func PreviewTopology(c *gin.Context) {
 		contentType = "image/gif"
 	case ".svg":
 		contentType = "image/svg+xml"
+	case ".pdf":
+		contentType = "application/pdf"
 	}
 
 	c.Header("Content-Type", contentType)
@@ -270,6 +272,8 @@ func DownloadTopology(c *gin.Context) {
 		contentType = "image/gif"
 	case ".svg":
 		contentType = "image/svg+xml"
+	case ".pdf":
+		contentType = "application/pdf"
 	}
 
 	c.Header("Content-Type", contentType)

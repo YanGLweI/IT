@@ -21,3 +21,7 @@ export function deleteRegion(id, dualToken) {
   if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }
   return request.delete(`/regions/${id}`, config)
 }
+
+export function reorderRegion(data) {
+  return request.post('/regions/reorder', data)
+}

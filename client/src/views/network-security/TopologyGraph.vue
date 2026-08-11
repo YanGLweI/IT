@@ -10,6 +10,7 @@
         <el-button size="small" icon="el-icon-rank" @click="expandAll">全部展开</el-button>
         <el-button size="small" icon="el-icon-refresh-left" @click="resetView">重置视图</el-button>
         <el-button size="small" icon="el-icon-refresh" @click="fetchAll" :loading="loading">刷新</el-button>
+        <el-button size="small" icon="el-icon-download" @click="exportPNG" :loading="exportingPNG">导出PNG</el-button>
         <el-button size="small" icon="el-icon-download" @click="exportPDF" :loading="exporting">导出PDF</el-button>
       </div>
     </div>
@@ -46,6 +47,7 @@
 
 <script>
 import * as echarts from 'echarts'
+import * as zrender from 'zrender'
 import { jsPDF } from 'jspdf'
 import { getFirewallTopologyTree } from '@/api/firewall_topology'
 
@@ -60,6 +62,7 @@ export default {
     return {
       loading: false,
       exporting: false,
+      exportingPNG: false,
       nodes: [],
       chart: null
     }
@@ -111,7 +114,8 @@ export default {
             name: r.name,
             nodeType: 'region',
             networkLevel: r.network_level || 0,
-            tooltip: `区域：${r.name}<br/>资产数：${(r.assets || []).length}`,
+            subnet: r.subnet || '',
+            tooltip: `区域：${r.name}<br/>资产数：${(r.assets || []).length}${r.subnet ? '<br/>子网：' + r.subnet : ''}`,
             children: (r.assets || []).map(a => ({
               id: 'asset:' + a.id,
               name: a.computer_name,
@@ -233,6 +237,107 @@ export default {
       ;(data.children || []).forEach(c => this.decorateNode(c))
       return data
     },
+    // 导出拓扑图为 PNG（离屏渲染高清大图，确保全部资产完整显示不遮挡）
+    async exportPNG() {
+      if (!this.treeData || this.exportingPNG) return
+      this.exportingPNG = true
+      try {
+        // 创建离屏容器
+        const container = document.createElement('div')
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;width:3200px;height:2200px;'
+        document.body.appendChild(container)
+
+        // 初始化临时 ECharts 实例
+        const tmpChart = echarts.init(container, null, { renderer: 'canvas' })
+
+        // 深拷贝树数据并重新 decorate（避免修改主图表数据）
+        const exportData = JSON.parse(JSON.stringify(this.treeData))
+        this.decorateNode(exportData)
+
+        // 渲染配置：展开全部层级、关闭动画、放大符号与字体
+        tmpChart.setOption({
+          graphic: {
+            elements: [
+              {
+                type: 'group',
+                left: 'center',
+                top: 20,
+                children: [
+                  { type: 'rect', shape: { x: 0, y: 0, width: 12, height: 12 }, style: { fill: '#ffffff', stroke: '#334155', lineWidth: 1.5 } },
+                  { type: 'text', style: { text: '互联网', x: 18, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 70, y: 0, width: 12, height: 12 }, style: { fill: '#f87171' } },
+                  { type: 'text', style: { text: '防火墙', x: 88, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 140, y: 0, width: 12, height: 12 }, style: { fill: '#86efac' } },
+                  { type: 'text', style: { text: '二级区域', x: 158, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 210, y: 0, width: 12, height: 12 }, style: { fill: '#fde047' } },
+                  { type: 'text', style: { text: '三级区域', x: 228, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 280, y: 0, width: 12, height: 12 }, style: { fill: '#fdba74' } },
+                  { type: 'text', style: { text: '四级区域', x: 298, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 350, y: 0, width: 12, height: 12 }, style: { fill: '#f87171' } },
+                  { type: 'text', style: { text: '高安全区域', x: 368, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 440, y: 0, width: 12, height: 12 }, style: { fill: '#64748b' } },
+                  { type: 'text', style: { text: 'Linux 资产', x: 458, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 530, y: 0, width: 12, height: 12 }, style: { fill: '#93c5fd' } },
+                  { type: 'text', style: { text: 'Windows 资产', x: 548, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 640, y: 0, width: 12, height: 12 }, style: { fill: '#d4a574' } },
+                  { type: 'text', style: { text: '其他资产', x: 658, y: 10, font: '12px sans-serif', fill: '#64748b' } }
+                ]
+              }
+            ]
+          },
+          series: [{
+            type: 'tree',
+            data: [exportData],
+            orient: 'LR',
+            top: '12%',
+            bottom: '5%',
+            left: '5%',
+            right: '10%',
+            roam: false,
+            expandAndCollapse: false,
+            initialTreeDepth: 10,
+            symbol: 'circle',
+            lineStyle: { color: '#cbd5e1', width: 1.5, curveness: 0.3 },
+            emphasis: { focus: 'descendant' },
+            animation: false
+          }]
+        }, true)
+
+        // 等待渲染完成
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // 在"防火墙→区域"连接线上绘制子网标签（导出图字号放大适配 3200px 画布）
+        const tmpView = tmpChart.getViewOfSeriesModel(tmpChart.getModel().getSeriesByIndex(0))
+        const subnetGroup = this.buildSubnetLabelGroup(tmpView, 18, 0.3)
+        if (subnetGroup && tmpView._mainGroup) {
+          tmpView._mainGroup.add(subnetGroup)
+          tmpChart.getZr().refresh()
+        }
+        await new Promise(resolve => setTimeout(resolve, 200))
+
+        // 获取高清 PNG（pixelRatio: 1.5 平衡清晰度与文件大小）
+        const imgData = tmpChart.getDataURL({ type: 'png', pixelRatio: 1.5, backgroundColor: '#fff' })
+
+        // 销毁临时图表和容器
+        tmpChart.dispose()
+        document.body.removeChild(container)
+
+        // 创建下载链接
+        const link = document.createElement('a')
+        link.href = imgData
+        const today = new Date()
+        const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+        link.download = `网络拓扑图-${dateStr}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } catch (e) {
+        console.error('exportPNG error:', e)
+        this.$message.error('导出失败，请重试')
+      } finally {
+        this.exportingPNG = false
+      }
+    },
     // 导出拓扑图为 PDF（离屏渲染高清大图，确保全部资产完整显示不遮挡）
     async exportPDF() {
       if (!this.treeData || this.exporting) return
@@ -301,6 +406,15 @@ export default {
 
         // 等待渲染完成
         await new Promise(resolve => setTimeout(resolve, 500))
+
+        // 在“防火墙→区域”连接线上绘制子网标签（导出图字号放大适配 3200px 画布）
+        const tmpView = tmpChart.getViewOfSeriesModel(tmpChart.getModel().getSeriesByIndex(0))
+        const subnetGroup = this.buildSubnetLabelGroup(tmpView, 18, 0.3)
+        if (subnetGroup && tmpView._mainGroup) {
+          tmpView._mainGroup.add(subnetGroup)
+          tmpChart.getZr().refresh()
+        }
+        await new Promise(resolve => setTimeout(resolve, 200))
 
         // 获取高清 PNG（pixelRatio: 1.5 平衡清晰度与文件大小）
         const imgData = tmpChart.getDataURL({ type: 'png', pixelRatio: 1.5, backgroundColor: '#fff' })
@@ -378,10 +492,86 @@ export default {
       }, true)
       // 放行 roam 指针检查：使图表容器外部的代理滚轮/拖拽也能触发平移缩放
       this.allowExternalRoam()
-      // 监听 finished 事件：每次渲染/动画完成后重新放行（节点展开/收起会重建视图重置 pointerChecker）
+      // 监听 finished 事件：每次渲染/动画完成后重新放行（节点展开/收起会重建视图重置 pointerChecker）并重绘子网标签
       this.chart.off('finished', this._onFinished)
-      this._onFinished = () => this.allowExternalRoam()
+      this._onFinished = () => {
+        this.allowExternalRoam()
+        this.renderSubnetLabels()
+      }
       this.chart.on('finished', this._onFinished)
+    },
+    // 在“防火墙→区域”连接线上生成子网标签组（添加到 _mainGroup 内，随 roam 变换同步移动缩放）
+    buildSubnetLabelGroup(view, fontSize, curveness) {
+      if (!view || !view._data || !view._data.tree) return null
+      const tree = view._data.tree
+      const c = curveness || 0.4
+      const group = new zrender.Group()
+      tree.root.eachNode(node => {
+        const parent = node.parentNode
+        if (!parent || !node.hostTree.data) return
+        const raw = node.hostTree.data.getRawDataItem(node.dataIndex)
+        const pRaw = parent.hostTree.data.getRawDataItem(parent.dataIndex)
+        if (!raw || !pRaw || raw.nodeType !== 'region' || pRaw.nodeType !== 'firewall') return
+        const subnet = raw.subnet
+        if (!subnet) return
+        const l = node.getLayout()
+        const pl = parent.getLayout()
+        if (!l || !pl) return
+        // 与 ECharts 边绘制同公式的三次贝塞尔曲线（LR 布局），取 t=0.5 精确落在曲线上
+        const x1 = pl.x, y1 = pl.y, x2 = l.x, y2 = l.y
+        const cpx1 = x1 + (x2 - x1) * c, cpy1 = y1
+        const cpx2 = x2 + (x1 - x2) * c, cpy2 = y2
+        // P(0.5) = 0.125·P0 + 0.375·P1 + 0.375·P2 + 0.125·P3
+        const mx = 0.125 * x1 + 0.375 * cpx1 + 0.375 * cpx2 + 0.125 * x2
+        const my = 0.125 * y1 + 0.375 * cpy1 + 0.375 * cpy2 + 0.125 * y2
+        // 计算 t=0.5 处的切线方向（贝塞尔曲线导数）
+        // B'(0.5) = 0.75·(P3 + P2 - P1 - P0)
+        const dx = 0.75 * (x2 + cpx2 - cpx1 - x1)
+        const dy = 0.75 * (y2 + cpy2 - cpy1 - y1)
+        const angle = Math.atan2(dy, dx)
+        // 标签贴着线，垂直偏移 8px（根据连接线方向决定上下）
+        const offset = 8
+        const nx = -Math.sin(angle) * offset
+        const ny = Math.cos(angle) * offset
+        const labelX = mx + nx
+        const labelY = my + ny
+        group.add(new zrender.Text({
+          style: {
+            text: subnet,
+            fontSize,
+            fill: '#475569',
+            textAlign: 'center',
+            textVerticalAlign: 'middle'
+          },
+          x: labelX,
+          y: labelY,
+          rotation: -angle
+        }))
+      })
+      return group
+    },
+    // 主图表：重绘子网标签（先移除旧组再添加新组，避免重复叠加）
+    renderSubnetLabels() {
+      if (!this.chart) return
+      try {
+        const seriesModel = this.chart.getModel().getSeriesByIndex(0)
+        const view = this.chart.getViewOfSeriesModel(seriesModel)
+        if (!view) return
+        if (this._subnetGroup) {
+          view._mainGroup.remove(this._subnetGroup)
+          this._subnetGroup = null
+        }
+        const g = this.buildSubnetLabelGroup(view, 11, 0.4)
+        if (g) {
+          // 标签加入 _mainGroup（与节点同一坐标系，随 roam 变换同步移动缩放）
+          view._mainGroup.add(g)
+          this._subnetGroup = g
+          // 直接操作 zrender 元素后需手动触发重绘
+          this.chart.getZr().refresh()
+        }
+      } catch (e) {
+        console.warn('renderSubnetLabels failed', e)
+      }
     },
     // 放行 RoamController 的指针命中检查（内部 API，失败不影响主功能）
     allowExternalRoam() {

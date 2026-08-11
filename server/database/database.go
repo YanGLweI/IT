@@ -81,6 +81,9 @@ func InitDB() {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
 
+	// 初始化区域排序：为历史数据按 id 顺序填充 sort_order（排序后的记录均非 0，不会误伤）
+	DB.Model(&models.Region{}).Where("sort_order = 0").Update("sort_order", gorm.Expr("id"))
+
 	// 初始化基础数据
 	SeedPermissionRules()
 	SeedChangeTypes()

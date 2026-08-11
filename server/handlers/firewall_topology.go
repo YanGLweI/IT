@@ -33,6 +33,7 @@ type firewallRegionVO struct {
 	ID           uint   `json:"id"`
 	Name         string `json:"name"`
 	NetworkLevel int    `json:"network_level"`
+	Subnet       string `json:"subnet"`
 	Assets []struct {
 		ID           uint   `json:"id"`
 		ComputerName string `json:"computer_name"`
@@ -93,7 +94,7 @@ func GetFirewallTopologyTree(c *gin.Context) {
 			vo.Asset.IPAddress = n.Asset.IPAddress
 		}
 		for _, l := range linksByNode[n.ID] {
-			rv := firewallRegionVO{ID: l.RegionID, Name: l.Region.Name, NetworkLevel: l.Region.NetworkLevel, Assets: []struct {
+			rv := firewallRegionVO{ID: l.RegionID, Name: l.Region.Name, NetworkLevel: l.Region.NetworkLevel, Subnet: l.Region.Subnet, Assets: []struct {
 				ID           uint   `json:"id"`
 				ComputerName string `json:"computer_name"`
 				IPAddress    string `json:"ip_address"`

@@ -53,8 +53,9 @@ func SetupRouter() *gin.Engine {
 			// 双控验证（需要JWT但不需要双控token）
 			protected.POST("/dual-control/verify", handlers.VerifyDualControl)
 
-			// 区域管理 - 查询（不需要双控）
+			// 区域管理 - 查询和排序（不需要双控）
 			protected.GET("/regions", handlers.ListRegions)
+			protected.POST("/regions/reorder", handlers.ReorderRegion)
 
 			// 操作系统类型管理 - 查询（不需要双控）
 			protected.GET("/os-types", handlers.ListOSTypes)
