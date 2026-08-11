@@ -10,6 +10,7 @@
   "dependencies": {
     "animejs": "^4.5.0",
     "axios": "^1.7.2",
+    "cytoscape": "^3.34.0",
     "docx-preview": "^0.3.7",
     "echarts": "^5.5.0",
     "element-ui": "^2.15.14",

@@ -37,6 +37,7 @@ type firewallRegionVO struct {
 		ID           uint   `json:"id"`
 		ComputerName string `json:"computer_name"`
 		IPAddress    string `json:"ip_address"`
+		OSName       string `json:"os_name"`
 	} `json:"assets"`
 }
 
@@ -56,9 +57,9 @@ func GetFirewallTopologyTree(c *gin.Context) {
 		return
 	}
 
-	// 查询全部资产，按区域分组（用于展示各区域下的资产与IP）
+	// 查询全部资产，按区域分组（用于展示各区域下的资产与 IP）
 	var assets []models.Asset
-	if err := db.Find(&assets).Error; err != nil {
+	if err := db.Preload("OSType").Find(&assets).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
@@ -96,13 +97,15 @@ func GetFirewallTopologyTree(c *gin.Context) {
 				ID           uint   `json:"id"`
 				ComputerName string `json:"computer_name"`
 				IPAddress    string `json:"ip_address"`
+				OSName       string `json:"os_name"`
 			}{}}
 			for _, a := range assetsByRegion[l.RegionID] {
 				rv.Assets = append(rv.Assets, struct {
 					ID           uint   `json:"id"`
 					ComputerName string `json:"computer_name"`
 					IPAddress    string `json:"ip_address"`
-				}{ID: a.ID, ComputerName: a.ComputerName, IPAddress: a.IPAddress})
+					OSName       string `json:"os_name"`
+				}{ID: a.ID, ComputerName: a.ComputerName, IPAddress: a.IPAddress, OSName: a.OSType.Name})
 			}
 			vo.Regions = append(vo.Regions, rv)
 		}

@@ -22,7 +22,9 @@
       <span class="legend-item"><i class="legend-dot" style="background: #fde047"></i>三级区域</span>
       <span class="legend-item"><i class="legend-dot" style="background: #fdba74"></i>四级区域</span>
       <span class="legend-item"><i class="legend-dot" style="background: #f87171"></i>高安全区域</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #64748b"></i>资产</span>
+      <span class="legend-item"><i class="legend-dot" style="background: #64748b"></i>Linux资产</span>
+      <span class="legend-item"><i class="legend-dot" style="background: #93c5fd"></i>Windows资产</span>
+      <span class="legend-item"><i class="legend-dot" style="background: #d4a574"></i>其他资产</span>
       <span class="legend-tip">提示：点击区域节点可展开/收起其下资产，点击防火墙节点折叠子树，右侧按钮或滚轮缩放、拖动平移</span>
     </div>
 
@@ -114,6 +116,7 @@ export default {
               id: 'asset:' + a.id,
               name: a.computer_name,
               nodeType: 'asset',
+              osName: a.os_name || '',
               tooltip: `资产：${a.computer_name}<br/>IP：${a.ip_address || '无'}`,
               children: []
             }))
@@ -163,7 +166,7 @@ export default {
         data.symbolSize = [38, 38]
         data.itemStyle = { color: '#f87171', borderColor: '#ef4444' }
         data.label = {
-          position: 'bottom',
+          position: 'left',
           distance: 8,
           color: '#b91c1c',
           fontSize: 12,
@@ -186,7 +189,7 @@ export default {
         data.symbolSize = 22
         data.itemStyle = { color: colors.dot, borderColor: colors.border }
         data.label = {
-          position: 'bottom',
+          position: 'left',
           distance: 6,
           color: colors.label,
           fontSize: 12,
@@ -198,16 +201,23 @@ export default {
           padding: [3, 6]
         }
       } else {
-        // 资产：灰色小圆点，浅底深字胶囊标签（名称+IP）
+        // 资产：根据操作系统类型设置不同颜色（RHEL=Linux 灰色、Windows 淡蓝色、其他淡灰色）
+        const osName = (data.osName || '').toLowerCase()
+        let assetColor = '#d4a574' // 默认淡棕色（其他）
+        if (osName.startsWith('rhel')) {
+          assetColor = '#64748b' // Linux 灰色
+        } else if (osName.startsWith('windows')) {
+          assetColor = '#93c5fd' // Windows 淡蓝色
+        }
         data.symbolSize = 14
-        data.itemStyle = { color: '#64748b', borderColor: '#64748b' }
+        data.itemStyle = { color: assetColor, borderColor: assetColor }
         data.label = {
-          position: 'bottom',
+          position: 'right',
           distance: 5,
           color: '#1e293b',
           fontSize: 10,
           lineHeight: 14,
-          align: 'center',
+          align: 'left',
           backgroundColor: 'rgba(241, 245, 249, 0.95)',
           borderColor: '#e2e8f0',
           borderWidth: 1,
@@ -215,9 +225,9 @@ export default {
           padding: [2, 4],
           formatter: () => data.name
         }
-        const m = data.tooltip && data.tooltip.match(/IP：(.+?)(<br\/>|$)/)
+        const m = data.tooltip && data.tooltip.match(/IP：(.+?)(<br\/\>|$)/)
         if (m && m[1] !== '无') {
-          data.label.formatter = () => `${data.name}\n${m[1]}`
+          data.label.formatter = () => `${data.name}  ${m[1]}`
         }
       }
       ;(data.children || []).forEach(c => this.decorateNode(c))
@@ -242,14 +252,43 @@ export default {
 
         // 渲染配置：展开全部层级、关闭动画、放大符号与字体
         tmpChart.setOption({
+          graphic: {
+            elements: [
+              {
+                type: 'group',
+                left: 'center',
+                top: 20,
+                children: [
+                  { type: 'rect', shape: { x: 0, y: 0, width: 12, height: 12 }, style: { fill: '#ffffff', stroke: '#334155', lineWidth: 1.5 } },
+                  { type: 'text', style: { text: '互联网', x: 18, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 70, y: 0, width: 12, height: 12 }, style: { fill: '#f87171' } },
+                  { type: 'text', style: { text: '防火墙', x: 88, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 140, y: 0, width: 12, height: 12 }, style: { fill: '#86efac' } },
+                  { type: 'text', style: { text: '二级区域', x: 158, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 210, y: 0, width: 12, height: 12 }, style: { fill: '#fde047' } },
+                  { type: 'text', style: { text: '三级区域', x: 228, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 280, y: 0, width: 12, height: 12 }, style: { fill: '#fdba74' } },
+                  { type: 'text', style: { text: '四级区域', x: 298, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 350, y: 0, width: 12, height: 12 }, style: { fill: '#f87171' } },
+                  { type: 'text', style: { text: '高安全区域', x: 368, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 440, y: 0, width: 12, height: 12 }, style: { fill: '#64748b' } },
+                  { type: 'text', style: { text: 'Linux 资产', x: 458, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 530, y: 0, width: 12, height: 12 }, style: { fill: '#93c5fd' } },
+                  { type: 'text', style: { text: 'Windows 资产', x: 548, y: 10, font: '12px sans-serif', fill: '#64748b' } },
+                  { type: 'rect', shape: { x: 640, y: 0, width: 12, height: 12 }, style: { fill: '#d4a574' } },
+                  { type: 'text', style: { text: '其他资产', x: 658, y: 10, font: '12px sans-serif', fill: '#64748b' } }
+                ]
+              }
+            ]
+          },
           series: [{
             type: 'tree',
             data: [exportData],
-            orient: 'TB',
-            top: '5%',
+            orient: 'LR',
+            top: '12%',
             bottom: '5%',
-            left: '3%',
-            right: '3%',
+            left: '5%',
+            right: '10%',
             roam: false,
             expandAndCollapse: false,
             initialTreeDepth: 10,
@@ -321,11 +360,11 @@ export default {
         series: [{
           type: 'tree',
           data: [this.treeData],
-          orient: 'TB',
-          top: '10%',
-          bottom: '15%',
-          left: '4%',
-          right: '4%',
+          orient: 'LR',
+          top: '5%',
+          bottom: '5%',
+          left: '8%',
+          right: '15%',
           roam: true,
           expandAndCollapse: true,
           // 默认展开到区域层，点击区域节点再展开其下资产，避免大量资产标签拥挤重叠
@@ -338,8 +377,11 @@ export default {
         }]
       }, true)
       // 放行 roam 指针检查：使图表容器外部的代理滚轮/拖拽也能触发平移缩放
-      // （notMerge 更新会重建视图并重置 pointerChecker，故每次渲染后重设）
       this.allowExternalRoam()
+      // 监听 finished 事件：每次渲染/动画完成后重新放行（节点展开/收起会重建视图重置 pointerChecker）
+      this.chart.off('finished', this._onFinished)
+      this._onFinished = () => this.allowExternalRoam()
+      this.chart.on('finished', this._onFinished)
     },
     // 放行 RoamController 的指针命中检查（内部 API，失败不影响主功能）
     allowExternalRoam() {
@@ -381,13 +423,13 @@ export default {
     },
     proxyWheel(e) {
       const chartEl = this.$refs.chartRef
-      if (!this.chart || !chartEl || chartEl.contains(e.target)) return
+      if (!this.chart || !chartEl || chartEl.contains(e.target) || this._dispatching) return
       e.preventDefault()
       this.zoomByWheel(e.deltaY < 0 ? 120 : -120)
     },
     proxyDown(e) {
       const chartEl = this.$refs.chartRef
-      if (!this.chart || !chartEl || chartEl.contains(e.target) || e.button !== 0) return
+      if (!this.chart || !chartEl || chartEl.contains(e.target) || e.button !== 0 || this._dispatching) return
       this._proxyDragging = true
       this.dispatchMouseToChart(chartEl, 'mousedown', e)
     },
@@ -402,7 +444,8 @@ export default {
     },
     // 把原生鼠标事件按相同坐标转投到图表 DOM，走 zrender 完整事件管线
     dispatchMouseToChart(chartEl, type, e) {
-      if (!chartEl) return
+      if (!chartEl || this._dispatching) return
+      this._dispatching = true
       chartEl.dispatchEvent(new MouseEvent(type, {
         clientX: e.clientX,
         clientY: e.clientY,
@@ -411,10 +454,12 @@ export default {
         bubbles: true,
         cancelable: true
       }))
+      this._dispatching = false
     },
     // 向画布中心派发合成 wheel 事件，走 ECharts 滚轮漫游的同一套处理逻辑，实现与滚轮完全一致的整体缩放
     zoomByWheel(deltaY) {
-      if (!this.chart) return
+      if (!this.chart || this._dispatching) return
+      this._dispatching = true
       const canvas = this.chart.getZr().painter.getViewportRoot()
       const rect = canvas.getBoundingClientRect()
       canvas.dispatchEvent(new WheelEvent('wheel', {
@@ -425,6 +470,7 @@ export default {
         bubbles: true,
         cancelable: true
       }))
+      this._dispatching = false
     },
     // 放大（合成 wheel 事件经 Chrome 的 wheelDelta 兼容填充后符号与直觉相反，实测 deltaY>0 为放大）
     zoomIn() {
