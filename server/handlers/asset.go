@@ -181,6 +181,7 @@ func UpdateAsset(c *gin.Context) {
 	asset.RegionID = input.RegionID
 	asset.IPAddress = input.IPAddress
 	asset.OSTypeID = input.OSTypeID
+	asset.OSType = models.OSType{} // 清空预加载的关联对象，避免 Save 时 GORM 将 os_type_id 覆盖回旧值
 	asset.Purpose = input.Purpose
 	asset.AssetLevel = input.AssetLevel
 	asset.Status = input.Status

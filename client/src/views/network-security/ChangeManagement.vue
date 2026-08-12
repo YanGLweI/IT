@@ -253,7 +253,7 @@
     </el-dialog>
 
     <!-- ==================== 弹窗：模板预览（支持docx/pdf） ==================== -->
-    <el-dialog class="vault-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
+    <el-dialog class="vault-dialog preview-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
       <div class="preview-toolbar" slot="title">
         <span>模板预览</span>
         <div class="preview-toolbar-right">

@@ -716,12 +716,30 @@
 /* ============================================
    预览类弹窗（更大高度，便于查看文件内容）
    用法：el-dialog 加 class="preview-dialog"
+   宽度统一放大到 90%，内容区统一 80vh（参考拓扑图预览）
    ============================================ */
 .preview-dialog .el-dialog {
-  max-height: 92vh !important;
+  max-height: 95vh !important;
+  width: 90% !important;
 }
 
 .preview-dialog .el-dialog__body {
-  max-height: 82vh !important;
+  max-height: 86vh !important;
   padding: 12px !important;
+}
+
+/* 预览内容区统一放大 */
+.preview-dialog .el-dialog__body iframe {
+  width: 100% !important;
+  height: 80vh !important;
+  border: none !important;
+}
+
+.preview-dialog .el-dialog__body img {
+  max-height: 80vh !important;
+}
+
+.preview-dialog .el-dialog__body > div[style*="height: 70vh"] {
+  height: 80vh !important;
+  box-sizing: border-box !important;
 }
