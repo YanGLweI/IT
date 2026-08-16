@@ -79,40 +79,22 @@
       </span>
     </el-dialog>
 
-    <!-- 预览弹窗 -->
-    <el-dialog title="文件预览" :visible.sync="previewVisible" width="80%" top="5vh" class="vault-dialog preview-dialog" @closed="clearDocxPreview">
-      <!-- 工具栏：搜索 + 下载 -->
-      <div class="preview-toolbar" slot="title">
-        <span>文件预览</span>
-        <div class="preview-toolbar-right">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索关键词"
-            size="small"
-            prefix-icon="el-icon-search"
-            clearable
-            style="width: 320px"
-            @keyup.enter.native="searchNext"
-            @clear="clearSearch"
-          >
-          </el-input>
-          <el-button icon="el-icon-bottom" @click="searchNext" size="small">下一个</el-button>
-          <span v-if="searchKeyword" class="search-info">{{ searchIndex + 1 }} / {{ searchTotal }}</span>
-          <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFile">下载</el-button>
+    <!-- 预览弹窗 - 使用 file-viewer -->
+    <el-dialog title="文件预览" :visible.sync="previewVisible" width="90%" top="2vh" class="vault-dialog preview-dialog fv-preview-dialog">
+      <div class="fv-container" style="height: 80vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer 
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
         </div>
-      </div>
-      <div v-if="previewType === 'pdf'" style="height: 70vh">
-        <iframe ref="pdfFrame" :src="previewUrl" style="width: 100%; height: 100%; border: none"></iframe>
-      </div>
-      <div v-else-if="previewType === 'image'" style="text-align: center">
-        <img :src="previewUrl" style="max-width: 100%; max-height: 70vh" />
-      </div>
-      <div v-else-if="previewType === 'docx'" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
-        <div ref="docxContainer" class="docx-preview-container"></div>
-      </div>
-      <div v-else style="text-align: center; padding: 40px">
-        <p>该文件格式不支持在线预览</p>
-        <el-button type="primary" @click="downloadFile">下载文件</el-button>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="downloadFile">下载文件</el-button>
+        </div>
       </div>
     </el-dialog>
     <!-- 双控验证弹窗 -->
@@ -122,11 +104,13 @@
 
 <script>
 import { getPolicies, createPolicy, updatePolicy, deletePolicy, getPolicyPreviewUrl, getPolicyDownloadUrl } from '@/api/policy'
-import { renderAsync } from 'docx-preview'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import fvFeature from '@/config/fv-feature'
 
 export default {
-  components: { DualControlDialog },
+  components: { DualControlDialog, FileViewer },
   name: 'PolicyList',
   data() {
     return {
@@ -142,29 +126,25 @@ export default {
       editVisible: false,
       editForm: { id: null, title: '', description: '' },
       previewVisible: false,
-      previewUrl: '',
-      previewType: '',
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvContainerHeight: '80vh',
       previewFileName: '',
       previewId: null,
-      searchKeyword: '',
-      searchIndex: 0,
-      searchTotal: 0,
-      searchMarks: []
+      officePreset: officePreset,
+      fvFeature: fvFeature
     }
   },
   mounted() {
     this.fetchData()
   },
-  watch: {
-    searchKeyword(val) {
-      clearTimeout(this._searchTimer)
-      if (!val.trim()) {
-        this.clearSearch()
-        return
+  computed: {
+    fvOptions() {
+      return {
+        preset: officePreset,
+        fetchFile: this.fetchFileWithAuth
       }
-      this._searchTimer = setTimeout(() => {
-        this.highlightAll(val)
-      }, 300)
     }
   },
   methods: {
@@ -249,177 +229,37 @@ export default {
     },
     async handlePreview(row) {
       const url = getPolicyPreviewUrl(row.id)
-      const fileType = row.file_type || ''
-      const fileName = (row.file_name || '').toLowerCase()
+      
+      // 从文件名中提取扩展名
+      const fileExtension = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      
+      this.currentFileUrl = url
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = this.getFileTypeFromExtension(fileExtension)
+      
       this.previewFileName = row.file_name || '文件'
       this.previewId = row.id
-      // 重置搜索
-      this.searchKeyword = ''
-      this.searchIndex = 0
-      this.searchTotal = 0
-      this.searchMarks = []
-      if (fileType.includes('pdf')) {
-        this.previewType = 'pdf'
-      } else if (fileType.startsWith('image/')) {
-        this.previewType = 'image'
-      } else if (fileType.includes('wordprocessingml') || fileType.includes('msword') || fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-        this.previewType = 'docx'
-      } else {
-        this.previewType = 'other'
-      }
+      
+      // 先关闭再打开，确保 FileViewer 组件重新渲染
+      this.previewVisible = false
+      await this.$nextTick()
       this.previewVisible = true
-
-      // 使用 fetch 带 token 获取文件并创建 blob URL
-      try {
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        if (!response.ok) throw new Error('预览失败')
-        const blob = await response.blob()
-        this.previewUrl = URL.createObjectURL(blob)
-
-        if (this.previewType === 'docx') {
-          this.$nextTick(() => {
-            this.renderDocxFromBlob(blob)
-          })
-        }
-      } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('文件预览失败')
-      }
+      await this.$nextTick()
     },
-    async renderDocxFromBlob(blob) {
-      try {
-        const arrayBuffer = await blob.arrayBuffer()
-        const container = this.$refs.docxContainer
-        if (container) {
-          container.innerHTML = ''
-          await renderAsync(arrayBuffer, container)
-        }
-      } catch (e) {
-        console.error('docx渲染失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
+    getFileTypeFromExtension(ext) {
+      return ext || ''
     },
-    clearDocxPreview() {
-      if (this.$refs.docxContainer) {
-        this.$refs.docxContainer.innerHTML = ''
-      }
-      this.searchMarks = []
-      this.searchTotal = 0
-      // 释放 blob URL
-      if (this.previewUrl) {
-        URL.revokeObjectURL(this.previewUrl)
-        this.previewUrl = ''
-      }
-    },
-    // 关键词搜索：跳转到下一个匹配
-    searchNext() {
-      if (!this.searchKeyword.trim()) return
-      // 关键词变化时，重新高亮（已在 watch 中处理，这里作为保底）
-      if (this.searchMarks.length === 0 || this._lastKeyword !== this.searchKeyword) {
-        this._lastKeyword = this.searchKeyword
-        this.highlightAll(this.searchKeyword)
-        return // highlightAll 已经定位到第一个，不需要再 +1
-      }
-      if (this.searchTotal === 0) {
-        this.$message.info('未找到匹配内容')
-        return
-      }
-      // 跳转到下一个匹配
-      this.searchIndex = (this.searchIndex + 1) % this.searchTotal
-      this.scrollToMark(this.searchIndex)
-    },
-    highlightAll(keyword) {
-      // 清除之前的高亮
-      this.clearHighlights()
-      if (!keyword.trim()) {
-        this.searchTotal = 0
-        this.searchIndex = 0
-        return
-      }
-      const container = this.previewType === 'docx'
-        ? this.$refs.docxContainer
-        : (this.previewType === 'pdf' ? null : null)
-      if (!container) {
-        // PDF iframe 内无法直接操作，提示用户使用浏览器自带搜索
-        this.$message.info('PDF 文件请使用 Ctrl+F / Cmd+F 进行搜索')
-        return
-      }
-      const regex = new RegExp(this.escapeRegExp(keyword), 'gi')
-      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false)
-      const textNodes = []
-      while (walker.nextNode()) {
-        if (walker.currentNode.textContent.trim()) textNodes.push(walker.currentNode)
-      }
-      let total = 0
-      this.searchMarks = []
-      textNodes.forEach(node => {
-        const text = node.textContent
-        let match
-        const matches = []
-        while ((match = regex.exec(text)) !== null) {
-          matches.push({ index: match.index, length: match[0].length })
+    async fetchFileWithAuth({ url }) {
+      const token = localStorage.getItem('token')
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        if (matches.length === 0) return
-        // 从后往前替换，避免索引偏移
-        const frag = document.createDocumentFragment()
-        let lastIdx = 0
-        matches.forEach(m => {
-          if (m.index > lastIdx) {
-            frag.appendChild(document.createTextNode(text.slice(lastIdx, m.index)))
-          }
-          const mark = document.createElement('mark')
-          mark.className = 'search-highlight'
-          mark.dataset.searchIndex = total
-          mark.textContent = text.slice(m.index, m.index + m.length)
-          this.searchMarks.push(mark)
-          frag.appendChild(mark)
-          lastIdx = m.index + m.length
-          total++
-        })
-        if (lastIdx < text.length) {
-          frag.appendChild(document.createTextNode(text.slice(lastIdx)))
-        }
-        node.parentNode.replaceChild(frag, node)
       })
-      this.searchTotal = total
-      this.searchIndex = 0
-      this._lastKeyword = keyword
-      if (total > 0) {
-        this.scrollToMark(0)
-      } else {
-        this.$message.info('未找到匹配内容')
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
       }
-    },
-    scrollToMark(index) {
-      // 移除之前的 active
-      this.searchMarks.forEach(m => m.classList.remove('search-highlight-active'))
-      const mark = this.searchMarks[index]
-      if (mark) {
-        mark.classList.add('search-highlight-active')
-        mark.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-    },
-    clearHighlights() {
-      const container = this.$refs.docxContainer
-      if (!container) return
-      const marks = container.querySelectorAll('mark.search-highlight')
-      marks.forEach(mark => {
-        const parent = mark.parentNode
-        parent.replaceChild(document.createTextNode(mark.textContent), mark)
-        parent.normalize()
-      })
-      this.searchMarks = []
-      this.searchTotal = 0
-    },
-    clearSearch() {
-      this.clearHighlights()
-      this.searchIndex = 0
-      this._lastKeyword = ''
-    },
-    escapeRegExp(str) {
-      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      return response.arrayBuffer()
     },
     async downloadFile() {
       if (this.previewId) {
@@ -509,76 +349,44 @@ export default {
 }
 
 /* ========== 预览弹窗 ========== */
-.preview-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-.preview-toolbar > span {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-}
-.preview-toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-right: 30px;
-}
-.preview-toolbar-right ::v-deep .el-button--primary {
-  background: #3b82f6;
-  border-color: #3b82f6;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-.preview-toolbar-right ::v-deep .el-button--primary:hover {
-  background: #2563eb;
-  border-color: #2563eb;
-}
-.search-info {
-  font-size: 12px;
-  color: #94a3b8;
-  white-space: nowrap;
-}
-.docx-preview-container {
-  background: #fff;
-}
-.docx-preview-container >>> .docx-wrapper {
-  background: #fff;
+.fv-preview-dialog ::v-deep .el-dialog__body {
   padding: 0;
-  width: 100%;
-  min-width: 100%;
-  overflow-x: auto;
+  overflow: hidden;
 }
-.docx-preview-container >>> .docx {
-  width: 100%;
-  overflow-x: auto;
+
+.fv-container {
+  background: #f8fafc;
 }
-.docx-preview-container >>> .docx table {
-  width: 100% !important;
-  table-layout: auto;
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  white-space: normal !important;
-  min-width: 40px;
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
 }
-/* 搜索高亮样式 - 不能用 scoped，需要用 >>> */
-.docx-preview-container >>> mark.search-highlight {
-  background-color: #fff3cd;
-  color: inherit;
-  padding: 1px 2px;
-  border-radius: 2px;
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
 }
-.docx-preview-container >>> mark.search-highlight-active {
-  background-color: #ff9632;
-  color: #fff;
-  padding: 1px 2px;
-  border-radius: 2px;
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 </style>

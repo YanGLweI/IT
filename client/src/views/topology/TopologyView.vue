@@ -89,15 +89,23 @@
       </span>
     </el-dialog>
 
-    <!-- 预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="拓扑图预览" :visible.sync="previewVisible" width="90%" top="3vh" @closed="clearPreview">
-      <div style="text-align: center">
-        <iframe v-if="previewIsPdf" :src="previewUrl" class="pdf-preview-frame"></iframe>
-        <img v-else :src="previewUrl" style="max-width: 100%" />
+    <!-- 预览弹窗 - 使用 file-viewer -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" title="拓扑图预览" :visible.sync="previewVisible" width="90%" top="2vh">
+      <div class="fv-container" style="height: 80vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer 
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="downloadFile">下载文件</el-button>
+        </div>
       </div>
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="downloadFile">下载</el-button>
-      </span>
     </el-dialog>
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
@@ -106,10 +114,13 @@
 
 <script>
 import { getTopologies, createTopology, updateTopology, deleteTopology, getTopologyPreviewUrl, getTopologyDownloadUrl } from '@/api/topology'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import fvFeature from '@/config/fv-feature'
 
 export default {
-  components: { DualControlDialog },
+  components: { DualControlDialog, FileViewer },
   name: 'TopologyView',
   data() {
     return {
@@ -125,15 +136,25 @@ export default {
       editVisible: false,
       editForm: { id: null, name: '', description: '' },
       previewVisible: false,
-      previewUrl: '',
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
       previewId: null,
       previewFileName: '',
-      previewIsPdf: false,
+      fvFeature: fvFeature,
       thumbUrls: {} // 存储缩略图的 blob URL
     }
   },
   mounted() {
     this.fetchData()
+  },
+  computed: {
+    fvOptions() {
+      return {
+        preset: officePreset,
+        fetchFile: this.fetchFileWithAuth
+      }
+    }
   },
   methods: {
     async fetchData() {
@@ -238,30 +259,32 @@ export default {
       }
     },
     async handlePreview(item) {
-      this.previewId = item.id
-      this.previewFileName = item.file_name || '拓扑图'
-      this.previewIsPdf = this.isPdfFile(item.file_name)
-      this.previewVisible = true
+      const url = getTopologyPreviewUrl(item.id)
+      const fileExtension = item.file_name ? item.file_name.split('.').pop().toLowerCase() : ''
       
-      // 使用 fetch 带 token 获取文件并创建 blob URL
-      try {
-        const url = getTopologyPreviewUrl(item.id)
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        if (!response.ok) throw new Error('预览失败')
-        const blob = await response.blob()
-        this.previewUrl = URL.createObjectURL(blob)
-      } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('预览失败')
-      }
+      this.currentFileUrl = url
+      this.currentFileName = item.file_name || 'unknown_file'
+      this.currentFileType = fileExtension
+      this.previewFileName = item.file_name || '拓扑图'
+      this.previewId = item.id
+      
+      // 先关闭再打开，确保 FileViewer 组件重新渲染
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
     },
-    clearPreview() {
-      if (this.previewUrl) {
-        URL.revokeObjectURL(this.previewUrl)
-        this.previewUrl = ''
+    async fetchFileWithAuth({ url }) {
+      const token = localStorage.getItem('token')
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
       }
+      return response.arrayBuffer()
     },
     async downloadFile() {
       if (this.previewId) {
@@ -388,12 +411,38 @@ export default {
   font-weight: 600;
   letter-spacing: 1px;
 }
-.pdf-preview-frame {
-  width: 100%;
-  height: 75vh;
-  border: none;
-  border-radius: 8px;
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
 }
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
+}
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
+}
+
 .topo-info {
   margin-top: 10px;
 }
