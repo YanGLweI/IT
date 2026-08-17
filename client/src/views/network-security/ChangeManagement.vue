@@ -253,7 +253,7 @@
     </el-dialog>
 
     <!-- ==================== 弹窗：模板预览（使用 file-viewer） ==================== -->
-    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh">
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh" :close-on-click-modal="true">
       <div class="preview-toolbar" slot="title">
         <span>模板预览</span>
         <div class="preview-toolbar-right">

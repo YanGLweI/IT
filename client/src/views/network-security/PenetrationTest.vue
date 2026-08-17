@@ -389,7 +389,7 @@ export default {
       this.previewDownloadUrl = getVulnerabilityScanDownloadUrl(vs.id)
       const name = vs.file_name || `漏洞扫描-${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
       this.currentFileName = name
-      this.currentFileType = name ? name.split('.').pop().toLowerCase() : ''
+      this.currentFileType = vs.file_name ? vs.file_name.split('.').pop().toLowerCase() : ''
       this.currentFileUrl = getVulnerabilityScanPreviewUrl(vs.id)
       this.currentVulnScanId = vs.id
       this.previewVisible = false

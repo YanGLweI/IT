@@ -285,7 +285,7 @@ export default {
       }
       // 触发不合规资产数字段重新验证
       this.$nextTick(() => {
-        this.$refs.form && this.$refs.form.validateField('non_compliant_assets')
+        this.$refs.formRef && this.$refs.formRef.validateField('non_compliant_assets')
       })
     },
     async fetchData() {

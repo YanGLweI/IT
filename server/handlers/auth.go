@@ -294,12 +294,13 @@ func setRefreshTokenCookie(c *gin.Context, refreshToken string) {
 // 路径用 "/" 覆盖所有受保护接口；Secure 与 refresh_token 保持一致（开发环境为 http）
 func setAccessTokenCookie(c *gin.Context, accessToken string) {
 	expiry := config.Cfg.Server.AccessTokenExpiry
-	c.SetCookie("access_token", accessToken, expiry*60, "/", "", false, true)
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie("access_token", accessToken, expiry*60, "/api", "", config.Cfg.Server.GinMode == "release", true)
 }
 
 // ClearAccessTokenCookie 清除 accessToken Cookie
 func ClearAccessTokenCookie(c *gin.Context) {
-	c.SetCookie("access_token", "", -1, "/", "", false, true)
+	c.SetCookie("access_token", "", -1, "/api", "", false, true)
 }
 
 // ClearRefreshTokenCookie 清除 refreshToken Cookie（导出供其他包使用）
@@ -328,6 +329,7 @@ func RefreshToken(c *gin.Context) {
 
 	if err != nil || !token.Valid {
 		ClearRefreshTokenCookie(c)
+		ClearAccessTokenCookie(c)
 		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "刷新令牌无效或已过期"})
 		return
 	}
@@ -336,12 +338,14 @@ func RefreshToken(c *gin.Context) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		ClearRefreshTokenCookie(c)
+		ClearAccessTokenCookie(c)
 		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "刷新令牌类型无效"})
 		return
 	}
 	tokenType, _ := claims["type"].(string)
 	if tokenType != "refresh" {
 		ClearRefreshTokenCookie(c)
+		ClearAccessTokenCookie(c)
 		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "刷新令牌类型无效"})
 		return
 	}

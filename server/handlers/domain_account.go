@@ -66,6 +66,9 @@ func DomainAccountLogin(c *gin.Context) {
 
 	services.LogLogin(req.Username, "", "login_success", c.ClientIP(), c.Request.UserAgent(), "域账号自助平台登录成功")
 
+	// 同步设置 access_token Cookie，供浏览器原生请求（如 file-viewer PDF Range 直连）鉴权回退使用
+	setAccessTokenCookie(c, accessToken)
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "登录成功",

@@ -49,6 +49,10 @@ func JWTAuth() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
+			// 来自 Cookie 的 token 无效时同步清除，避免失效 cookie 持续残留
+			if authHeader == "" {
+				c.SetCookie("access_token", "", -1, "/api", "", false, true)
+			}
 			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "Token 无效或已过期"})
 			c.Abort()
 			return

@@ -36,6 +36,11 @@ function doRefreshToken() {
 
 // 清除登录状态并跳转登录页
 function handleLogout(msg) {
+  // 先调用登出接口清除 HttpOnly Cookie（access_token + refresh_token）
+  // 即使请求失败（如 token 已过期）也不影响本地清除流程
+  try {
+    axios.post('/api/logout', null, { withCredentials: true })
+  } catch (_) {}
   localStorage.removeItem('token')
   localStorage.removeItem('username')
   localStorage.removeItem('display_name')

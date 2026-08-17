@@ -19,17 +19,26 @@ setDefaultFileViewerAssetBaseUrl('/file-viewer/')
 
 // 修复 ResizeObserver loop 错误（file-viewer 1:1 缩放时容器尺寸快速变化触发）
 // 这是浏览器已知的 ResizeObserver 限制，通过 requestAnimationFrame 包装回调解决
+// 仅作用于 file-viewer 容器，避免影响第三方库（如 echarts、cytoscape）的回调时序
 if (typeof ResizeObserver !== 'undefined') {
   const _OrigResizeObserver = ResizeObserver
   window.ResizeObserver = class extends _OrigResizeObserver {
     constructor(callback) {
       let rafId = null
       super((entries, observer) => {
-        if (rafId) cancelAnimationFrame(rafId)
-        rafId = requestAnimationFrame(() => {
-          rafId = null
+        // 仅对 file-viewer 容器的回调使用 rAF 包装，其余走原生
+        const hasFvContainer = entries.some(entry =>
+          entry.target && (entry.target.closest ? entry.target.closest('.fv-container, .file-viewer-web-shell, .file-viewer') : false)
+        )
+        if (hasFvContainer) {
+          if (rafId) cancelAnimationFrame(rafId)
+          rafId = requestAnimationFrame(() => {
+            rafId = null
+            callback(entries, observer)
+          })
+        } else {
           callback(entries, observer)
-        })
+        }
       })
     }
   }

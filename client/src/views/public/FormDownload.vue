@@ -262,7 +262,7 @@ export default {
       if (item.source_type === 'dynamic') {
         this.currentFileType = 'xlsx'
       } else {
-        this.currentFileType = fileName.includes('.') ? fileName.split('.').pop() : ''
+        this.currentFileType = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : ''
       }
       this.currentFileUrl = getPublicPreviewUrl(item.id)
       this.previewVisible = false
