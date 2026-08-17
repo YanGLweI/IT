@@ -252,29 +252,48 @@
       </span>
     </el-dialog>
 
-    <!-- ==================== 弹窗：模板预览（支持docx/pdf） ==================== -->
-    <el-dialog class="vault-dialog preview-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
+    <!-- ==================== 弹窗：模板预览（使用 file-viewer） ==================== -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh">
       <div class="preview-toolbar" slot="title">
         <span>模板预览</span>
         <div class="preview-toolbar-right">
           <el-button type="primary" size="small" icon="el-icon-download" @click="downloadTemplate(templatePreviewRow)">下载</el-button>
         </div>
       </div>
-      <div v-if="templatePreviewType === 'pdf'" style="height: 70vh">
-        <iframe :src="templatePreviewUrl" style="width: 100%; height: 100%; border: none" />
-      </div>
-      <div v-else-if="templatePreviewType === 'docx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
-        <div ref="templateDocxContainer" class="docx-preview-container"></div>
-      </div>
-      <div v-else style="text-align: center; padding: 40px">
-        <p>该文件格式不支持在线预览</p>
-        <el-button type="primary" @click="downloadTemplate(templatePreviewRow)">下载文件</el-button>
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer 
+            v-if="templatePreviewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="downloadTemplate(templatePreviewRow)">下载文件</el-button>
+        </div>
       </div>
     </el-dialog>
 
-    <!-- ==================== 弹窗：PDF预览 ==================== -->
-    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
-      <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
+    <!-- ==================== 弹窗：扫描件预览（使用 file-viewer） ==================== -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer 
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="downloadRecord({ id: previewId, file_name: currentFileName })">下载文件</el-button>
+        </div>
+      </div>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
@@ -288,12 +307,14 @@ import {
   getChangeRecordTemplates, uploadChangeRecordTemplate, deleteChangeRecordTemplate, getChangeRecordTemplateDownloadUrl, getChangeRecordTemplatePreviewUrl,
   getChangeRecords, createChangeRecord, updateChangeRecord, deleteChangeRecord, getChangeRecordPreviewUrl, getChangeRecordDownloadUrl
 } from '@/api/change_record'
-import { renderAsync } from 'docx-preview'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'ChangeManagement',
-  components: { DualControlDialog },
+  components: { DualControlDialog, FileViewer },
   data() {
     const now = new Date()
     return {
@@ -311,8 +332,6 @@ export default {
       templateFileList: [],
       // 模板预览
       templatePreviewVisible: false,
-      templatePreviewUrl: '',
-      templatePreviewType: '',
       templatePreviewRow: null,
       // 变更类型管理
       changeTypes: [],
@@ -350,10 +369,20 @@ export default {
       recordFileList: [],
       // 预览
       previewVisible: false,
-      previewUrl: ''
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      previewId: null,
+      fvFeature: fvFeature
     }
   },
   computed: {
+    fvOptions() {
+      return {
+        preset: officePreset,
+        fetchFile: this.fetchFileWithAuth
+      }
+    },
     // 申请日期：只能选择当月日期
     applyDatePickerOptions() {
       const year = this.recordForm.year
@@ -520,60 +549,18 @@ export default {
     },
     async previewTemplate(row) {
       const url = getChangeRecordTemplatePreviewUrl(row.id)
-      const fileName = (row.file_name || '').toLowerCase()
+      const fileExtension = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      
       this.templatePreviewRow = row
-      this.templatePreviewUrl = ''
-
-      if (fileName.endsWith('.pdf')) {
-        this.templatePreviewType = 'pdf'
-      } else if (fileName.endsWith('.docx')) {
-        this.templatePreviewType = 'docx'
-      } else {
-        this.templatePreviewType = 'other'
-      }
-
+      this.currentFileUrl = url
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = fileExtension
+      
+      // 先关闭再打开，确保 FileViewer 组件重新渲染
+      this.templatePreviewVisible = false
+      await this.$nextTick()
       this.templatePreviewVisible = true
-
-      try {
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        if (!response.ok) throw new Error('预览失败')
-        const blob = await response.blob()
-        this.templatePreviewUrl = URL.createObjectURL(blob)
-
-        if (this.templatePreviewType === 'docx') {
-          this.$nextTick(() => {
-            this.renderTemplateDocx(blob)
-          })
-        }
-      } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('模板预览失败')
-      }
-    },
-    async renderTemplateDocx(blob) {
-      try {
-        const arrayBuffer = await blob.arrayBuffer()
-        const container = this.$refs.templateDocxContainer
-        if (container) {
-          container.innerHTML = ''
-          await renderAsync(arrayBuffer, container)
-        }
-      } catch (e) {
-        console.error('docx渲染失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
-    },
-    clearTemplatePreview() {
-      if (this.$refs.templateDocxContainer) {
-        this.$refs.templateDocxContainer.innerHTML = ''
-      }
-      if (this.templatePreviewUrl) {
-        URL.revokeObjectURL(this.templatePreviewUrl)
-        this.templatePreviewUrl = ''
-      }
-      this.templatePreviewRow = null
+      await this.$nextTick()
     },
     async deleteTemplate(row) {
       try {
@@ -671,18 +658,30 @@ export default {
     },
     async previewRecord(row) {
       const url = getChangeRecordPreviewUrl(row.id)
-      try {
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        if (!response.ok) throw new Error('预览失败')
-        const blob = await response.blob()
-        this.previewUrl = URL.createObjectURL(blob)
-        this.previewVisible = true
-      } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('预览失败')
+      const fileExtension = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      
+      this.currentFileUrl = url
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = fileExtension
+      this.previewId = row.id
+      
+      // 先关闭再打开，确保 FileViewer 组件重新渲染
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
+    },
+    async fetchFileWithAuth({ url }) {
+      const token = localStorage.getItem('token')
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
       }
+      return response.arrayBuffer()
     },
     async downloadRecord(row) {
       const url = getChangeRecordDownloadUrl(row.id)
@@ -903,7 +902,39 @@ export default {
   margin-right: 30px;
 }
 
-/* --- DOCX 预览 --- */
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
+}
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
+}
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
+}
+
+/* --- DOCX 预览（保留兼容） --- */
 .docx-preview-container {
   background: #fff;
 }

@@ -165,14 +165,26 @@
       </span>
     </el-dialog>
 
-    <!-- 预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
-      <iframe v-if="pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
-    </el-dialog>
-
-    <!-- 修复报表预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="修复报表预览" :visible.sync="fixPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearFixPreview">
-      <iframe v-if="fixPdfBlobUrl" :src="fixPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
+    <!-- 预览弹窗（使用 file-viewer，合规性报表/修复报表共用） -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" :title="previewTitle" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="handleDownloadFromPreview">下载文件</el-button>
+        </div>
+      </div>
+      <span slot="footer">
+        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
+      </span>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
@@ -189,10 +201,13 @@ import {
 } from '@/api/patch_update'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import tableHeightMixin from '@/mixins/table-height'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'PatchUpdate',
-  components: { DualControlDialog },
+  components: { DualControlDialog, FileViewer },
   mixins: [tableHeightMixin],
   data() {
     const now = new Date()
@@ -241,12 +256,22 @@ export default {
       fixUploading: false,
       fixSelectedFile: null,
       fixFileList: [],
-      // 合规性报表预览
+      // 预览（合规性报表/修复报表共用）
       previewVisible: false,
-      pdfBlobUrl: '',
-      // 修复报表预览
-      fixPreviewVisible: false,
-      fixPdfBlobUrl: ''
+      previewTitle: '文件预览',
+      previewDownloadUrl: '',
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvFeature: fvFeature
+    }
+  },
+  computed: {
+    fvOptions() {
+      return {
+        preset: officePreset,
+        fetchFile: this.fetchFileWithAuth
+      }
     }
   },
   mounted() {
@@ -379,24 +404,42 @@ export default {
     },
     // 预览合规性报表
     async handlePreview(row) {
-      const url = getPatchUpdatePreviewUrl(row.id)
-      try {
-        this.clearPreview()
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-        if (!response.ok) throw new Error('预览失败')
-        const blob = await response.blob()
-        this.pdfBlobUrl = URL.createObjectURL(blob)
-        this.previewVisible = true
-      } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('预览失败')
-      }
+      this.previewTitle = '文件预览'
+      this.previewDownloadUrl = getPatchUpdateDownloadUrl(row.id)
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getPatchUpdatePreviewUrl(row.id)
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
     },
-    clearPreview() {
-      if (this.pdfBlobUrl) {
-        URL.revokeObjectURL(this.pdfBlobUrl)
-        this.pdfBlobUrl = ''
+    async fetchFileWithAuth({ url }) {
+      const token = localStorage.getItem('token')
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
+      }
+      return response.arrayBuffer()
+    },
+    async handleDownloadFromPreview() {
+      if (!this.previewDownloadUrl) return
+      try {
+        const response = await fetch(this.previewDownloadUrl, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = this.currentFileName || 'download'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(link.href)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
       }
     },
     // 下载合规性报表
@@ -471,25 +514,15 @@ export default {
     },
     // 预览修复报表
     async handlePreviewFix(row) {
-      const url = getPatchFixPreviewUrl(row.id)
-      try {
-        this.clearFixPreview()
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-        if (!response.ok) throw new Error('预览失败')
-        const blob = await response.blob()
-        this.fixPdfBlobUrl = URL.createObjectURL(blob)
-        this.fixPreviewVisible = true
-      } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('预览失败')
-      }
-    },
-    clearFixPreview() {
-      if (this.fixPdfBlobUrl) {
-        URL.revokeObjectURL(this.fixPdfBlobUrl)
-        this.fixPdfBlobUrl = ''
-      }
+      this.previewTitle = '修复报表预览'
+      this.previewDownloadUrl = getPatchFixDownloadUrl(row.id)
+      this.currentFileName = row.fix_file_name || 'unknown_file'
+      this.currentFileType = row.fix_file_name ? row.fix_file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getPatchFixPreviewUrl(row.id)
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
     }
   }
 }
@@ -591,5 +624,37 @@ export default {
 .filter-bar .el-button--primary:hover {
   background: #2563eb;
   color: #fff;
+}
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
+}
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
+}
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 </style>

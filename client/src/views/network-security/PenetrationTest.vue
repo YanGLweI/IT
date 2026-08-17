@@ -132,11 +132,22 @@
       </span>
     </el-dialog>
 
-    <!-- 预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
-      <iframe v-if="previewUrl && isPdf && pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
-      <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
-        <div ref="docxContainer" class="docx-preview-container"></div>
+    <!-- 预览弹窗（使用 file-viewer） -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="handleDownloadFromPreview">下载文件</el-button>
+        </div>
       </div>
       <span slot="footer">
         <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
@@ -155,12 +166,14 @@ import {
 } from '@/api/penetration_test'
 import { getVulnerabilityScans, getVulnerabilityScanPreviewUrl, getVulnerabilityScanDownloadUrl } from '@/api/vulnerability_scan'
 import DualControlDialog from '@/components/DualControlDialog.vue'
-import { renderAsync } from 'docx-preview'
 import tableHeightMixin from '@/mixins/table-height'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'PenetrationTest',
-  components: { DualControlDialog },
+  components: { DualControlDialog, FileViewer },
   mixins: [tableHeightMixin],
   data() {
     const now = new Date()
@@ -196,12 +209,20 @@ export default {
       vulnScanOptions: [],
       // 预览
       previewVisible: false,
-      previewUrl: '',
       previewDownloadUrl: '',
-      previewFileName: '',
-      isPdf: true,
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
       currentVulnScanId: null,
-      pdfBlobUrl: ''
+      fvFeature: fvFeature
+    }
+  },
+  computed: {
+    fvOptions() {
+      return {
+        preset: officePreset,
+        fetchFile: this.fetchFileWithAuth
+      }
     }
   },
   mounted() {
@@ -353,106 +374,57 @@ export default {
     },
     // 预览
     async handlePreview(row) {
-      this.previewUrl = getPenetrationTestPreviewUrl(row.id)
       this.previewDownloadUrl = getPenetrationTestDownloadUrl(row.id)
-      this.previewFileName = row.file_name
-      this.isPdf = row.file_name && row.file_name.toLowerCase().endsWith('.pdf')
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getPenetrationTestPreviewUrl(row.id)
       this.currentVulnScanId = null
-      if (this.pdfBlobUrl) {
-        URL.revokeObjectURL(this.pdfBlobUrl)
-        this.pdfBlobUrl = ''
-      }
+      this.previewVisible = false
+      await this.$nextTick()
       this.previewVisible = true
-      if (this.isPdf) {
-        await this.fetchPdfAsBlob(this.previewUrl)
-      } else {
-        this.$nextTick(() => {
-          this.renderDocx(this.previewUrl)
-        })
-      }
+      await this.$nextTick()
     },
     // 预览漏洞扫描报告
     async handlePreviewVulnScan(vs) {
-      this.previewUrl = getVulnerabilityScanPreviewUrl(vs.id)
       this.previewDownloadUrl = getVulnerabilityScanDownloadUrl(vs.id)
-      this.previewFileName = vs.file_name || `漏洞扫描-${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
-      this.isPdf = vs.file_name && vs.file_name.toLowerCase().endsWith('.pdf')
+      const name = vs.file_name || `漏洞扫描-${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
+      this.currentFileName = name
+      this.currentFileType = name ? name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getVulnerabilityScanPreviewUrl(vs.id)
       this.currentVulnScanId = vs.id
-      if (this.pdfBlobUrl) {
-        URL.revokeObjectURL(this.pdfBlobUrl)
-        this.pdfBlobUrl = ''
-      }
+      this.previewVisible = false
+      await this.$nextTick()
       this.previewVisible = true
-      if (this.isPdf) {
-        await this.fetchPdfAsBlob(this.previewUrl)
-      } else {
-        this.$nextTick(() => {
-          this.renderDocx(this.previewUrl)
-        })
-      }
+      await this.$nextTick()
     },
-    // 渲染 DOCX 文件
-    async renderDocx(url) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+    async fetchFileWithAuth({ url }) {
+      const token = localStorage.getItem('token')
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        const blob = await response.blob()
-        const arrayBuffer = await blob.arrayBuffer()
-        const container = this.$refs.docxContainer
-        if (container) {
-          container.innerHTML = ''
-          await renderAsync(arrayBuffer, container)
-        }
-      } catch (e) {
-        console.error('docx渲染失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
       }
-    },
-    // 清理 DOCX 预览
-    clearDocxPreview() {
-      if (this.$refs.docxContainer) {
-        this.$refs.docxContainer.innerHTML = ''
-      }
-    },
-    // 获取 PDF 文件为 Blob URL（携带 JWT token）
-    async fetchPdfAsBlob(url) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        const blob = await response.blob()
-        this.pdfBlobUrl = URL.createObjectURL(blob)
-      } catch (e) {
-        console.error('PDF加载失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
-    },
-    // 清理所有预览内容
-    clearPreview() {
-      this.clearDocxPreview()
-      // 释放 PDF Blob URL
-      if (this.pdfBlobUrl) {
-        URL.revokeObjectURL(this.pdfBlobUrl)
-        this.pdfBlobUrl = ''
-      }
+      return response.arrayBuffer()
     },
     handleDownloadFromPreview() {
-      if (this.previewDownloadUrl) {
-        window.open(this.previewDownloadUrl, '_blank')
-      }
+      if (!this.previewDownloadUrl) return
+      fetch(this.previewDownloadUrl, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      }).then(res => res.blob()).then(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = this.currentFileName || 'download'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }).catch(() => {
+        this.$message.error('下载失败')
+      })
     },
     // 删除
     async handleDelete(row) {
@@ -578,17 +550,36 @@ export default {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
-/* DOCX 预览容器样式 */
-.docx-preview-container >>> .docx-wrapper {
-  background: #fff;
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
 }
-.docx-preview-container >>> .docx table {
-  border-collapse: collapse;
-  width: 100%;
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
-  border: 1px solid #ddd;
-  padding: 8px;
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 </style>

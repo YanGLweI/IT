@@ -287,19 +287,25 @@
       </span>
     </el-dialog>
 
-    <!-- 申请表预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="申请表预览" :visible.sync="previewVisible" width="80%" top="3vh" @close="clearPreview">
-      <iframe v-if="pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
+    <!-- 预览弹窗（使用 file-viewer，申请表/恢复记录/模板共用） -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" :title="previewTitle" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="handleDownloadFromPreview">下载文件</el-button>
+        </div>
+      </div>
       <span slot="footer">
         <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 恢复记录预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="恢复记录预览" :visible.sync="recoveryPreviewVisible" width="80%" top="3vh" @close="clearRecoveryPreview">
-      <iframe v-if="recoveryPdfBlobUrl" :src="recoveryPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadRecoveryFromPreview">下载</el-button>
       </span>
     </el-dialog>
 
@@ -330,22 +336,6 @@
       </span>
     </el-dialog>
 
-    <!-- 模板预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" :visible.sync="templatePreviewVisible" width="80%" top="3vh" @closed="clearTemplatePreview">
-      <div slot="title">
-        <span>模板预览</span>
-      </div>
-      <iframe v-if="templatePreviewType === 'pdf'" :src="templatePreviewUrl" style="width: 100%; height: 70vh; border: none" />
-      <div v-else-if="templatePreviewType === 'docx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
-        <div ref="templateDocxContainer" class="docx-preview-container"></div>
-      </div>
-      <div v-else style="text-align: center; padding: 40px">
-        <p>该文件格式不支持在线预览</p>
-      </div>
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="downloadTemplate(templatePreviewRow)">下载</el-button>
-      </span>
-    </el-dialog>
   </div>
 </template>
 
@@ -360,12 +350,14 @@ import {
 } from '@/api/backup'
 import { getAssets } from '@/api/asset'
 import { getDepartments } from '@/api/department'
-import { renderAsync } from 'docx-preview'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'BackupManagement',
-  components: { DualControlDialog },
+  components: { DualControlDialog, FileViewer },
   data() {
     const now = new Date()
     return {
@@ -381,11 +373,14 @@ export default {
       },
       templateSelectedFile: null,
       templateFileList: [],
-      // 模板预览
-      templatePreviewVisible: false,
-      templatePreviewUrl: '',
-      templatePreviewType: '',
-      templatePreviewRow: null,
+      // 预览（申请表/恢复记录/模板共用）
+      previewVisible: false,
+      previewTitle: '文件预览',
+      previewDownloadUrl: '',
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvFeature: fvFeature,
       // 备份记录
       records: [],
       loading: false,
@@ -452,22 +447,13 @@ export default {
         recovery_date: [{ required: true, message: '请选择恢复日期', trigger: 'change' }]
       },
       recoverySelectedFile: null,
-      recoveryFileList: [],
-      // 申请表预览
-      previewVisible: false,
-      previewUrl: '',
-      previewDownloadUrl: '',
-      previewFileName: '',
-      pdfBlobUrl: '',
-      // 恢复记录预览
-      recoveryPreviewVisible: false,
-      recoveryPreviewUrl: '',
-      recoveryDownloadUrl: '',
-      recoveryPreviewFileName: '',
-      recoveryPdfBlobUrl: ''
+      recoveryFileList: []
     }
   },
   computed: {
+    fvOptions() {
+      return { preset: officePreset, fetchFile: this.fetchFileWithAuth }
+    },
     backupTargetPlaceholder() {
       const map = {
         '磁盘分区': '请输入磁盘分区',
@@ -551,61 +537,15 @@ export default {
       }
     },
     async previewTemplate(row) {
-      const url = getBackupTemplatePreviewUrl(row.id)
-      const fileName = (row.file_name || '').toLowerCase()
-      this.templatePreviewRow = row
-      this.templatePreviewUrl = ''
-
-      if (fileName.endsWith('.pdf')) {
-        this.templatePreviewType = 'pdf'
-      } else if (fileName.endsWith('.docx')) {
-        this.templatePreviewType = 'docx'
-      } else {
-        this.templatePreviewType = 'other'
-      }
-
-      this.templatePreviewVisible = true
-
-      try {
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
-        if (!response.ok) throw new Error('预览失败')
-        const blob = await response.blob()
-        this.templatePreviewUrl = URL.createObjectURL(blob)
-
-        if (this.templatePreviewType === 'docx') {
-          this.$nextTick(() => {
-            this.renderTemplateDocx(blob)
-          })
-        }
-      } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('模板预览失败')
-      }
-    },
-    async renderTemplateDocx(blob) {
-      try {
-        const arrayBuffer = await blob.arrayBuffer()
-        const container = this.$refs.templateDocxContainer
-        if (container) {
-          container.innerHTML = ''
-          await renderAsync(arrayBuffer, container)
-        }
-      } catch (e) {
-        console.error('docx渲染失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
-    },
-    clearTemplatePreview() {
-      if (this.$refs.templateDocxContainer) {
-        this.$refs.templateDocxContainer.innerHTML = ''
-      }
-      if (this.templatePreviewUrl) {
-        URL.revokeObjectURL(this.templatePreviewUrl)
-        this.templatePreviewUrl = ''
-      }
-      this.templatePreviewRow = null
+      this.previewTitle = '模板预览'
+      this.previewDownloadUrl = getBackupTemplateDownloadUrl(row.id)
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getBackupTemplatePreviewUrl(row.id)
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
     },
     async deleteTemplate(row) {
       try {
@@ -856,37 +796,30 @@ export default {
     },
     // 申请表预览
     async handlePreview(row) {
-      this.clearPreview()
-      this.previewUrl = getBackupPreviewUrl(row.id)
+      this.previewTitle = '申请表预览'
       this.previewDownloadUrl = getBackupDownloadUrl(row.id)
-      this.previewFileName = row.file_name
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getBackupPreviewUrl(row.id)
+      this.previewVisible = false
+      await this.$nextTick()
       this.previewVisible = true
-      await this.fetchPdfAsBlob(this.previewUrl)
+      await this.$nextTick()
     },
-    async fetchPdfAsBlob(url) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const blob = await response.blob()
-        this.pdfBlobUrl = URL.createObjectURL(blob)
-      } catch (e) {
-        console.error('PDF加载失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
+    async fetchFileWithAuth({ url }) {
+      const token = localStorage.getItem('token')
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
       }
-    },
-    clearPreview() {
-      if (this.pdfBlobUrl) {
-        URL.revokeObjectURL(this.pdfBlobUrl)
-        this.pdfBlobUrl = ''
-      }
+      return response.arrayBuffer()
     },
     // 下载
     async handleDownload(row) {
       await this.downloadWithAuth(getBackupDownloadUrl(row.id), row.file_name)
     },
     async handleDownloadFromPreview() {
-      await this.downloadWithAuth(this.previewDownloadUrl, this.previewFileName)
+      await this.downloadWithAuth(this.previewDownloadUrl, this.currentFileName)
     },
     async downloadWithAuth(url, fileName) {
       try {
@@ -986,36 +919,18 @@ export default {
     },
     // 恢复记录预览
     async handlePreviewRecovery(recovery) {
-      this.clearRecoveryPreview()
-      this.recoveryPreviewUrl = getBackupRecoveryPreviewUrl(recovery.id)
-      this.recoveryDownloadUrl = getBackupRecoveryDownloadUrl(recovery.id)
-      this.recoveryPreviewFileName = recovery.file_name
-      this.recoveryPreviewVisible = true
-      await this.fetchRecoveryPdfAsBlob(this.recoveryPreviewUrl)
-    },
-    async fetchRecoveryPdfAsBlob(url) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const blob = await response.blob()
-        this.recoveryPdfBlobUrl = URL.createObjectURL(blob)
-      } catch (e) {
-        console.error('PDF加载失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
-    },
-    clearRecoveryPreview() {
-      if (this.recoveryPdfBlobUrl) {
-        URL.revokeObjectURL(this.recoveryPdfBlobUrl)
-        this.recoveryPdfBlobUrl = ''
-      }
+      this.previewTitle = '恢复记录预览'
+      this.previewDownloadUrl = getBackupRecoveryDownloadUrl(recovery.id)
+      this.currentFileName = recovery.file_name || 'unknown_file'
+      this.currentFileType = recovery.file_name ? recovery.file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getBackupRecoveryPreviewUrl(recovery.id)
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
     },
     async handleDownloadRecovery(recovery) {
       await this.downloadWithAuth(getBackupRecoveryDownloadUrl(recovery.id), recovery.file_name)
-    },
-    async handleDownloadRecoveryFromPreview() {
-      await this.downloadWithAuth(this.recoveryDownloadUrl, this.recoveryPreviewFileName)
     }
   }
 }
@@ -1139,5 +1054,37 @@ export default {
 .filter-bar .el-button--primary:hover {
   background: #2563eb;
   color: #fff;
+}
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
+}
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
+}
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 </style>

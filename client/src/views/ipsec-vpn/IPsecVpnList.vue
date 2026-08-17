@@ -89,19 +89,31 @@
     <!-- 新增/编辑弹窗 -->
     <IPsecVpnDialog ref="vpnDialog" @saved="fetchList" />
 
-    <!-- 图片预览弹窗 -->
-    <el-dialog class="preview-dialog" title="图片预览" :visible.sync="previewVisible" width="700px" append-to-body :close-on-click-modal="true">
-      <div class="preview-gallery">
-        <img v-if="previewUrl" :src="'/' + previewUrl" class="preview-img" />
-        <div v-if="previewImages.length > 1" class="preview-nav">
-          <button class="nav-arrow left" :disabled="previewIndex === 0" @click="prevPreview">
-            <i class="el-icon-arrow-left"></i>
-          </button>
-          <span class="nav-indicator">{{ previewIndex + 1 }} / {{ previewImages.length }}</span>
-          <button class="nav-arrow right" :disabled="previewIndex === previewImages.length - 1" @click="nextPreview">
-            <i class="el-icon-arrow-right"></i>
-          </button>
+    <!-- 预览弹窗（使用 file-viewer） -->
+    <el-dialog class="preview-dialog fv-preview-dialog" :title="previewTitle" :visible.sync="previewVisible" width="80%" top="3vh" append-to-body :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
         </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="handleDownloadFromPreview">下载文件</el-button>
+        </div>
+      </div>
+      <div v-if="previewImages.length > 1" class="preview-nav">
+        <button class="nav-arrow left" :disabled="previewIndex === 0" @click="prevPreview">
+          <i class="el-icon-arrow-left"></i>
+        </button>
+        <span class="nav-indicator">{{ previewIndex + 1 }} / {{ previewImages.length }}</span>
+        <button class="nav-arrow right" :disabled="previewIndex === previewImages.length - 1" @click="nextPreview">
+          <i class="el-icon-arrow-right"></i>
+        </button>
       </div>
     </el-dialog>
 
@@ -214,10 +226,13 @@
 import { getIPsecVpns, deleteIPsecVpn } from '@/api/ipsec_vpn'
 import IPsecVpnDialog from './IPsecVpnDialog.vue'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'IPsecVpnList',
-  components: { IPsecVpnDialog, DualControlDialog },
+  components: { IPsecVpnDialog, DualControlDialog, FileViewer },
   data() {
     return {
       list: [],
@@ -228,15 +243,25 @@ export default {
       keyword: '',
       searchTimer: null,
       previewVisible: false,
-      previewUrl: '',
+      previewTitle: '图片预览',
       previewImages: [],
       previewIndex: 0,
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvFeature: fvFeature,
       detailVisible: false,
       detailItem: null
     }
   },
   created() {
     this.fetchList()
+  },
+  computed: {
+    fvOptions() {
+      // 截图为公开静态路径（uploads/ipsec_vpn/），无需鉴权，省略 fetchFile 走默认获取
+      return { preset: officePreset }
+    }
   },
   methods: {
     async fetchList() {
@@ -282,17 +307,14 @@ export default {
     previewImage(path) {
       this.previewImages = [path]
       this.previewIndex = 0
-      this.previewUrl = path
-      this.previewVisible = true
+      this.openPreviewAt(0)
     },
     previewPhase2Images(item) {
       const entries = this.parsePhase2(item)
       const images = entries.filter(e => e.image).map(e => e.image)
       if (!images.length) return
       this.previewImages = images
-      this.previewIndex = 0
-      this.previewUrl = images[0]
-      this.previewVisible = true
+      this.openPreviewAt(0)
     },
     previewPhase2FromDetail(item, entryIdx) {
       const entries = this.parsePhase2(item)
@@ -301,21 +323,40 @@ export default {
       const clickedImage = entries[entryIdx] && entries[entryIdx].image
       const startIdx = clickedImage ? images.indexOf(clickedImage) : 0
       this.previewImages = images
-      this.previewIndex = startIdx >= 0 ? startIdx : 0
-      this.previewUrl = images[this.previewIndex]
-      this.previewVisible = true
+      this.openPreviewAt(startIdx >= 0 ? startIdx : 0)
+    },
+    async openPreviewAt(idx) {
+      this.previewIndex = idx
+      const path = this.previewImages[idx]
+      this.currentFileUrl = '/' + path
+      this.currentFileName = path.split('/').pop() || 'image'
+      this.currentFileType = path.split('.').pop().toLowerCase()
+      // FileViewer 监听 url prop 变化自动重载（updateViewer），
+      // 多图切换时保持弹窗常开，避免重开弹窗的视觉跳动
+      if (!this.previewVisible) {
+        this.previewVisible = true
+        await this.$nextTick()
+      }
     },
     prevPreview() {
       if (this.previewIndex > 0) {
-        this.previewIndex--
-        this.previewUrl = this.previewImages[this.previewIndex]
+        this.openPreviewAt(this.previewIndex - 1)
       }
     },
     nextPreview() {
       if (this.previewIndex < this.previewImages.length - 1) {
-        this.previewIndex++
-        this.previewUrl = this.previewImages[this.previewIndex]
+        this.openPreviewAt(this.previewIndex + 1)
       }
+    },
+    // 仅在 fv-feature 关闭的降级方案中使用
+    handleDownloadFromPreview() {
+      if (!this.currentFileUrl) return
+      const a = document.createElement('a')
+      a.href = this.currentFileUrl
+      a.download = this.currentFileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     },
     showDetail(item) {
       this.detailItem = item
@@ -553,14 +594,9 @@ tr:hover .td-actions {
   border-color: #ef4444;
   color: #ef4444;
 }
-.preview-gallery {
-  text-align: center;
-}
-.preview-img {
-  max-width: 100%;
-  max-height: 400px;
-  border-radius: 8px;
-  object-fit: contain;
+.fv-preview-dialog ::v-deep .el-dialog__body {
+  max-height: none;
+  padding: 12px 20px;
 }
 .preview-nav {
   display: flex;
@@ -683,5 +719,37 @@ tr:hover .td-actions {
   font-weight: 600;
   color: #64748b;
   margin-bottom: 8px;
+}
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
+}
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
+}
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 </style>

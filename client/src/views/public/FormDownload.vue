@@ -123,58 +123,50 @@
       <p class="empty-desc">管理员尚未发布任何表单，请稍后再来查看</p>
     </div>
 
-    <!-- 预览弹窗 -->
+    <!-- 预览弹窗（使用 file-viewer，PDF/DOCX/XLSX/图片统一渲染） -->
     <el-dialog
-      class="vault-dialog preview-dialog"
+      class="vault-dialog preview-dialog fv-preview-dialog"
+      :title="'文件预览 — ' + previewFileName"
       :visible.sync="previewVisible"
       width="80%"
-      top="5vh"
+      top="3vh"
       append-to-body
-      @closed="clearPreview"
-      v-loading="previewLoading"
     >
-      <div class="preview-toolbar" slot="title">
-        <span>文件预览 — {{ previewFileName }}</span>
-        <div class="preview-toolbar-right">
-          <a :href="'/api/public/forms/' + previewItemId + '/download'" class="preview-download-link">
-            <el-button type="primary" size="small" icon="el-icon-download">下载</el-button>
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <a :href="publicDownloadUrl">
+            <el-button type="primary">下载文件</el-button>
           </a>
         </div>
       </div>
-      <!-- PDF -->
-      <div v-if="previewType === 'pdf'" style="height: 70vh">
-        <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 100%; border: none;"></iframe>
-      </div>
-      <!-- 图片 -->
-      <div v-else-if="previewType === 'image'" style="text-align: center">
-        <img v-if="previewUrl" :src="previewUrl" style="max-width: 100%; max-height: 70vh;" />
-      </div>
-      <!-- DOCX -->
-      <div v-else-if="previewType === 'docx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px;">
-        <div ref="docxContainer" class="docx-preview-container"></div>
-      </div>
-      <!-- XLSX -->
-      <div v-else-if="previewType === 'xlsx'" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 10px;">
-        <div v-html="xlsxHtml" class="xlsx-preview-container"></div>
-      </div>
-      <!-- 不支持 -->
-      <div v-else style="text-align: center; padding: 40px;">
-        <p>该文件格式不支持在线预览</p>
-        <a :href="'/api/public/forms/' + previewItemId + '/download'">
-          <el-button type="primary">下载文件</el-button>
+      <span slot="footer">
+        <a :href="publicDownloadUrl" class="fv-download-link">
+          <el-button type="primary" size="small" icon="el-icon-download">下载</el-button>
         </a>
-      </div>
+      </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { getPublicForms, getPublicPreviewBlob } from '@/api/public_form'
-import { renderAsync } from 'docx-preview'
-import * as XLSX from 'xlsx'
+import { getPublicForms, getPublicPreviewUrl } from '@/api/public_form'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'FormDownload',
+  components: { FileViewer },
   data() {
     return {
       items: [],
@@ -185,17 +177,23 @@ export default {
       gridKey: 0,
       // 预览相关
       previewVisible: false,
-      previewUrl: '',
-      previewType: '',
       previewFileName: '',
       previewItemId: null,
-      previewLoading: false,
-      xlsxHtml: ''
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvFeature: fvFeature
     }
   },
   computed: {
     filteredItems() {
       return this.items
+    },
+    fvOptions() {
+      return { preset: officePreset, fetchFile: this.fetchFilePublic }
+    },
+    publicDownloadUrl() {
+      return this.previewItemId ? '/api/public/forms/' + this.previewItemId + '/download' : ''
     }
   },
   created() {
@@ -259,76 +257,29 @@ export default {
       const fileName = (item.file_name || '').toLowerCase()
       this.previewFileName = item.title || item.file_name || '文件'
       this.previewItemId = item.id
-      this.xlsxHtml = ''
-
-      // 检测文件类型
-      if (fileName.endsWith('.pdf')) {
-        this.previewType = 'pdf'
-      } else if (['.png', '.jpg', '.jpeg', '.gif', '.bmp'].some(ext => fileName.endsWith(ext))) {
-        this.previewType = 'image'
-      } else if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-        this.previewType = 'docx'
-      } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-        this.previewType = 'xlsx'
+      this.currentFileName = item.file_name || (item.title || '文件') + '.xlsx'
+      // 动态来源由后端生成器实时生成，固定为 xlsx；其余按扩展名识别
+      if (item.source_type === 'dynamic') {
+        this.currentFileType = 'xlsx'
       } else {
-        this.previewType = 'other'
+        this.currentFileType = fileName.includes('.') ? fileName.split('.').pop() : ''
       }
-
+      this.currentFileUrl = getPublicPreviewUrl(item.id)
+      this.previewVisible = false
+      await this.$nextTick()
       this.previewVisible = true
-      this.previewLoading = true
-
-      try {
-        const res = await getPublicPreviewBlob(item.id)
-        const blob = res.data
-
-        if (this.previewUrl) URL.revokeObjectURL(this.previewUrl)
-        this.previewUrl = URL.createObjectURL(blob)
-
-        if (this.previewType === 'docx') {
-          this.$nextTick(() => this.renderDocx(blob))
-        } else if (this.previewType === 'xlsx') {
-          await this.renderXlsx(blob)
-        }
-      } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('预览失败，请稍后重试')
-      } finally {
-        this.previewLoading = false
-      }
+      await this.$nextTick()
     },
-    async renderXlsx(blob) {
-      try {
-        const arrayBuffer = await blob.arrayBuffer()
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' })
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-        this.xlsxHtml = XLSX.utils.sheet_to_html(firstSheet, { editable: false })
-      } catch (e) {
-        console.error('xlsx渲染失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
+    // 公共接口免登录；若已登录则附带 token（兼容两种场景）
+    async fetchFilePublic({ url }) {
+      const headers = {}
+      const token = localStorage.getItem('token')
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const response = await fetch(url, { headers })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
       }
-    },
-    async renderDocx(blob) {
-      try {
-        const arrayBuffer = await blob.arrayBuffer()
-        const container = this.$refs.docxContainer
-        if (container) {
-          container.innerHTML = ''
-          await renderAsync(arrayBuffer, container)
-        }
-      } catch (e) {
-        console.error('docx渲染失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
-    },
-    clearPreview() {
-      if (this.previewUrl) {
-        URL.revokeObjectURL(this.previewUrl)
-        this.previewUrl = ''
-      }
-      this.xlsxHtml = ''
-      if (this.$refs.docxContainer) {
-        this.$refs.docxContainer.innerHTML = ''
-      }
+      return response.arrayBuffer()
     }
   }
 }
@@ -600,70 +551,43 @@ export default {
 }
 
 /* 预览弹窗 */
-.preview-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-.preview-toolbar-right {
-  display: flex;
-  align-items: center;
-  margin-right: 30px;
-}
-.preview-download-link {
+.fv-download-link {
   text-decoration: none;
 }
-.docx-preview-container {
-  background: #fff;
+
+.fv-container {
+  background: #f8fafc;
 }
-.docx-preview-container >>> .docx-wrapper {
-  background: #fff;
-  padding: 0;
-  width: 100%;
-  min-width: 100%;
-  overflow-x: auto;
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
 }
-.docx-preview-container >>> .docx {
-  width: 100%;
-  overflow-x: auto;
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
 }
-.docx-preview-container >>> .docx table {
-  width: 100% !important;
-  table-layout: auto;
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  white-space: normal !important;
-  min-width: 40px;
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
 }
-.xlsx-preview-container {
-  font-size: 13px;
-}
-.xlsx-preview-container >>> table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.xlsx-preview-container >>> table td,
-.xlsx-preview-container >>> table th {
-  border: 1px solid #E2E8F0;
-  padding: 6px 10px;
-  text-align: left;
-  white-space: nowrap;
-  min-width: 60px;
-}
-.xlsx-preview-container >>> table th {
-  background: #F8FAFC;
-  font-weight: 600;
-  color: #334155;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-.xlsx-preview-container >>> table tr:hover td {
-  background: #F1F5F9;
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 </style>

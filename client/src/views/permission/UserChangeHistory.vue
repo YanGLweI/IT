@@ -126,9 +126,26 @@
       </span>
     </el-dialog>
 
-    <!-- 预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
-      <iframe v-if="previewUrl" :src="previewUrl" style="width: 100%; height: 70vh; border: none;" />
+    <!-- 预览弹窗（使用 file-viewer） -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="handleDownloadFromPreview">下载文件</el-button>
+        </div>
+      </div>
+      <span slot="footer">
+        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
+      </span>
     </el-dialog>
 
     <!-- 双控验证弹窗 -->
@@ -140,10 +157,13 @@
 import { getUserChangeHistories, createUserChangeHistory, updateUserChangeHistory, deleteUserChangeHistory, getUserChangePreviewUrl, getUserChangeDownloadUrl } from '@/api/user_change'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import tableHeightMixin from '@/mixins/table-height'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'UserChangeHistory',
-  components: { DualControlDialog },
+  components: { DualControlDialog, FileViewer },
   mixins: [tableHeightMixin],
   data() {
     const now = new Date()
@@ -176,7 +196,11 @@ export default {
       fileList: [],
       // 预览
       previewVisible: false,
-      previewUrl: ''
+      previewDownloadUrl: '',
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvFeature: fvFeature
     }
   },
   computed: {
@@ -201,6 +225,9 @@ export default {
           return date < minDate
         }
       }
+    },
+    fvOptions() {
+      return { preset: officePreset, fetchFile: this.fetchFileWithAuth }
     }
   },
   watch: {
@@ -312,18 +339,39 @@ export default {
       this.showUpload = true
     },
     async handlePreview(row) {
-      const url = getUserChangePreviewUrl(row.id)
+      this.previewDownloadUrl = getUserChangeDownloadUrl(row.id)
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getUserChangePreviewUrl(row.id)
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
+    },
+    async fetchFileWithAuth({ url }) {
+      const token = localStorage.getItem('token')
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
+      }
+      return response.arrayBuffer()
+    },
+    async handleDownloadFromPreview() {
+      if (!this.previewDownloadUrl) return
       try {
-        const response = await fetch(url, {
+        const response = await fetch(this.previewDownloadUrl, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         })
-        if (!response.ok) throw new Error('预览失败')
+        if (!response.ok) throw new Error('下载失败')
         const blob = await response.blob()
-        this.previewUrl = URL.createObjectURL(blob)
-        this.previewVisible = true
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = this.currentFileName || '下载文件'
+        link.click()
+        URL.revokeObjectURL(link.href)
       } catch (e) {
-        console.error('预览失败:', e)
-        this.$message.error('预览失败')
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
       }
     },
     async handleDownload(row) {
@@ -495,5 +543,37 @@ export default {
 .el-dialog__footer .el-button--primary:hover {
   background: #2563eb;
   color: #fff;
+}
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
+}
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
+}
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 </style>

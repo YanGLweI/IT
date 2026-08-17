@@ -177,25 +177,25 @@
       </span>
     </el-dialog>
 
-    <!-- 检查报告预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="检查报告预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearPreview">
-      <iframe v-if="previewUrl && isPdf && pdfBlobUrl" :src="pdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
-      <div v-else-if="!isPdf" ref="docxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
-        <div ref="docxContainer" class="docx-preview-container"></div>
+    <!-- 预览弹窗（使用 file-viewer，检查报告/整改报告共用） -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" :title="previewTitle" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="handleDownloadFromPreview">下载文件</el-button>
+        </div>
       </div>
       <span slot="footer">
         <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 整改报告预览弹窗 -->
-    <el-dialog class="vault-dialog preview-dialog" title="整改报告预览" :visible.sync="rectPreviewVisible" width="80%" top="3vh" :close-on-click-modal="true" @close="clearRectPreview">
-      <iframe v-if="rectPreviewUrl && rectIsPdf && rectPdfBlobUrl" :src="rectPdfBlobUrl" style="width: 100%; height: 70vh; border: none;" />
-      <div v-else-if="!rectIsPdf" ref="rectDocxScrollContainer" style="height: 70vh; overflow: auto; border: 1px solid #eee; padding: 20px">
-        <div ref="rectDocxContainer" class="docx-preview-container"></div>
-      </div>
-      <span slot="footer">
-        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadRect">下载</el-button>
       </span>
     </el-dialog>
 
@@ -214,12 +214,14 @@ import {
 import { getAssets } from '@/api/asset'
 import { getRegions } from '@/api/region'
 import DualControlDialog from '@/components/DualControlDialog.vue'
-import { renderAsync } from 'docx-preview'
 import tableHeightMixin from '@/mixins/table-height'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'FirewallCheck',
-  components: { DualControlDialog },
+  components: { DualControlDialog, FileViewer },
   mixins: [tableHeightMixin],
   data() {
     const now = new Date()
@@ -260,20 +262,22 @@ export default {
       rectUploading: false,
       rectSelectedFile: null,
       rectFileList: [],
-      // 检查报告预览
+      // 预览（检查报告/整改报告共用）
       previewVisible: false,
-      previewUrl: '',
+      previewTitle: '文件预览',
       previewDownloadUrl: '',
-      previewFileName: '',
-      isPdf: true,
-      pdfBlobUrl: '',
-      // 整改报告预览
-      rectPreviewVisible: false,
-      rectPreviewUrl: '',
-      rectDownloadUrl: '',
-      rectFileName: '',
-      rectIsPdf: true,
-      rectPdfBlobUrl: ''
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvFeature: fvFeature
+    }
+  },
+  computed: {
+    fvOptions() {
+      return {
+        preset: officePreset,
+        fetchFile: this.fetchFileWithAuth
+      }
     }
   },
   mounted() {
@@ -421,63 +425,29 @@ export default {
     },
     // 检查报告预览
     async handlePreview(row) {
-      this.clearPreview()
-      this.previewUrl = getFirewallCheckPreviewUrl(row.id)
+      this.previewTitle = '检查报告预览'
       this.previewDownloadUrl = getFirewallCheckDownloadUrl(row.id)
-      this.previewFileName = row.file_name
-      this.isPdf = row.file_name && row.file_name.toLowerCase().endsWith('.pdf')
-      if (this.pdfBlobUrl) {
-        URL.revokeObjectURL(this.pdfBlobUrl)
-        this.pdfBlobUrl = ''
-      }
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getFirewallCheckPreviewUrl(row.id)
+      this.previewVisible = false
+      await this.$nextTick()
       this.previewVisible = true
-      if (this.isPdf) {
-        await this.fetchPdfAsBlob(this.previewUrl)
-      } else {
-        this.$nextTick(() => { this.renderDocx(this.previewUrl) })
-      }
+      await this.$nextTick()
     },
-    async fetchPdfAsBlob(url) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const blob = await response.blob()
-        this.pdfBlobUrl = URL.createObjectURL(blob)
-      } catch (e) {
-        console.error('PDF加载失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
+    async fetchFileWithAuth({ url }) {
+      const token = localStorage.getItem('token')
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
       }
-    },
-    async renderDocx(url) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const blob = await response.blob()
-        const arrayBuffer = await blob.arrayBuffer()
-        const container = this.$refs.docxContainer
-        if (container) {
-          container.innerHTML = ''
-          await renderAsync(arrayBuffer, container)
-        }
-      } catch (e) {
-        console.error('docx渲染失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
-    },
-    clearPreview() {
-      if (this.$refs.docxContainer) this.$refs.docxContainer.innerHTML = ''
-      if (this.pdfBlobUrl) {
-        URL.revokeObjectURL(this.pdfBlobUrl)
-        this.pdfBlobUrl = ''
-      }
+      return response.arrayBuffer()
     },
     async handleDownload(row) {
       await this.downloadWithAuth(getFirewallCheckDownloadUrl(row.id), row.file_name)
     },
     async handleDownloadFromPreview() {
-      await this.downloadWithAuth(this.previewDownloadUrl, this.previewFileName)
+      await this.downloadWithAuth(this.previewDownloadUrl, this.currentFileName)
     },
     // 通用下载方法（携带JWT token）
     async downloadWithAuth(url, fileName) {
@@ -552,60 +522,15 @@ export default {
     },
     // 预览整改报告
     async handlePreviewRect(row) {
-      this.clearRectPreview()
-      this.rectPreviewUrl = getFirewallRectPreviewUrl(row.id)
-      this.rectDownloadUrl = getFirewallRectDownloadUrl(row.id)
-      this.rectFileName = row.rect_file_name
-      this.rectIsPdf = row.rect_file_name && row.rect_file_name.toLowerCase().endsWith('.pdf')
-      if (this.rectPdfBlobUrl) {
-        URL.revokeObjectURL(this.rectPdfBlobUrl)
-        this.rectPdfBlobUrl = ''
-      }
-      this.rectPreviewVisible = true
-      if (this.rectIsPdf) {
-        await this.fetchRectPdfAsBlob(this.rectPreviewUrl)
-      } else {
-        this.$nextTick(() => { this.renderRectDocx(this.rectPreviewUrl) })
-      }
-    },
-    async fetchRectPdfAsBlob(url) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const blob = await response.blob()
-        this.rectPdfBlobUrl = URL.createObjectURL(blob)
-      } catch (e) {
-        console.error('PDF加载失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
-    },
-    async renderRectDocx(url) {
-      try {
-        const token = localStorage.getItem('token')
-        const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-        const blob = await response.blob()
-        const arrayBuffer = await blob.arrayBuffer()
-        const container = this.$refs.rectDocxContainer
-        if (container) {
-          container.innerHTML = ''
-          await renderAsync(arrayBuffer, container)
-        }
-      } catch (e) {
-        console.error('docx渲染失败:', e)
-        this.$message.error('文件预览失败，请尝试下载后查看')
-      }
-    },
-    clearRectPreview() {
-      if (this.$refs.rectDocxContainer) this.$refs.rectDocxContainer.innerHTML = ''
-      if (this.rectPdfBlobUrl) {
-        URL.revokeObjectURL(this.rectPdfBlobUrl)
-        this.rectPdfBlobUrl = ''
-      }
-    },
-    async handleDownloadRect() {
-      await this.downloadWithAuth(this.rectDownloadUrl, this.rectFileName)
+      this.previewTitle = '整改报告预览'
+      this.previewDownloadUrl = getFirewallRectDownloadUrl(row.id)
+      this.currentFileName = row.rect_file_name || 'unknown_file'
+      this.currentFileType = row.rect_file_name ? row.rect_file_name.split('.').pop().toLowerCase() : ''
+      this.currentFileUrl = getFirewallRectPreviewUrl(row.id)
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
     }
   }
 }
@@ -696,17 +621,35 @@ export default {
   justify-content: center;
 }
 
-/* DOCX 预览容器样式 */
-.docx-preview-container >>> .docx-wrapper {
-  background: #fff;
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
 }
-.docx-preview-container >>> .docx table {
-  border-collapse: collapse;
-  width: 100%;
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
 }
-.docx-preview-container >>> .docx table td,
-.docx-preview-container >>> .docx table th {
-  border: 1px solid #ddd;
-  padding: 8px;
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 </style>
