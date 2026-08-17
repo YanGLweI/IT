@@ -269,22 +269,26 @@ export default {
         const rule = this.rules.find(r => r.id === this.editingRuleId)
         if (!rule) return
 
-        // 先进行双控验证
-        const dualToken = await this.$refs.dualControl.open()
-
-        // 保存到后端
-        await updatePermissionRule(rule.id, {
-          rules_json: JSON.stringify(rule._rules)
-        }, dualToken)
-
-        // 双控验证通过且后端保存成功后，再修改本地数据
-        const sysRule = rule._rules.find(sr => sr.system === this.editingSystem)
+        // 构造提交数据：深拷贝当前规则，并应用本次修改的新状态
+        const newRules = JSON.parse(JSON.stringify(rule._rules))
+        const sysRule = newRules.find(sr => sr.system === this.editingSystem)
         if (sysRule) {
           const targetRole = sysRule.roles.find(r => r.name === this.editingRoleName)
           if (targetRole) {
             targetRole.enabled = this.editingNewStatus
           }
         }
+
+        // 先进行双控验证（取消时抛异常，本地数据保持不变）
+        const dualToken = await this.$refs.dualControl.open()
+
+        // 保存到后端（提交的是包含新状态的数据）
+        await updatePermissionRule(rule.id, {
+          rules_json: JSON.stringify(newRules)
+        }, dualToken)
+
+        // 后端保存成功后，再同步本地数据
+        rule._rules = newRules
 
         this.$message.success('保存成功')
         this.dialogVisible = false

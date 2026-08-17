@@ -161,6 +161,8 @@ func Logout(c *gin.Context) {
 
 	// 清除 refreshToken Cookie
 	ClearRefreshTokenCookie(c)
+	// 同步清除 access_token Cookie
+	ClearAccessTokenCookie(c)
 
 	usernameStr, _ := username.(string)
 	displayNameStr, _ := displayName.(string)

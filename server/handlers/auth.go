@@ -72,6 +72,8 @@ func Login(c *gin.Context) {
 
 	// 设置 refreshToken 到 HttpOnly Cookie
 	setRefreshTokenCookie(c, refreshToken)
+	// 同步 access token 到 Cookie，供浏览器原生请求（如 file-viewer PDF Range 直连）鉴权回退使用
+	setAccessTokenCookie(c, accessToken)
 
 	// 记录登录成功日志
 	services.LogLogin(req.Username, displayName, "login_success", c.ClientIP(), c.Request.UserAgent(), "登录成功")
@@ -288,6 +290,18 @@ func setRefreshTokenCookie(c *gin.Context, refreshToken string) {
 	c.SetCookie("refresh_token", refreshToken, expiry*86400, "/api", "", false, true)
 }
 
+// setAccessTokenCookie 设置 accessToken 到 HttpOnly Cookie
+// 路径用 "/" 覆盖所有受保护接口；Secure 与 refresh_token 保持一致（开发环境为 http）
+func setAccessTokenCookie(c *gin.Context, accessToken string) {
+	expiry := config.Cfg.Server.AccessTokenExpiry
+	c.SetCookie("access_token", accessToken, expiry*60, "/", "", false, true)
+}
+
+// ClearAccessTokenCookie 清除 accessToken Cookie
+func ClearAccessTokenCookie(c *gin.Context) {
+	c.SetCookie("access_token", "", -1, "/", "", false, true)
+}
+
 // ClearRefreshTokenCookie 清除 refreshToken Cookie（导出供其他包使用）
 func ClearRefreshTokenCookie(c *gin.Context) {
 	c.SetCookie("refresh_token", "", -1, "/api", "", false, true)
@@ -341,6 +355,9 @@ func RefreshToken(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成令牌失败"})
 		return
 	}
+
+	// 同步刷新 access_token Cookie，保持浏览器原生请求鉴权可用
+	setAccessTokenCookie(c, newAccessToken)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,

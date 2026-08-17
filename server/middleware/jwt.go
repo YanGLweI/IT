@@ -13,23 +13,28 @@ import (
 // JWTAuth JWT 认证中间件
 func JWTAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 从 Header 获取 Token
+		// 从 Header 获取 Token，否则回退到 HttpOnly Cookie（access_token）
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未登录"})
-			c.Abort()
-			return
+		tokenString := ""
+		if authHeader != "" {
+			// 解析 Bearer Token
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "Token 格式错误"})
+				c.Abort()
+				return
+			}
+			tokenString = parts[1]
+		} else {
+			// 浏览器原生请求（如 file-viewer PDF 预览的 Range 直连）无法携带自定义 Header，
+			// 从同源 Cookie 回退读取 access token
+			tokenString, _ = c.Cookie("access_token")
+			if tokenString == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未登录"})
+				c.Abort()
+				return
+			}
 		}
-
-		// 解析 Bearer Token
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "Token 格式错误"})
-			c.Abort()
-			return
-		}
-
-		tokenString := parts[1]
 		secret := config.Cfg.Server.JWTSecret
 		if secret == "" {
 			secret = "default-secret-key"
