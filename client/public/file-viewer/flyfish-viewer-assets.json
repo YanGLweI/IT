@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-17T06:01:48.988Z",
+  "generatedAt": "2026-08-21T03:35:23.911Z",
   "rendererAssetManifests": [
     {
       "rendererId": "model",
@@ -453,7 +453,7 @@
   ],
   "validation": {
     "valid": true,
-    "checkedAt": "2026-08-17T06:01:48.987Z",
+    "checkedAt": "2026-08-21T03:35:23.910Z",
     "assets": [
       {
         "id": "model-occt-worker",

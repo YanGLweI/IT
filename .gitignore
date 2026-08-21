@@ -39,3 +39,5 @@ key/*.pem
 
 DEPLOY.md
 deploy.sh
+
+dist*
