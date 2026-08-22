@@ -179,7 +179,7 @@ export default {
     },
     async fetchAllSoftware() {
       try {
-        const res = await getApprovedSoftware({ page_size: 1000 })
+        const res = await getApprovedSoftware({ all: true })
         this.allSoftware = res.data || []
       } catch (e) {
         console.error(e)

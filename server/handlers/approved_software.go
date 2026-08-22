@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -20,7 +21,8 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-	// ListApprovedSoftware 获取核准软件列表（无分页，返回所有数据）
+	// ListApprovedSoftware 获取核准软件列表
+// 默认分页返回（核准软件目录页）；all=true 时返回全部数据（关联弹框/日志解析等场景）
 func ListApprovedSoftware(c *gin.Context) {
 	keyword := c.Query("keyword")
 	licenseType := c.Query("license_type")
@@ -37,12 +39,36 @@ func ListApprovedSoftware(c *gin.Context) {
 		db = db.Where("need_update = ?", needUpdate == "true")
 	}
 
+	// 全量模式：跳过分页，返回所有匹配记录
+	if c.Query("all") == "true" {
+		var list []models.ApprovedSoftware
+		if err := db.Order("id desc").Find(&list).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 200, "data": list, "total": len(list)})
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	var total int64
+	db.Model(&models.ApprovedSoftware{}).Count(&total)
+
 	var list []models.ApprovedSoftware
-	if err := db.Order("id desc").Find(&list).Error; err != nil {
+	offset := (page - 1) * pageSize
+	if err := db.Order("id desc").Offset(offset).Limit(pageSize).Find(&list).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 200, "data": list})
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": list, "total": total, "page": page, "page_size": pageSize})
 }
 
 // ListApprovedSoftwareNeedUpdate 获取需要更新的核准软件
@@ -546,6 +572,14 @@ func UpdateAssetSoftwareLinks(c *gin.Context) {
 		return
 	}
 
+	// 查询旧关联的软件ID（用于日志旧值）
+	var oldLinks []models.AssetSoftware
+	database.GetDB().Where("asset_id = ?", assetID).Find(&oldLinks)
+	oldIDs := make([]uint, 0, len(oldLinks))
+	for _, l := range oldLinks {
+		oldIDs = append(oldIDs, l.ApprovedSoftwareID)
+	}
+
 	// 删除旧关联
 	database.GetDB().Where("asset_id = ?", assetID).Delete(&models.AssetSoftware{})
 
@@ -562,9 +596,15 @@ func UpdateAssetSoftwareLinks(c *gin.Context) {
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)
+	softwareIDs := input.SoftwareIDs
+	if softwareIDs == nil {
+		softwareIDs = []uint{}
+	}
+	softwareIDsBytes, _ := json.Marshal(softwareIDs)
+	oldIDsBytes, _ := json.Marshal(oldIDs)
 	details := []services.LogDetail{
 		{FieldName: "AssetID", FieldLabel: "资产ID", NewValue: fmt.Sprintf("%d", assetID)},
-		{FieldName: "SoftwareIDs", FieldLabel: "软件ID列表", NewValue: fmt.Sprintf("%v", input.SoftwareIDs)},
+		{FieldName: "SoftwareIDs", FieldLabel: "软件ID列表", OldValue: string(oldIDsBytes), NewValue: string(softwareIDsBytes)},
 	}
 	services.LogOperation(username, displayName, "更新资产软件关联", "asset_software", uint(assetID), asset.ComputerName, approver, c.ClientIP(), details)
 }

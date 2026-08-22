@@ -280,7 +280,7 @@ export default {
     async loadAllSoftware() {
       this.softwareLoading = true
       try {
-        const res = await getApprovedSoftware()
+        const res = await getApprovedSoftware({ all: true })
         this.allSoftware = res.data || []
       } catch (e) {
         console.error('加载软件列表失败:', e)

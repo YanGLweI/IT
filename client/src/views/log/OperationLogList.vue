@@ -259,7 +259,7 @@ export default {
     async fetchApprovedSoftware() {
       try {
         this.softwareMap = {}
-        const res = await getApprovedSoftware()
+        const res = await getApprovedSoftware({ all: true })
         const softwareList = Array.isArray(res.data) ? res.data : []
         softwareList.forEach(s => {
           this.softwareMap[s.id] = s.name
