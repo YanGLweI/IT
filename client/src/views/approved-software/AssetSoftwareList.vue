@@ -91,19 +91,22 @@
       </div>
       <el-divider />
       <div style="margin-bottom: 10px; color: #909399; font-size: 13px">请勾选该资产上已安装的核准软件：</div>
-      <el-checkbox-group v-model="selectedSoftwareIds">
-        <el-checkbox
-          v-for="sw in allSoftware"
-          :key="sw.id"
-          :label="sw.id"
-          style="display: block; margin-bottom: 6px"
-        >
-          {{ sw.name }}
-          <span v-if="sw.version" style="color: #999; font-size: 12px">({{ sw.version }})</span>
-        </el-checkbox>
-      </el-checkbox-group>
-      <div v-if="allSoftware.length === 0" style="text-align: center; color: #999; padding: 20px">
-        暂无核准软件，请先在"核准软件目录"中添加
+      <div class="software-list-wrapper">
+        <el-checkbox-group v-model="selectedSoftwareIds">
+          <div class="software-list">
+            <el-checkbox
+              v-for="sw in allSoftware"
+              :key="sw.id"
+              :label="sw.id"
+            >
+              {{ sw.name }}
+              <span v-if="sw.version" style="color: #999; font-size: 12px">({{ sw.version }})</span>
+            </el-checkbox>
+          </div>
+        </el-checkbox-group>
+        <div v-if="allSoftware.length === 0" class="empty-state">
+          暂无核准软件，请先在"核准软件目录"中添加
+        </div>
       </div>
       <span slot="footer">
         <el-button @click="editDialogVisible = false">取消</el-button>
@@ -176,7 +179,7 @@ export default {
     },
     async fetchAllSoftware() {
       try {
-        const res = await getApprovedSoftware()
+        const res = await getApprovedSoftware({ page_size: 1000 })
         this.allSoftware = res.data || []
       } catch (e) {
         console.error(e)
@@ -304,5 +307,34 @@ export default {
 
 .header-actions .el-button--success {
   border-radius: 10px;
+}
+
+/* 软件列表弹窗样式 */
+/* 动态控制列表高度：大屏上限 400px，小屏随视窗高度收缩，保证弹窗不超出视窗 */
+.software-list-wrapper {
+  max-height: min(400px, calc(100vh - 400px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.software-list :deep(.el-checkbox) {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  margin-right: 0;
+}
+
+.software-list :deep(.el-checkbox__label) {
+  flex: 1;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 20px;
 }
 </style>
