@@ -75,7 +75,7 @@
         :total="total"
         :page-size.sync="pageSize"
         :current-page.sync="page"
-        :page-sizes="[10, 20, 50]"
+        :page-sizes="[5, 10, 20, 50]"
         @size-change="handleSizeChange"
         @current-change="fetchData"
       />
@@ -182,7 +182,7 @@ export default {
       records: [],
       loading: false,
       page: 1,
-      pageSize: 10,
+      pageSize: 5,
       total: 0,
       filterYear: '',
       keyword: '',

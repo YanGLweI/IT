@@ -56,13 +56,13 @@
             </template>
           </el-table-column>
           <el-table-column prop="purpose" label="用途" show-overflow-tooltip/>
-          <el-table-column prop="asset_level" label="资产等级" width="100" sortable="custom">
+          <el-table-column prop="asset_level" label="资产等级" width="120" sortable="custom">
             <template slot-scope="scope">
               <el-tag v-if="scope.row.asset_level" size="mini">{{ scope.row.asset_level }}</el-tag>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="80" sortable="custom">
+          <el-table-column prop="status" label="状态" width="100" sortable="custom">
             <template slot-scope="scope">
               <el-tag :type="statusType(scope.row.status)" size="mini">{{ scope.row.status }}</el-tag>
             </template>

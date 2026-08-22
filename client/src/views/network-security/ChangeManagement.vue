@@ -129,7 +129,7 @@
           :total="recordsTotal"
           :page-size.sync="recordsPageSize"
           :current-page.sync="recordsPage"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[5, 10, 20, 50]"
           @size-change="handleRecordSizeChange"
           @current-change="fetchRecords"
         />
@@ -347,7 +347,7 @@ export default {
       records: [],
       recordsLoading: false,
       recordsPage: 1,
-      recordsPageSize: 10,
+      recordsPageSize: 5,
       recordsTotal: 0,
       filterYear: '',
       filterTypeId: [],
