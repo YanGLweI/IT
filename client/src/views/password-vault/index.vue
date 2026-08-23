@@ -68,10 +68,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="username" label="账号" min-width="140" show-overflow-tooltip>
+        <el-table-column prop="username" label="账号" min-width="140">
           <template slot-scope="{ row }">
-            <span>{{ maskUsername(row.username) }}</span>
-            <el-button type="text" size="mini" icon="el-icon-document-copy" @click="copyText(row.username)" style="margin-left: 4px" />
+            <div class="username-cell">
+              <span class="username-text" :title="row.username">{{ row.username }}</span>
+              <el-button type="text" size="mini" icon="el-icon-document-copy" @click="copyText(row.username)" />
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="category_name" label="分类" width="110">
@@ -291,10 +293,6 @@ export default {
     handleSortChange() {
       this.loadEntries()
     },
-    maskUsername(username) {
-      if (!username || username.length <= 2) return username
-      return username[0] + '***' + username[username.length - 1]
-    },
     copyText(text) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -477,6 +475,25 @@ export default {
 }
 .text-muted {
   color: #94a3b8;
+}
+
+/* 账号列：文本可截断，复制按钮始终可见 */
+.username-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.username-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.username-cell .el-button {
+  flex-shrink: 0;
+  padding: 0;
 }
 
 /* 表格样式优化 */

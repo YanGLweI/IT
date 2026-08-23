@@ -41,3 +41,4 @@ DEPLOY.md
 deploy.sh
 
 dist*
+flyfish-viewer-assets.json
