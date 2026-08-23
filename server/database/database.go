@@ -64,6 +64,7 @@ func InitDB() {
 		&models.CalendarNotification{},
 		&models.PasswordCategory{},
 		&models.PasswordEntry{},
+		&models.PasswordEntryAccount{},
 		&models.PasswordEntryViewer{},
 		&models.PasswordEntryStar{},
 		&models.PasswordViewLog{},
@@ -88,6 +89,20 @@ func InitDB() {
 	SeedPermissionRules()
 	SeedChangeTypes()
 	SeedPasswordCategories()
+
+	// 密码本存量迁移：旧条目（单账号）转换为账号子表记录（幂等）
+	var legacyEntries []models.PasswordEntry
+	DB.Where("username != '' AND encrypted_password != '' AND id NOT IN (SELECT entry_id FROM password_entry_accounts)").
+		Find(&legacyEntries)
+	for _, e := range legacyEntries {
+		DB.Create(&models.PasswordEntryAccount{
+			EntryID:           e.ID,
+			Username:          e.Username,
+			EncryptedPassword: e.EncryptedPassword,
+			URL:               e.URL,
+			Port:              e.Port,
+		})
+	}
 
 	fmt.Println("数据库初始化成功!")
 }

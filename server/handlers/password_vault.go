@@ -335,7 +335,8 @@ func ListPasswordEntries(c *gin.Context) {
 		query = query.Where("id IN (SELECT entry_id FROM password_entry_stars WHERE username = ?)", usernameStr)
 	}
 	if keyword := c.Query("keyword"); keyword != "" {
-		query = query.Where("name LIKE ? OR username LIKE ? OR url LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+		kw := "%" + keyword + "%"
+		query = query.Where("name LIKE ? OR url LIKE ? OR EXISTS (SELECT 1 FROM password_entry_accounts a WHERE a.entry_id = password_entries.id AND (a.username LIKE ? OR a.label LIKE ?))", kw, kw, kw, kw)
 	}
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -399,10 +400,23 @@ func ListPasswordEntries(c *gin.Context) {
 			starSet[s.EntryID] = true
 		}
 
+		// 批量查询条目下的账号（密文不返回前端）
+		accountMap := make(map[uint][]models.PasswordEntryAccount)
+		var accounts []models.PasswordEntryAccount
+		db.Where("entry_id IN ?", entryIDs).Order("sort_order ASC, id ASC").Find(&accounts)
+		for _, a := range accounts {
+			accountMap[a.EntryID] = append(accountMap[a.EntryID], a)
+		}
+
 		// 填充数据
 		for i := range entries {
 			entries[i].CategoryName = catMap[entries[i].CategoryID]
 			entries[i].Viewers = viewerMap[entries[i].ID]
+			entries[i].Accounts = accountMap[entries[i].ID]
+			if entries[i].Accounts == nil {
+				entries[i].Accounts = []models.PasswordEntryAccount{}
+			}
+			entries[i].AccountCount = len(entries[i].Accounts)
 			entries[i].IsStarred = starSet[entries[i].ID]
 			entries[i].IsCreator = entries[i].CreatedBy == usernameStr
 		}
@@ -417,45 +431,83 @@ func CreatePasswordEntry(c *gin.Context) {
 		CategoryID        uint     `json:"category_id" binding:"required"`
 		Icon              string   `json:"icon" binding:"required"`
 		Name              string   `json:"name" binding:"required"`
-		Username          string   `json:"username" binding:"required"`
-		EncryptedPassword string   `json:"encrypted_password" binding:"required"`
+		Username          string   `json:"username"`          // 存量兼容：无 accounts 时作为单账号
+		EncryptedPassword string   `json:"encrypted_password"` // 存量兼容
 		URL               string   `json:"url"`
 		Port              int      `json:"port"`
 		Notes             string   `json:"notes"`
 		Viewers           []string `json:"viewers"`
+		Accounts          []struct {
+			Label             string `json:"label"`
+			Username          string `json:"username" binding:"required"`
+			EncryptedPassword string `json:"encrypted_password" binding:"required"`
+			URL               string `json:"url"`
+			Port              int    `json:"port"`
+			Notes             string `json:"notes"`
+			SortOrder         int    `json:"sort_order"`
+		} `json:"accounts"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "必填字段缺失"})
 		return
 	}
 
-	// RSA 解密密码明文
-	passwordPlain, err := DecryptPassword(req.EncryptedPassword)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码解密失败"})
-		return
+	// 存量兼容：未传 accounts 时，顶层账号字段作为单账号处理
+	if len(req.Accounts) == 0 {
+		if req.Username == "" || req.EncryptedPassword == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请至少添加一个账号"})
+			return
+		}
+		req.Accounts = append(req.Accounts, struct {
+			Label             string `json:"label"`
+			Username          string `json:"username" binding:"required"`
+			EncryptedPassword string `json:"encrypted_password" binding:"required"`
+			URL               string `json:"url"`
+			Port              int    `json:"port"`
+			Notes             string `json:"notes"`
+			SortOrder         int    `json:"sort_order"`
+		}{Username: req.Username, EncryptedPassword: req.EncryptedPassword, URL: req.URL, Port: req.Port})
 	}
 
-	// AES 加密存储
-	encryptedPwd, err := aesEncrypt(passwordPlain)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码加密失败"})
-		return
+	// 逐个账号：RSA 解密后 AES 加密存储
+	newAccounts := make([]models.PasswordEntryAccount, 0, len(req.Accounts))
+	for i, a := range req.Accounts {
+		passwordPlain, err := DecryptPassword(a.EncryptedPassword)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码解密失败"})
+			return
+		}
+		encryptedPwd, err := aesEncrypt(passwordPlain)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码加密失败"})
+			return
+		}
+		sortOrder := a.SortOrder
+		if sortOrder == 0 {
+			sortOrder = i
+		}
+		newAccounts = append(newAccounts, models.PasswordEntryAccount{
+			Label:             a.Label,
+			Username:          a.Username,
+			EncryptedPassword: encryptedPwd,
+			URL:               a.URL,
+			Port:              a.Port,
+			Notes:             a.Notes,
+			SortOrder:         sortOrder,
+		})
 	}
 
 	username, displayName, approver := services.GetUserContext(c)
 
 	entry := models.PasswordEntry{
-		CategoryID:        req.CategoryID,
-		Icon:              req.Icon,
-		Name:              req.Name,
-		Username:          req.Username,
-		EncryptedPassword: encryptedPwd,
-		URL:               req.URL,
-		Port:              req.Port,
-		Notes:             req.Notes,
-		CreatedBy:         username,
-		UpdatedBy:         username,
+		CategoryID: req.CategoryID,
+		Icon:       req.Icon,
+		Name:       req.Name,
+		URL:        req.URL,
+		Port:       req.Port,
+		Notes:      req.Notes,
+		CreatedBy:  username,
+		UpdatedBy:  username,
 	}
 
 	db := database.GetDB()
@@ -463,6 +515,17 @@ func CreatePasswordEntry(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "创建密码条目失败"})
 		return
 	}
+
+	// 保存账号
+	for i := range newAccounts {
+		newAccounts[i].EntryID = entry.ID
+		if err := db.Create(&newAccounts[i]).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存账号失败"})
+			return
+		}
+	}
+	entry.Accounts = newAccounts
+	entry.AccountCount = len(newAccounts)
 
 	// 保存查看授权用户（确保创建者在列表中）
 	hasCreator := false
@@ -482,10 +545,14 @@ func CreatePasswordEntry(c *gin.Context) {
 		})
 	}
 
+	accountNames := make([]string, 0, len(newAccounts))
+	for _, a := range newAccounts {
+		accountNames = append(accountNames, a.Username)
+	}
 	details := []services.LogDetail{
 		{FieldName: "Name", FieldLabel: "条目名称", NewValue: req.Name},
-		{FieldName: "Username", FieldLabel: "账号", NewValue: req.Username},
 		{FieldName: "CategoryID", FieldLabel: "分类", NewValue: fmt.Sprintf("%d", req.CategoryID)},
+		{FieldName: "Accounts", FieldLabel: "账号", NewValue: strings.Join(accountNames, ", ")},
 	}
 	services.LogOperation(username, displayName, "创建密码条目", "password_entry", entry.ID, entry.Name, approver, c.ClientIP(), details)
 
@@ -504,48 +571,134 @@ func UpdatePasswordEntry(c *gin.Context) {
 	oldEntry := entry
 
 	var req struct {
-		CategoryID        uint     `json:"category_id" binding:"required"`
-		Icon              string   `json:"icon" binding:"required"`
-		Name              string   `json:"name" binding:"required"`
-		Username          string   `json:"username" binding:"required"`
-		EncryptedPassword string   `json:"encrypted_password"`
-		URL               string   `json:"url"`
-		Port              int      `json:"port"`
-		Notes             string   `json:"notes"`
-		Viewers           []string `json:"viewers"`
+		CategoryID uint     `json:"category_id" binding:"required"`
+		Icon       string   `json:"icon" binding:"required"`
+		Name       string   `json:"name" binding:"required"`
+		URL        string   `json:"url"`
+		Port       int      `json:"port"`
+		Notes      string   `json:"notes"`
+		Viewers    []string `json:"viewers"`
+		Accounts   []struct {
+			ID                uint   `json:"id"`
+			Label             string `json:"label"`
+			Username          string `json:"username" binding:"required"`
+			EncryptedPassword string `json:"encrypted_password"` // 为空则保留原密码
+			URL               string `json:"url"`
+			Port              int    `json:"port"`
+			Notes             string `json:"notes"`
+			SortOrder         int    `json:"sort_order"`
+		} `json:"accounts"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "必填字段缺失"})
 		return
 	}
 
+	db := database.GetDB()
+
+	// 查询现有账号
+	var oldAccounts []models.PasswordEntryAccount
+	db.Where("entry_id = ?", id).Find(&oldAccounts)
+	oldAccountMap := make(map[uint]models.PasswordEntryAccount)
+	for _, a := range oldAccounts {
+		oldAccountMap[a.ID] = a
+	}
+
+	if len(req.Accounts) == 0 && len(oldAccounts) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请至少保留一个账号"})
+		return
+	}
+
+	// 账号全量替换：有 id 的更新（无新密码则保留原密文），无 id 的新增，请求中缺失的删除
+	newAccounts := make([]models.PasswordEntryAccount, 0, len(req.Accounts))
+	keptIDs := make(map[uint]bool)
+	for i, a := range req.Accounts {
+		sortOrder := a.SortOrder
+		if sortOrder == 0 {
+			sortOrder = i
+		}
+		if a.ID > 0 {
+			old, ok := oldAccountMap[a.ID]
+			if !ok {
+				continue // 不属于该条目的 id 忽略
+			}
+			keptIDs[a.ID] = true
+			old.Label = a.Label
+			old.Username = a.Username
+			old.URL = a.URL
+			old.Port = a.Port
+			old.Notes = a.Notes
+			old.SortOrder = sortOrder
+			if a.EncryptedPassword != "" {
+				passwordPlain, err := DecryptPassword(a.EncryptedPassword)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码解密失败"})
+					return
+				}
+				encryptedPwd, err := aesEncrypt(passwordPlain)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码加密失败"})
+					return
+				}
+				old.EncryptedPassword = encryptedPwd
+			}
+			if err := db.Save(&old).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新账号失败"})
+				return
+			}
+			newAccounts = append(newAccounts, old)
+		} else {
+			if a.EncryptedPassword == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "新账号必须填写密码"})
+				return
+			}
+			passwordPlain, err := DecryptPassword(a.EncryptedPassword)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码解密失败"})
+				return
+			}
+			encryptedPwd, err := aesEncrypt(passwordPlain)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码加密失败"})
+				return
+			}
+			acc := models.PasswordEntryAccount{
+				EntryID:           uint(id),
+				Label:             a.Label,
+				Username:          a.Username,
+				EncryptedPassword: encryptedPwd,
+				URL:               a.URL,
+				Port:              a.Port,
+				Notes:             a.Notes,
+				SortOrder:         sortOrder,
+			}
+			if err := db.Create(&acc).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "保存账号失败"})
+				return
+			}
+			newAccounts = append(newAccounts, acc)
+		}
+	}
+	// 删除请求中缺失的账号
+	for _, old := range oldAccounts {
+		if !keptIDs[old.ID] {
+			db.Delete(&old)
+		}
+	}
+
 	entry.CategoryID = req.CategoryID
 	entry.Icon = req.Icon
 	entry.Name = req.Name
-	entry.Username = req.Username
 	entry.URL = req.URL
 	entry.Port = req.Port
 	entry.Notes = req.Notes
+	// 存量字段保持不变，避免审计 diff 噪音
+	entry.Username = oldEntry.Username
+	entry.EncryptedPassword = oldEntry.EncryptedPassword
 
 	username, displayName, approver := services.GetUserContext(c)
 	entry.UpdatedBy = username
 
-	// 如果传了新密码，则加密更新
-	if req.EncryptedPassword != "" {
-		passwordPlain, err := DecryptPassword(req.EncryptedPassword)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "密码解密失败"})
-			return
-		}
-		encryptedPwd, err := aesEncrypt(passwordPlain)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码加密失败"})
-			return
-		}
-		entry.EncryptedPassword = encryptedPwd
-	}
-
-	db := database.GetDB()
 	if err := db.Save(&entry).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新密码条目失败"})
 		return
@@ -562,8 +715,24 @@ func UpdatePasswordEntry(c *gin.Context) {
 		}
 	}
 
+	entry.Accounts = newAccounts
+	entry.AccountCount = len(newAccounts)
+
 	fieldLabels := services.GetFieldLabels("password_entry")
 	details := services.DiffStructs(oldEntry, entry, fieldLabels)
+
+	// 账号变更摘要
+	oldNames := make([]string, 0, len(oldAccounts))
+	for _, a := range oldAccounts {
+		oldNames = append(oldNames, a.Username)
+	}
+	newNames := make([]string, 0, len(newAccounts))
+	for _, a := range newAccounts {
+		newNames = append(newNames, a.Username)
+	}
+	if strings.Join(oldNames, ",") != strings.Join(newNames, ",") {
+		details = append(details, services.LogDetail{FieldName: "Accounts", FieldLabel: "账号", OldValue: strings.Join(oldNames, ", "), NewValue: strings.Join(newNames, ", ")})
+	}
 	services.LogOperation(username, displayName, "更新密码条目", "password_entry", entry.ID, entry.Name, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功", "data": entry})
@@ -579,7 +748,8 @@ func DeletePasswordEntry(c *gin.Context) {
 	}
 
 	db := database.GetDB()
-	// 删除关联的查看授权、收藏和查看日志
+	// 删除关联的账号、查看授权、收藏和查看日志
+	db.Where("entry_id = ?", id).Delete(&models.PasswordEntryAccount{})
 	db.Where("entry_id = ?", id).Delete(&models.PasswordEntryViewer{})
 	db.Where("entry_id = ?", id).Delete(&models.PasswordViewLog{})
 	db.Where("entry_id = ?", id).Delete(&models.PasswordEntryStar{})
@@ -592,7 +762,6 @@ func DeletePasswordEntry(c *gin.Context) {
 	username, displayName, approver := services.GetUserContext(c)
 	details := []services.LogDetail{
 		{FieldName: "Name", FieldLabel: "条目名称", OldValue: entry.Name},
-		{FieldName: "Username", FieldLabel: "账号", OldValue: entry.Username},
 	}
 	services.LogOperation(username, displayName, "删除密码条目", "password_entry", entry.ID, entry.Name, approver, c.ClientIP(), details)
 
@@ -647,22 +816,35 @@ func UnlockPasswordEntry(c *gin.Context) {
 		return
 	}
 
-	// AES 解密密码
-	passwordPlain, err := aesDecrypt(entry.EncryptedPassword)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码解密失败"})
-		return
+	// 查询条目下所有账号并逐个 AES 解密
+	db := database.GetDB()
+	var accounts []models.PasswordEntryAccount
+	db.Where("entry_id = ?", id).Order("sort_order ASC, id ASC").Find(&accounts)
+
+	result := make([]gin.H, 0, len(accounts))
+	for _, a := range accounts {
+		passwordPlain, err := aesDecrypt(a.EncryptedPassword)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码解密失败"})
+			return
+		}
+		result = append(result, gin.H{
+			"id":       a.ID,
+			"label":    a.Label,
+			"username": a.Username,
+			"password": passwordPlain,
+		})
 	}
 
-	// 记录查看日志
-	database.GetDB().Create(&models.PasswordViewLog{
+	// 记录查看日志（按条目一条）
+	db.Create(&models.PasswordViewLog{
 		EntryID:   entry.ID,
 		EntryName: entry.Name,
 		Viewer:    usernameStr,
 		ViewedAt:  time.Now(),
 	})
 
-	c.JSON(http.StatusOK, gin.H{"code": 200, "data": gin.H{"password": passwordPlain}})
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": gin.H{"accounts": result}})
 }
 
 // ============ 收藏管理 ============

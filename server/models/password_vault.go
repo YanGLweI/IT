@@ -30,8 +30,8 @@ type PasswordEntry struct {
 	CategoryID        uint   `gorm:"type:int unsigned;not null" json:"category_id"`
 	Icon              string `gorm:"type:varchar(50);not null" json:"icon"`
 	Name              string `gorm:"type:varchar(200);not null" json:"name"`
-	Username          string `gorm:"type:varchar(200);not null" json:"username"`
-	EncryptedPassword string `gorm:"type:text;not null" json:"-"` // AES加密密文，不返回前端
+	Username          string `gorm:"type:varchar(200)" json:"username"`                   // 存量字段，已迁移至 PasswordEntryAccount
+	EncryptedPassword string `gorm:"type:text" json:"-"`                                   // 存量字段，已迁移至 PasswordEntryAccount
 	URL               string `gorm:"type:varchar(500)" json:"url"`
 	Port              int    `gorm:"type:int" json:"port"`
 	Notes             string `gorm:"type:text" json:"notes"`
@@ -39,14 +39,36 @@ type PasswordEntry struct {
 	UpdatedBy         string `gorm:"type:varchar(100);not null" json:"updated_by"`
 
 	// 关联字段
-	CategoryName string   `gorm:"-" json:"category_name"`
-	Viewers      []string `gorm:"-" json:"viewers"`
-	IsStarred    bool     `gorm:"-" json:"is_starred"`  // 非持久化，由查询时填充
-	IsCreator    bool     `gorm:"-" json:"is_creator"`
+	CategoryName string               `gorm:"-" json:"category_name"`
+	Viewers      []string             `gorm:"-" json:"viewers"`
+	Accounts     []PasswordEntryAccount `gorm:"-" json:"accounts"`
+	AccountCount int                  `gorm:"-" json:"account_count"`
+	IsStarred    bool                 `gorm:"-" json:"is_starred"` // 非持久化，由查询时填充
+	IsCreator    bool                 `gorm:"-" json:"is_creator"`
 }
 
 func (PasswordEntry) TableName() string {
 	return "password_entries"
+}
+
+// PasswordEntryAccount 密码条目下的账号（一个条目可挂多个账号）
+type PasswordEntryAccount struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	EntryID           uint   `gorm:"type:int unsigned;not null;index" json:"entry_id"`
+	Label             string `gorm:"type:varchar(100)" json:"label"` // 账号标签，如 root / 业务账号
+	Username          string `gorm:"type:varchar(200);not null" json:"username"`
+	EncryptedPassword string `gorm:"type:text;not null" json:"-"` // AES加密密文，不返回前端
+	URL               string `gorm:"type:varchar(500)" json:"url"`
+	Port              int    `gorm:"type:int" json:"port"`
+	Notes             string `gorm:"type:text" json:"notes"`
+	SortOrder         int    `gorm:"type:int;default:0" json:"sort_order"`
+}
+
+func (PasswordEntryAccount) TableName() string {
+	return "password_entry_accounts"
 }
 
 // PasswordEntryViewer 密码查看授权
@@ -62,11 +84,13 @@ func (PasswordEntryViewer) TableName() string {
 
 // PasswordViewLog 密码查看日志
 type PasswordViewLog struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	EntryID   uint      `gorm:"type:int unsigned;not null" json:"entry_id"`
-	EntryName string    `gorm:"type:varchar(200);not null" json:"entry_name"`
-	Viewer    string    `gorm:"type:varchar(100);not null" json:"viewer"`
-	ViewedAt  time.Time `gorm:"not null" json:"viewed_at"`
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	EntryID     uint      `gorm:"type:int unsigned;not null" json:"entry_id"`
+	EntryName   string    `gorm:"type:varchar(200);not null" json:"entry_name"`
+	AccountID   uint      `gorm:"type:int unsigned" json:"account_id"`
+	AccountName string    `gorm:"type:varchar(200)" json:"account_name"`
+	Viewer      string    `gorm:"type:varchar(100);not null" json:"viewer"`
+	ViewedAt    time.Time `gorm:"not null" json:"viewed_at"`
 }
 
 func (PasswordViewLog) TableName() string {

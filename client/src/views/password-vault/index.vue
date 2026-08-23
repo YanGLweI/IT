@@ -61,19 +61,20 @@
       </div>
 
       <!-- 表格 -->
-      <el-table :data="entries" v-loading="tableLoading" stripe style="width: 100%" :max-height="tableMaxHeight" @sort-change="handleSortChange">
+      <el-table :data="entries" v-loading="tableLoading" stripe style="width: 100%" :max-height="tableMaxHeight" @sort-change="handleSortChange" @row-click="openDetailDrawer">
         <el-table-column width="50" align="center">
           <template slot-scope="{ row }">
             <svg-icon :name="row.icon" :size="20" />
           </template>
         </el-table-column>
         <el-table-column prop="name" label="名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="username" label="账号" min-width="140">
+        <el-table-column label="账号" min-width="160">
           <template slot-scope="{ row }">
-            <div class="username-cell">
-              <span class="username-text" :title="row.username">{{ row.username }}</span>
-              <el-button type="text" size="mini" icon="el-icon-document-copy" @click="copyText(row.username)" />
+            <div class="account-cell" v-if="row.account_count">
+              <span class="account-count-badge">{{ row.account_count }}</span>
+              <span class="account-summary" :title="accountSummary(row)">{{ accountSummary(row) }}</span>
             </div>
+            <span v-else class="text-muted">-</span>
           </template>
         </el-table-column>
         <el-table-column prop="category_name" label="分类" width="110">
@@ -104,14 +105,14 @@
         </el-table-column>
         <el-table-column label="收藏" width="50" align="center">
           <template slot-scope="{ row }">
-            <i :class="row.is_starred ? 'el-icon-star-on starred' : 'el-icon-star-off'" style="cursor: pointer; font-size: 16px;" @click="handleToggleStar(row)" />
+            <i :class="row.is_starred ? 'el-icon-star-on starred' : 'el-icon-star-off'" style="cursor: pointer; font-size: 16px;" @click.stop="handleToggleStar(row)" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" align="center" fixed="right">
           <template slot-scope="{ row }">
-            <el-button type="text" size="medium" icon="el-icon-lock" @click="openUnlockDialog(row)" title="查看密码" />
-            <el-button type="text" size="medium" icon="el-icon-edit" @click="openEntryDialog(row)" title="编辑" />
-            <el-button type="text" size="medium" icon="el-icon-delete" style="color: #cf222e" @click="handleDelete(row)" title="删除" />
+            <el-button type="text" size="medium" icon="el-icon-lock" @click.stop="openUnlockDialog(row)" title="查看密码" />
+            <el-button type="text" size="medium" icon="el-icon-edit" @click.stop="openEntryDialog(row)" title="编辑" />
+            <el-button type="text" size="medium" icon="el-icon-delete" style="color: #cf222e" @click.stop="handleDelete(row)" title="删除" />
           </template>
         </el-table-column>
       </el-table>
@@ -127,6 +128,7 @@
     <UnlockDialog ref="unlockDialog" />
     <CategoryDialog ref="categoryDialog" :categories="categories" @saved="loadCategories" />
     <PasswordEntryDialog ref="entryDialog" :categories="categories" @saved="onEntrySaved" />
+    <EntryDetailDrawer ref="detailDrawer" @edit="openEntryDialog" @delete="handleDelete" @unlock="openUnlockDialog" />
   </div>
 </template>
 
@@ -136,11 +138,12 @@ import DualControlDialog from '@/components/DualControlDialog.vue'
 import UnlockDialog from './UnlockDialog.vue'
 import CategoryDialog from './CategoryDialog.vue'
 import PasswordEntryDialog from './PasswordEntryDialog.vue'
+import EntryDetailDrawer from './EntryDetailDrawer.vue'
 import { getPasswordCategories, getPasswordEntries, deletePasswordEntry, togglePasswordEntryStar, deletePasswordCategory, sortPasswordCategory } from '@/api/password_vault'
 
 export default {
   name: 'PasswordVault',
-  components: { SvgIcon, DualControlDialog, UnlockDialog, CategoryDialog, PasswordEntryDialog },
+  components: { SvgIcon, DualControlDialog, UnlockDialog, CategoryDialog, PasswordEntryDialog, EntryDetailDrawer },
   data() {
     return {
       categories: [],
@@ -233,6 +236,15 @@ export default {
     },
     openUnlockDialog(entry) {
       this.$refs.unlockDialog.open(entry)
+    },
+    openDetailDrawer(row) {
+      this.$refs.detailDrawer.open(row)
+    },
+    accountSummary(row) {
+      const accounts = row.accounts || []
+      if (!accounts.length) return '-'
+      const first = accounts[0].username
+      return accounts.length > 1 ? `${first} 等 ${accounts.length} 个账号` : first
     },
     async handleToggleStar(row) {
       const original = row.is_starred
@@ -477,23 +489,33 @@ export default {
   color: #94a3b8;
 }
 
-/* 账号列：文本可截断，复制按钮始终可见 */
-.username-cell {
+/* 账号列：数量徽标 + 首账号摘要 */
+.account-cell {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   width: 100%;
 }
-.username-text {
+.account-count-badge {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #2563eb;
+  background: #dbeafe;
+  border-radius: 10px;
+  padding: 0 6px;
+  font-weight: 600;
+}
+.account-summary {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.username-cell .el-button {
-  flex-shrink: 0;
-  padding: 0;
+  color: #475569;
 }
 
 /* 表格样式优化 */
