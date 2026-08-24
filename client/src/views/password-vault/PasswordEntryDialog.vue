@@ -48,7 +48,7 @@
                 </div>
                 <el-row :gutter="10">
                   <el-col :span="9">
-                    <el-input v-model="acc.label" placeholder="标签（如 root / 业务账号）" />
+                    <el-input v-model="acc.label" placeholder="标签（如 管理员 / 操作员）" />
                   </el-col>
                   <el-col :span="15">
                     <el-input v-model="acc.username" placeholder="用户名/账号（必填）" />
