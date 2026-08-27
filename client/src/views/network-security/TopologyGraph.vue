@@ -17,14 +17,15 @@
 
     <!-- 图例 -->
     <div class="legend-bar" v-if="hasData">
-      <span class="legend-item"><i class="legend-dot" style="background: #ffffff; border: 1.5px solid #334155"></i>互联网</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #f87171"></i>防火墙</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #86efac"></i>二级区域</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #fde047"></i>三级区域</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #fdba74"></i>四级区域</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #f87171"></i>高安全区域</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #64748b"></i>Linux资产</span>
-      <span class="legend-item"><i class="legend-dot" style="background: #93c5fd"></i>Windows资产</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.internet" alt="">互联网</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.firewall" alt="">防火墙</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.region2" alt="">二级区域</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.region3" alt="">三级区域</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.region4" alt="">四级区域</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.region5" alt="">高安全区域</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.linux" alt="">Linux资产</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.windows" alt="">Windows资产</span>
+      <span class="legend-item"><img class="legend-icon" :src="legendIcons.vmware" alt="">VMware资产</span>
       <span class="legend-item"><i class="legend-dot" style="background: #d4a574"></i>其他资产</span>
       <span class="legend-tip">提示：点击区域节点可展开/收起其下资产，点击防火墙节点折叠子树，右侧按钮或滚轮缩放、拖动平移</span>
     </div>
@@ -51,10 +52,100 @@ import * as zrender from 'zrender'
 import { jsPDF } from 'jspdf'
 import { getFirewallTopologyTree } from '@/api/firewall_topology'
 
-// 互联网云朵形状：经典三瓣云（顶部大包 + 左右两包），Bootstrap Icons cloud 同款 path（16x16 viewBox）
-const CLOUD_SYMBOL = 'path://M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z'
-// 防火墙砖墙图标：实心圆角方块（保证图标整体可点击展开/收起），砖缝以镂空方式露出页面白底（24x24 viewBox）
-const FIREWALL_SYMBOL = 'path://M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM5 10h14v-2H5zM5 16h14v-2H5zM9 8h2V5H9zM15 14h2v-3h-2zM9 19h2v-3H9z'
+// 互联网云朵形状：云轮廓 + 地球经纬线图标（1195x1024 viewBox，多段子路径拼接）
+const CLOUD_PATH_D = [
+  'M935.112817 810.777735H919.029795a21.5972 21.5972 0 0 1 0-42.734885h17.921081a213.214913 213.214913 0 0 0 216.891032-209.079279 209.998308 209.998308 0 0 0-146.125737-197.591406 20.218655 20.218655 0 0 1-14.244962-22.51623v-29.408953a261.004462 261.004462 0 0 0-34.463618-129.123686 21.5972 21.5972 0 0 1 5.973694-28.949439 22.056715 22.056715 0 0 1 28.949439 7.811753 303.739347 303.739347 0 0 1 39.977796 150.261372v17.461566a251.814164 251.814164 0 0 1 160.830214 232.055023 256.409313 256.409313 0 0 1-259.625917 251.814164zM275.708939 810.777735h-16.083022a261.004462 261.004462 0 0 1-158.073125-51.925183 21.137685 21.137685 0 0 1-4.595149-29.868469 22.056715 22.056715 0 0 1 29.868469-4.595149 220.107636 220.107636 0 0 0 132.799805 45.95149H275.708939a21.5972 21.5972 0 0 1 0 42.734886zm-219.188607-109.82406A20.218655 20.218655 0 0 1 38.599251 689.465802 243.083381 243.083381 0 0 1 0 558.963571a249.976104 249.976104 0 0 1 158.992155-229.757449 178.29178 178.29178 0 0 1 180.129839-175.53469 183.805959 183.805959 0 0 1 89.145891 22.975744 317.065279 317.065279 0 0 1 115.338239-127.285626 328.093637 328.093637 0 0 1 321.660428-13.785447 21.137685 21.137685 0 0 1 9.190298 28.489924 21.5972 21.5972 0 0 1-28.949438 9.190298 281.682632 281.682632 0 0 0-128.664172-30.327984A275.708939 275.708939 0 0 0 459.514898 216.165458a21.137685 21.137685 0 0 1-16.083022 13.785447 21.5972 21.5972 0 0 1-18.840111-3.67612 137.854469 137.854469 0 0 0-85.469771-28.949438 135.09738 135.09738 0 0 0-137.854469 132.34029 108.445516 108.445516 0 0 0 0 11.487873 20.67817 20.67817 0 0 1-14.244962 21.5972 209.998308 209.998308 0 0 0-144.287678 196.212861 204.943644 204.943644 0 0 0 31.706528 109.364546 19.299626 19.299626 0 0 1 2.75709 15.623506 22.51623 22.51623 0 0 1-9.190298 13.785447 25.273319 25.273319 0 0 1-11.487873 3.216605zM924.543974 124.721993a21.5972 21.5972 0 0 1-21.5972-21.5972 22.51623 22.51623 0 0 1 5.973694-14.244962 22.51623 22.51623 0 0 1 30.327983 0 21.5972 21.5972 0 0 1 6.433208 15.163992 21.137685 21.137685 0 0 1-21.137685 22.056715zM597.369367 523.121409a250.435619 250.435619 0 1 0 250.435619 249.976105A250.435619 250.435619 0 0 0 597.369367 523.121409zm0 464.569562a214.593457 214.593457 0 1 1 214.593457-214.593457A214.593457 214.593457 0 0 1 597.369367 987.690971z',
+  'M597.369367 558.963571a212.295883 212.295883 0 0 0-70.765294 7.811754 280.304088 280.304088 0 0 0-79.036563 175.53469 275.708939 275.708939 0 0 0 106.147942 242.623866h15.163991a171.858572 171.858572 0 0 0 57.439363 0 229.757449 229.757449 0 0 1-142.909134-241.245321A235.731143 235.731143 0 0 1 597.369367 558.963571z',
+  'M597.369367 558.963571a212.295883 212.295883 0 0 1 70.765294 7.811754 280.304088 280.304088 0 0 1 79.036563 175.53469 275.708939 275.708939 0 0 1-106.147942 242.623866h-15.163991a171.858572 171.858572 0 0 1-57.439363 0 229.757449 229.757449 0 0 0 142.909134-241.245321A235.731143 235.731143 0 0 0 597.369367 558.963571z',
+  'M597.369367 666.030542a249.057075 249.057075 0 0 0 147.504282-48.708579 205.403159 205.403159 0 0 0-28.949438-22.975745 214.133942 214.133942 0 0 1-237.109688 0 205.403159 205.403159 0 0 0-28.949438 22.975745A249.057075 249.057075 0 0 0 597.369367 666.030542zM597.369367 881.083515a248.59756 248.59756 0 0 1 147.504282 45.951489 179.21081 179.21081 0 0 1-28.949438 23.43526 214.133942 214.133942 0 0 0-237.109688 0 179.21081 179.21081 0 0 1-28.949438-23.43526 248.59756 248.59756 0 0 1 147.504282-45.951489zM359.800165 755.635948h474.678889v35.842162H359.800165z'
+].join(' ')
+// 线稿图标下垫白色遮罩（云内白色椭圆 + 地球内白色圆，均不超出轮廓），遮挡穿过节点背后的连接线
+const CLOUD_SYMBOL = 'image://data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1195 1024">' +
+  '<ellipse cx="597" cy="512" rx="535" ry="245" fill="#ffffff"/>' +
+  '<circle cx="597" cy="773" r="214" fill="#ffffff"/>' +
+  '<path d="' + CLOUD_PATH_D + '" fill="#334155"/>' +
+  '</svg>'
+)
+// 防火墙砖墙图标：圆角方块 + 镂空砖块（1024x1024 viewBox）
+const FIREWALL_PATH_D = 'M896 85.333333a42.666667 42.666667 0 0 1 42.666667 42.666667v768a42.666667 42.666667 0 0 1-42.666667 42.666667H128a42.666667 42.666667 0 0 1-42.666667-42.666667V128a42.666667 42.666667 0 0 1 42.666667-42.666667h768zM362.666667 682.666667H170.666667v170.666666h192v-170.666666zm490.666666 0H448v170.666666h405.333333v-170.666666zM576 426.666667H170.666667v170.666666h405.333333v-170.666666zm277.333333 0h-192v170.666666h192v-170.666666zM362.666667 170.666667H170.666667v170.666666h192V170.666667zm490.666666 0H448v170.666666h405.333333V170.666667z'
+// 线稿图标下垫与外轮廓同尺寸的白色圆角矩形遮罩，遮挡穿过节点背后的连接线（砖缝填白）
+const FIREWALL_SYMBOL = 'image://data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">' +
+  '<rect x="85.333333" y="85.333333" width="853.333334" height="853.333334" rx="42.666667" fill="#ffffff"/>' +
+  '<path d="' + FIREWALL_PATH_D + '" fill="#f87171"/>' +
+  '</svg>'
+)
+// 区域图标：容器 + 交换箭头（1024x1024 viewBox），填充色按区域等级对应现有配色
+const REGION_PATH_D = [
+  'M789.311488 720.384A72.192 72.192 0 1 0 861.759488 793.6a72.192 72.192 0 0 0-72.448-73.216zm0 97.024a25.6 25.6 0 1 1 25.6-25.6 25.6 25.6 0 0 1-25.6 25.6zM356.159488 730.624a23.808 23.808 0 0 0-23.552 23.808v76.8a23.808 23.808 0 1 0 47.36 0v-76.8a23.808 23.808 0 0 0-23.808-23.808z',
+  'M1024.319488 658.688L935.487488 118.272a104.704 104.704 0 0 0-25.6-53.76 79.616 79.616 0 0 0-57.6-23.808H173.375488a84.736 84.736 0 0 0-59.904 25.6 87.552 87.552 0 0 0-24.064 57.088L0.319488 655.104A43.264 43.264 0 0 0 0.319488 665.6v227.584a95.744 95.744 0 0 0 71.68 87.808H929.855488A94.976 94.976 0 0 0 1024.319488 888.32V665.6a23.808 23.808 0 0 0 0-6.912zM166.719488 131.584a29.44 29.44 0 0 0 0-6.656 5.376 5.376 0 0 1 1.792-3.84 6.912 6.912 0 0 1 4.096-2.048h678.912a20.992 20.992 0 0 1 5.12 11.52l72.704 470.272a36.352 36.352 0 0 0-7.168 0H99.903488a35.072 35.072 0 0 0-7.168 0zm763.136 772.608H94.527488a15.616 15.616 0 0 1-15.36-14.08v-194.56a16.128 16.128 0 0 1 16.384-15.36h834.56a14.336 14.336 0 0 1 11.008 4.864 15.104 15.104 0 0 1 4.864 10.496v192.768a15.872 15.872 0 0 1-16.128 15.872z',
+  'M182.079488 730.624a23.808 23.808 0 0 0-23.552 23.808v76.8a24.064 24.064 0 0 0 23.552 25.6 25.6 25.6 0 0 0 24.064-25.6v-76.8a24.064 24.064 0 0 0-24.064-23.808zM272.447488 273.408l151.552 79.36a47.104 47.104 0 0 0 17.664 1.536c8.96-1.536 8.704-6.4 8.704-6.4V286.72h147.456s116.224 12.032 116.224 44.8c0 0-1.792-102.4-119.808-102.4h-143.872V162.816s0-3.584-8.704-5.12a25.6 25.6 0 0 0-14.592 2.56l-150.528 81.92s-14.08 5.376-14.08 16.128a17.408 17.408 0 0 0 9.984 15.104zM269.375488 730.624a23.808 23.808 0 0 0-23.552 23.808v76.8a23.552 23.552 0 1 0 47.104 0v-76.8a23.808 23.808 0 0 0-23.552-23.808zM612.415488 365.056c-10.752 2.304-11.264 6.4-11.264 6.4v61.184h-148.224s-116.224-12.032-116.224-45.056c0 0 2.048 103.68 120.064 103.68h144.384v65.536s1.536 3.84 11.264 4.864a18.944 18.944 0 0 0 11.52-2.56l150.784-81.664s14.08-5.632 14.08-16.64a17.152 17.152 0 0 0-9.984-14.848l-151.552-79.616a27.648 27.648 0 0 0-14.848-1.28z'
+].join(' ')
+// 白色遮罩：容器两处镂空区（不超出外轮廓），遮挡穿过节点背后的连接线
+const REGION_MASK_D = [
+  'M166.719488 131.584a29.44 29.44 0 0 0 0-6.656 5.376 5.376 0 0 1 1.792-3.84 6.912 6.912 0 0 1 4.096-2.048h678.912a20.992 20.992 0 0 1 5.12 11.52l72.704 470.272a36.352 36.352 0 0 0-7.168 0H99.903488a35.072 35.072 0 0 0-7.168 0z',
+  'M929.855488 904.192H94.527488a15.616 15.616 0 0 1-15.36-14.08v-194.56a16.128 16.128 0 0 1 16.384-15.36h834.56a14.336 14.336 0 0 1 11.008 4.864 15.104 15.104 0 0 1 4.864 10.496v192.768a15.872 15.872 0 0 1-16.128 15.872z'
+].join(' ')
+// 按颜色生成并缓存区域 image symbol
+const regionSymbolCache = {}
+function regionSymbol(color) {
+  if (!regionSymbolCache[color]) {
+    regionSymbolCache[color] = 'image://data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">' +
+      '<path d="' + REGION_MASK_D + '" fill="#ffffff"/>' +
+      '<path d="' + REGION_PATH_D + '" fill="' + color + '"/>' +
+      '</svg>'
+    )
+  }
+  return regionSymbolCache[color]
+}
+// Windows 资产图标：四格方块（1024x1024 viewBox），下垫白色矩形遮罩挡住背后连线，填充色为现有 Windows 淡蓝 #93c5fd
+const WINDOWS_SYMBOL = 'image://data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">' +
+  '<rect x="96" y="96" width="832" height="832" fill="#ffffff"/>' +
+  '<path d="M96 96h396.16v396.16H96V96zm435.84 0h396.16v396.16H531.84V96zM96 531.84h396.16v396.16H96V531.84zm435.84 0h396.16v396.16H531.84V531.84z" fill="#93c5fd"/>' +
+  '</svg>'
+)
+// Linux 资产图标：红帽图标（1024x1024 viewBox），使用 SVG 自带配色（红帽 + 黑色阴影），下垫白色椭圆遮罩挡住背后连线
+const LINUX_SYMBOL = 'image://data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">' +
+  '<ellipse cx="520" cy="420" rx="225" ry="195" fill="#ffffff"/>' +
+  '<ellipse cx="512" cy="610" rx="380" ry="180" fill="#ffffff"/>' +
+  '<path d="M640.512 556.672c50.486857 0 123.574857-10.514286 123.574857-70.966857a57.179429 57.179429 0 0 0-1.28-13.897143l-30.098286-131.492571c-6.930286-28.946286-13.001143-42.057143-63.451428-67.456C630.089143 252.708571 544.768 219.428571 519.552 219.428571c-23.478857 0-30.336 30.482286-58.331429 30.482286-28.013714 0-46.976-22.747429-72.192-22.747428-25.234286 0-40.027429 16.603429-52.187428 50.797714q-33.938286 96.365714-38.326857 110.336c-0.694857 2.56-0.987429 5.248-0.896 7.899428 0 37.449143 146.541714 160.292571 342.875428 160.292572" fill="#F00001"/>' +
+  '<path d="M771.803429 510.244571c6.985143 33.28 6.985143 36.754286 6.985142 41.161143 0 56.886857-63.524571 88.466286-147.053714 88.466286-188.708571 0.128-354.066286-111.213714-354.066286-184.795429 0-10.24 2.048-20.388571 6.089143-29.805714-67.84 3.419429-155.757714 15.634286-155.757714 93.714286C128 646.912 429.092571 804.571429 667.465143 804.571429c182.802286 0 228.882286-83.218286 228.882286-148.900572 0-51.730286-44.416-110.372571-124.452572-145.408" fill="#F00001"/>' +
+  '<path d="M763.501714 475.867429v0zM763.538286 475.922286l-0.018286-0.054857v0.036571c0 0.164571 0.237714 2.249143 0.146286 5.650286 0-1.828571 0-3.620571-0.146286-5.485715a65.462857 65.462857 0 0 1-23.186286 52.205715c-88.045714 63.122286-232.064 8.045714-320.292571-33.371429-48.091429-23.332571-94.482286-54.308571-122.404572-101.12-90.532571 132.754286 127.616 210.870857 224.438858 235.593143 82.322286 21.522286 217.965714 43.209143 253.165714-59.52 8.685714-31.579429-0.603429-64.457143-11.702857-93.933714zm0.109714 0.457143c2.066286 7.296 3.657143 14.189714 5.028571 20.900571l-5.028571-20.900571z" fill="#000000"/>' +
+  '</svg>'
+)
+// VMware 资产图标：蓝橙双圆角方块（1064x1024 viewBox），使用 SVG 自带配色，下垫两个白色圆角矩形遮罩挡住背后连线
+const VMWARE_SYMBOL = 'image://data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1064 1024">' +
+  '<rect x="265.05216" y="23.38816" width="762.72" height="768.08" rx="120" fill="#ffffff"/>' +
+  '<rect x="8.3968" y="247.3984" width="765.34" height="765.42" rx="120" fill="#ffffff"/>' +
+  '<path d="M385.06496 23.38816a120.0128 120.0128 0 0 0-120.0128 120.0128v528.05632a120.0128 120.0128 0 0 0 120.0128 120.0128h522.6496a120.0128 120.0128 0 0 0 120.05376-120.0128V143.36a120.0128 120.0128 0 0 0-120.0128-120.0128H385.10592zM894.5664 584.66304c0 38.2976-31.04768 69.34528-69.34528 69.34528h-357.5808a69.34528 69.34528 0 0 1-69.38624-69.34528V230.15424c0-38.25664 31.04768-69.30432 69.34528-69.30432h357.5808c38.2976 0 69.34528 31.04768 69.34528 69.30432v354.5088z" fill="#068BEF"/>' +
+  '<path d="M653.7216 247.3984H128.4096a120.0128 120.0128 0 0 0-120.0128 120.0128v525.39392a120.0128 120.0128 0 0 0 120.0128 120.0128h525.39392a120.0128 120.0128 0 0 0 120.0128-120.0128V367.4112a120.0128 120.0128 0 0 0-120.0128-120.0128zm-14.49984 559.9232c0 38.2976-31.04768 69.38624-69.34528 69.38624h-357.5808A69.34528 69.34528 0 0 1 142.9504 807.3216v-354.46784c0-38.2976 31.04768-69.34528 69.34528-69.34528h357.5808c38.2976 0 69.34528 31.00672 69.34528 69.30432v354.5088z" fill="#FF8B02"/>' +
+  '<path d="M633.2416 654.00832h143.89248v137.4208h-143.93344z" fill="#068BEF"/>' +
+  '<path d="M398.25408 383.50848L265.05216 460.3904V383.50848z" fill="#057EAF"/>' +
+  '<path d="M639.22176 791.42912l134.5536 72.74496v-72.74496z" fill="#D77D06"/>' +
+  '</svg>'
+)
+// 导出图图例：生成与节点图标一致的 graphic 子元素（图标 + 文字），其他资产仍为圆点
+function buildLegendElements() {
+  const t = (text, x) => ({ type: 'text', style: { text, x, y: 10, font: '12px sans-serif', fill: '#64748b' } })
+  const img = (src, x, w) => ({ type: 'image', style: { image: src.replace(/^image:\/\//, ''), x, y: 0, width: w || 14, height: 14 } })
+  return [
+    img(CLOUD_SYMBOL, 0, 16), t('互联网', 22),
+    img(FIREWALL_SYMBOL, 70), t('防火墙', 88),
+    img(regionSymbol('#86efac'), 140), t('二级区域', 158),
+    img(regionSymbol('#fde047'), 210), t('三级区域', 228),
+    img(regionSymbol('#fdba74'), 280), t('四级区域', 298),
+    img(regionSymbol('#f87171'), 350), t('高安全区域', 368),
+    img(LINUX_SYMBOL, 440), t('Linux 资产', 458),
+    img(WINDOWS_SYMBOL, 530), t('Windows 资产', 548),
+    img(VMWARE_SYMBOL, 640), t('VMware 资产', 658),
+    { type: 'rect', shape: { x: 750, y: 1, width: 12, height: 12 }, style: { fill: '#d4a574' } }, t('其他资产', 768)
+  ]
+}
 
 export default {
   name: 'TopologyGraph',
@@ -70,6 +161,21 @@ export default {
   computed: {
     hasData() {
       return this.nodes.some(n => !n.invalid)
+    },
+    // 页面图例图标：复用节点 image symbol（去掉 image:// 前缀作为 img src）
+    legendIcons() {
+      const url = s => s.replace(/^image:\/\//, '')
+      return {
+        internet: url(CLOUD_SYMBOL),
+        firewall: url(FIREWALL_SYMBOL),
+        region2: url(regionSymbol('#86efac')),
+        region3: url(regionSymbol('#fde047')),
+        region4: url(regionSymbol('#fdba74')),
+        region5: url(regionSymbol('#f87171')),
+        linux: url(LINUX_SYMBOL),
+        windows: url(WINDOWS_SYMBOL),
+        vmware: url(VMWARE_SYMBOL)
+      }
     }
   },
   mounted() {
@@ -154,21 +260,25 @@ export default {
     // 根据节点类型设置外观（自定义形状 + 胶囊标签，保证文字与背景对比度）
     decorateNode(data) {
       if (data.nodeType === 'internet') {
-        // 互联网：经典描边云朵（白底 + 深色轮廓），文字在云内
+        // 互联网：云 + 地球线稿图标（image symbol 内置白色遮罩挡住背后连线），文字置于图标下方胶囊标签
         data.symbol = CLOUD_SYMBOL
-        data.symbolSize = [84, 60]
-        data.itemStyle = { color: '#ffffff', borderColor: '#334155', borderWidth: 2 }
+        data.symbolSize = [84, 72]
         data.label = {
-          position: 'inside',
+          position: 'bottom',
+          distance: 6,
           color: '#334155',
-          fontSize: 13,
-          fontWeight: 600
+          fontSize: 12,
+          fontWeight: 600,
+          backgroundColor: '#ffffff',
+          borderColor: '#cbd5e1',
+          borderWidth: 1,
+          borderRadius: 4,
+          padding: [3, 6]
         }
       } else if (data.nodeType === 'firewall') {
-        // 防火墙：实心砖墙图标（淡红色，镂空砖缝），整块图标均可点击，淡红胶囊标签
+        // 防火墙：砖墙图标（image symbol 内置白色遮罩挡住背后连线，淡红 #f87171），整块图标均可点击，淡红胶囊标签
         data.symbol = FIREWALL_SYMBOL
         data.symbolSize = [38, 38]
-        data.itemStyle = { color: '#f87171', borderColor: '#ef4444' }
         data.label = {
           position: 'left',
           distance: 8,
@@ -190,8 +300,9 @@ export default {
           5: { dot: '#f87171', border: '#ef4444', label: '#b91c1c', bg: '#fee2e2', labelBorder: '#fca5a5' }
         }
         const colors = levelColors[data.networkLevel] || levelColors[2]
-        data.symbolSize = 22
-        data.itemStyle = { color: colors.dot, borderColor: colors.border }
+        // 区域：容器 + 交换箭头图标（image symbol 内置白色遮罩挡住背后连线），颜色对应网络等级
+        data.symbol = regionSymbol(colors.dot)
+        data.symbolSize = 26
         data.label = {
           position: 'left',
           distance: 6,
@@ -210,8 +321,12 @@ export default {
         let assetColor = '#d4a574' // 默认淡棕色（其他）
         if (osName.startsWith('rhel')) {
           assetColor = '#64748b' // Linux 灰色
+          data.symbol = LINUX_SYMBOL // Linux 资产：红帽图标（SVG 自带配色）
         } else if (osName.startsWith('windows')) {
           assetColor = '#93c5fd' // Windows 淡蓝色
+          data.symbol = WINDOWS_SYMBOL // Windows 资产：四格方块图标（内置白色遮罩）
+        } else if (osName.startsWith('vmware')) {
+          data.symbol = VMWARE_SYMBOL // VMware 资产：蓝橙双方块图标（SVG 自带配色）
         }
         data.symbolSize = 14
         data.itemStyle = { color: assetColor, borderColor: assetColor }
@@ -262,26 +377,7 @@ export default {
                 type: 'group',
                 left: 'center',
                 top: 20,
-                children: [
-                  { type: 'rect', shape: { x: 0, y: 0, width: 12, height: 12 }, style: { fill: '#ffffff', stroke: '#334155', lineWidth: 1.5 } },
-                  { type: 'text', style: { text: '互联网', x: 18, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 70, y: 0, width: 12, height: 12 }, style: { fill: '#f87171' } },
-                  { type: 'text', style: { text: '防火墙', x: 88, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 140, y: 0, width: 12, height: 12 }, style: { fill: '#86efac' } },
-                  { type: 'text', style: { text: '二级区域', x: 158, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 210, y: 0, width: 12, height: 12 }, style: { fill: '#fde047' } },
-                  { type: 'text', style: { text: '三级区域', x: 228, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 280, y: 0, width: 12, height: 12 }, style: { fill: '#fdba74' } },
-                  { type: 'text', style: { text: '四级区域', x: 298, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 350, y: 0, width: 12, height: 12 }, style: { fill: '#f87171' } },
-                  { type: 'text', style: { text: '高安全区域', x: 368, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 440, y: 0, width: 12, height: 12 }, style: { fill: '#64748b' } },
-                  { type: 'text', style: { text: 'Linux 资产', x: 458, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 530, y: 0, width: 12, height: 12 }, style: { fill: '#93c5fd' } },
-                  { type: 'text', style: { text: 'Windows 资产', x: 548, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 640, y: 0, width: 12, height: 12 }, style: { fill: '#d4a574' } },
-                  { type: 'text', style: { text: '其他资产', x: 658, y: 10, font: '12px sans-serif', fill: '#64748b' } }
-                ]
+                children: buildLegendElements()
               }
             ]
           },
@@ -363,26 +459,7 @@ export default {
                 type: 'group',
                 left: 'center',
                 top: 20,
-                children: [
-                  { type: 'rect', shape: { x: 0, y: 0, width: 12, height: 12 }, style: { fill: '#ffffff', stroke: '#334155', lineWidth: 1.5 } },
-                  { type: 'text', style: { text: '互联网', x: 18, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 70, y: 0, width: 12, height: 12 }, style: { fill: '#f87171' } },
-                  { type: 'text', style: { text: '防火墙', x: 88, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 140, y: 0, width: 12, height: 12 }, style: { fill: '#86efac' } },
-                  { type: 'text', style: { text: '二级区域', x: 158, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 210, y: 0, width: 12, height: 12 }, style: { fill: '#fde047' } },
-                  { type: 'text', style: { text: '三级区域', x: 228, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 280, y: 0, width: 12, height: 12 }, style: { fill: '#fdba74' } },
-                  { type: 'text', style: { text: '四级区域', x: 298, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 350, y: 0, width: 12, height: 12 }, style: { fill: '#f87171' } },
-                  { type: 'text', style: { text: '高安全区域', x: 368, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 440, y: 0, width: 12, height: 12 }, style: { fill: '#64748b' } },
-                  { type: 'text', style: { text: 'Linux 资产', x: 458, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 530, y: 0, width: 12, height: 12 }, style: { fill: '#93c5fd' } },
-                  { type: 'text', style: { text: 'Windows 资产', x: 548, y: 10, font: '12px sans-serif', fill: '#64748b' } },
-                  { type: 'rect', shape: { x: 640, y: 0, width: 12, height: 12 }, style: { fill: '#d4a574' } },
-                  { type: 'text', style: { text: '其他资产', x: 658, y: 10, font: '12px sans-serif', fill: '#64748b' } }
-                ]
+                children: buildLegendElements()
               }
             ]
           },
@@ -738,7 +815,8 @@ export default {
 .legend-bar {
   display: flex;
   align-items: center;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 10px 18px;
   font-size: 13px;
   color: #475569;
   margin-bottom: 10px;
@@ -747,11 +825,18 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 .legend-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  display: inline-block;
+}
+.legend-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
   display: inline-block;
 }
 .legend-tip {
