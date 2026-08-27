@@ -189,14 +189,15 @@ func GetFieldLabels(resourceType string) map[string]string {
 	switch resourceType {
 	case "asset":
 		return map[string]string{
-			"ComputerName": "计算机名",
-			"RegionID":     "区域ID",
-			"IPAddress":    "IP地址",
-			"OSType":       "操作系统",
-			"Purpose":      "用途",
-			"AssetLevel":   "资产等级",
-			"Status":       "状态",
-			"Remark":       "备注",
+			"ComputerName":     "计算机名",
+			"RegionID":         "区域ID",
+			"IPAddress":        "IP地址",
+			"OSType":           "操作系统",
+			"Purpose":          "用途",
+			"AssetLevel":       "资产等级",
+			"IsVirtualMachine": "是否虚拟机",
+			"HostAssetID":      "所属虚拟主机",
+			"Remark":           "备注",
 		}
 	case "region":
 		return map[string]string{
@@ -404,17 +405,17 @@ func GetFieldLabels(resourceType string) map[string]string {
 		}
 	case "backup":
 		return map[string]string{
-			"ApplicationDate":    "申请日期",
+			"ApplicationDate":     "申请日期",
 			"BackupSourceAssetID": "备份源",
-			"BackupTargetType":   "备份对象类型",
-			"BackupTarget":       "备份对象",
-			"BackupTool":         "备份工具",
+			"BackupTargetType":    "备份对象类型",
+			"BackupTarget":        "备份对象",
+			"BackupTool":          "备份工具",
 			"BackupMediumAssetID": "备份介质",
-			"BackupFrequency":    "备份频率",
-			"RetentionPolicy":    "保留策略",
-			"FullBackupStrategy": "全量备份策略",
-			"DepartmentID":       "所属部门",
-			"FileName":           "申请表",
+			"BackupFrequency":     "备份频率",
+			"RetentionPolicy":     "保留策略",
+			"FullBackupStrategy":  "全量备份策略",
+			"DepartmentID":        "所属部门",
+			"FileName":            "申请表",
 		}
 	case "backup_recovery":
 		return map[string]string{
@@ -431,13 +432,13 @@ func GetFieldLabels(resourceType string) map[string]string {
 		}
 	case "form_vault":
 		return map[string]string{
-			"Title":        "标题",
-			"Description":  "描述",
-			"Category":     "分类",
-			"SourceType":   "来源类型",
-			"FileName":     "文件名",
-			"IsPublished":  "发布状态",
-			"RefModule":    "引用模块",
+			"Title":       "标题",
+			"Description": "描述",
+			"Category":    "分类",
+			"SourceType":  "来源类型",
+			"FileName":    "文件名",
+			"IsPublished": "发布状态",
+			"RefModule":   "引用模块",
 		}
 	case "calendar":
 		return map[string]string{

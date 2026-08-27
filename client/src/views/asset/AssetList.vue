@@ -4,7 +4,7 @@
     <div class="page-header">
       <div class="header-left">
         <h2 class="page-title">IT资产管理</h2>
-        <p class="page-subtitle">管理公司IT资产信息，支持按区域分类与状态筛选</p>
+        <p class="page-subtitle">管理公司IT资产信息，支持按区域分类</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" size="small" icon="el-icon-plus" @click="handleAdd">新增资产</el-button>
@@ -22,10 +22,6 @@
         @clear="handleSearch"
         @keyup.enter.native="handleSearch"
       />
-    </div>
-
-    <div v-if="statusFilter" class="status-filter-tag">
-      <el-tag closable @close="clearStatusFilter" type="warning">状态筛选: {{ statusFilter }}</el-tag>
     </div>
 
     <el-tabs v-model="activeTab" @tab-click="handleTabClick">
@@ -62,9 +58,9 @@
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="100" sortable="custom">
+          <el-table-column label="所属虚拟主机" show-overflow-tooltip>
             <template slot-scope="scope">
-              <el-tag :type="statusType(scope.row.status)" size="mini">{{ scope.row.status }}</el-tag>
+              {{ scope.row.host_asset ? scope.row.host_asset.computer_name : '-' }}
             </template>
           </el-table-column>
           <el-table-column label="操作" width="200" align="center" fixed="right">
@@ -118,7 +114,6 @@ export default {
       assets: [],
       regions: [],
       activeTab: 'all',
-      statusFilter: '',
       formVisible: false,
       editData: null,
       loading: false,
@@ -133,12 +128,6 @@ export default {
     }
   },
   async mounted() {
-    // 如果URL带有status参数，应用状态筛选
-    const statusFilter = this.$route.query.status
-    if (statusFilter) {
-      this.activeTab = 'all'
-      this.statusFilter = statusFilter
-    }
     await this.fetchRegions()
     this.fetchData()
   },
@@ -154,9 +143,6 @@ export default {
         }
         if (this.activeTab !== 'all') {
           params.region_id = this.activeTab
-        }
-        if (this.statusFilter) {
-          params.status = this.statusFilter
         }
         if (this.search) {
           params.search = this.search
@@ -224,20 +210,7 @@ export default {
         if (e.message !== 'canceled') console.error(e)
       }
     },
-    statusType(status) {
-      switch (status) {
-        case '在用': return 'success'
-        case '闲置': return 'warning'
-        case '报废': return 'danger'
-        default: return 'info'
-      }
-    },
     handleSearch() {
-      this.currentPage = 1
-      this.fetchData()
-    },
-    clearStatusFilter() {
-      this.statusFilter = ''
       this.currentPage = 1
       this.fetchData()
     }
@@ -299,11 +272,6 @@ export default {
 }
 .header-actions .el-button--primary:hover {
   background: #2563eb;
-}
-
-/* --- 状态筛选标签 --- */
-.status-filter-tag {
-  margin-bottom: 12px;
 }
 
 /* --- 筛选栏输入框宽度 --- */

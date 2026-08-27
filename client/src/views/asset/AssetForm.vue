@@ -1,7 +1,7 @@
 <template>
   <el-dialog class="vault-dialog" :title="isEdit ? '编辑资产' : '新增资产'" :visible.sync="dialogVisible" width="600px" @close="handleClose" :close-on-click-modal="false">
     <DualControlDialog ref="dualControl" />
-    <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+    <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
       <el-form-item label="计算机名" prop="computer_name">
         <el-input v-model="form.computer_name" placeholder="请输入计算机名" />
       </el-form-item>
@@ -28,11 +28,15 @@
           <el-option label="三级" value="三级" />
         </el-select>
       </el-form-item>
-      <el-form-item label="状态">
-        <el-select v-model="form.status" style="width: 100%">
-          <el-option label="在用" value="在用" />
-          <el-option label="闲置" value="闲置" />
-          <el-option label="报废" value="报废" />
+      <el-form-item label="是否虚拟机">
+        <el-radio-group v-model="form.is_virtual_machine" @change="handleVmChange">
+          <el-radio :label="true">是</el-radio>
+          <el-radio :label="false">否</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item v-if="form.is_virtual_machine" label="所属虚拟主机" prop="host_asset_id">
+        <el-select v-model="form.host_asset_id" placeholder="请选择所属虚拟主机" filterable style="width: 100%">
+          <el-option v-for="h in virtualHosts" :key="h.id" :label="hostLabel(h)" :value="h.id" />
         </el-select>
       </el-form-item>
       <el-form-item label="备注">
@@ -47,7 +51,7 @@
 </template>
 
 <script>
-import { createAsset, updateAsset } from '@/api/asset'
+import { createAsset, updateAsset, getVirtualHosts } from '@/api/asset'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import { getOSTypes } from '@/api/os_type'
 
@@ -63,10 +67,12 @@ export default {
     return {
       form: this.getDefaultForm(),
       osTypes: [],
+      virtualHosts: [],
       rules: {
         computer_name: [{ required: true, message: '请输入计算机名', trigger: 'blur' }],
         region_id: [{ required: true, message: '请选择区域', trigger: 'change' }],
-        os_type_id: [{ required: true, message: '请选择操作系统', trigger: 'change' }]
+        os_type_id: [{ required: true, message: '请选择操作系统', trigger: 'change' }],
+        host_asset_id: [{ required: true, message: '请选择所属虚拟主机', trigger: 'change' }]
       }
     }
   },
@@ -83,6 +89,7 @@ export default {
     visible(val) {
       if (val) {
         this.fetchOSTypes()
+        this.fetchVirtualHosts()
         if (this.editData) {
           // 只提取需要的字段，避免嵌套对象干扰
           this.form = {
@@ -93,7 +100,8 @@ export default {
             os_type_id: this.editData.os_type_id || null,
             purpose: this.editData.purpose || '',
             asset_level: this.editData.asset_level || '',
-            status: this.editData.status || '在用',
+            is_virtual_machine: !!this.editData.is_virtual_machine,
+            host_asset_id: this.editData.host_asset_id || null,
             remark: this.editData.remark || ''
           }
         } else {
@@ -111,6 +119,23 @@ export default {
         console.error(e)
       }
     },
+    async fetchVirtualHosts() {
+      try {
+        const res = await getVirtualHosts()
+        this.virtualHosts = res.data || []
+      } catch (e) {
+        console.error(e)
+      }
+    },
+    hostLabel(h) {
+      return h.ip_address ? `${h.computer_name} (${h.ip_address})` : h.computer_name
+    },
+    handleVmChange(val) {
+      if (!val) {
+        this.form.host_asset_id = null
+        this.$refs.formRef && this.$refs.formRef.clearValidate('host_asset_id')
+      }
+    },
     getDefaultForm() {
       return {
         computer_name: '',
@@ -119,7 +144,8 @@ export default {
         os_type_id: null,
         purpose: '',
         asset_level: '',
-        status: '在用',
+        is_virtual_machine: false,
+        host_asset_id: null,
         remark: ''
       }
     },
@@ -137,7 +163,8 @@ export default {
             os_type_id: this.form.os_type_id,
             purpose: this.form.purpose,
             asset_level: this.form.asset_level,
-            status: this.form.status,
+            is_virtual_machine: this.form.is_virtual_machine,
+            host_asset_id: this.form.is_virtual_machine ? this.form.host_asset_id : null,
             remark: this.form.remark
           }
           

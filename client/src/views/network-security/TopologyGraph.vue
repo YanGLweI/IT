@@ -212,8 +212,44 @@ export default {
         const name = n.asset.computer_name
         const ip = n.asset.ip_address
         const children = []
-        // 挂靠区域
+        // 挂靠区域（虚拟机挂到所属虚拟主机节点下，非虚拟机直接挂区域下）
         ;(n.regions || []).forEach(r => {
+          const assetNode = a => ({
+            id: 'asset:' + a.id,
+            name: a.computer_name,
+            nodeType: 'asset',
+            osName: a.os_name || '',
+            tooltip: `资产：${a.computer_name}<br/>IP：${a.ip_address || '无'}`,
+            children: []
+          })
+          // 第一遍：非虚拟机构建节点并建立 id 映射
+          const hostById = {}
+          const regionChildren = (r.assets || [])
+            .filter(a => !a.is_virtual_machine)
+            .map(a => {
+              const node = assetNode(a)
+              hostById[a.id] = node
+              return node
+            })
+          // 第二遍：虚拟机挂到同区域的主机节点下；主机不在本区域则兜底挂区域层并提示
+          ;(r.assets || []).filter(a => a.is_virtual_machine).forEach(a => {
+            const host = hostById[a.host_asset_id]
+            const vmNode = assetNode(a)
+            vmNode.tooltip += host
+              ? `<br/>所属虚拟主机：${host.name}`
+              : '<br/>所属虚拟主机：不在本区域或不存在'
+            if (host) {
+              host.children.push(vmNode)
+            } else {
+              regionChildren.push(vmNode)
+            }
+          })
+          // 主机有虚拟机时，tooltip 追加虚拟机数（含兜底未挂上的情况已覆盖）
+          regionChildren.forEach(h => {
+            if (h.children.length > 0) {
+              h.tooltip += `<br/>虚拟机数：${h.children.length}`
+            }
+          })
           children.push({
             // 稳定 id 供 ECharts 数据 diff 精确匹配，避免更新时重建节点导致抖动
             id: 'region:' + r.id,
@@ -222,14 +258,7 @@ export default {
             networkLevel: r.network_level || 0,
             subnet: r.subnet || '',
             tooltip: `区域：${r.name}<br/>资产数：${(r.assets || []).length}${r.subnet ? '<br/>子网：' + r.subnet : ''}`,
-            children: (r.assets || []).map(a => ({
-              id: 'asset:' + a.id,
-              name: a.computer_name,
-              nodeType: 'asset',
-              osName: a.os_name || '',
-              tooltip: `资产：${a.computer_name}<br/>IP：${a.ip_address || '无'}`,
-              children: []
-            }))
+            children: regionChildren
           })
         })
         // 下级防火墙

@@ -62,6 +62,7 @@ func SetupRouter() *gin.Engine {
 
 			// 资产管理 - 查询（不需要双控）
 			protected.GET("/assets", handlers.ListAssets)
+			protected.GET("/assets/virtual-hosts", handlers.ListVirtualHosts)
 			protected.GET("/assets/:id", handlers.GetAsset)
 
 			// 看板统计
@@ -259,7 +260,7 @@ func SetupRouter() *gin.Engine {
 				dual.POST("/assets", handlers.CreateAsset)
 				dual.PUT("/assets/:id", handlers.UpdateAsset)
 				dual.DELETE("/assets/:id", handlers.DeleteAsset)
-				
+
 				// IT政策 - 修改删除
 				dual.PUT("/policies/:id", handlers.UpdatePolicy)
 				dual.PUT("/policies/:id/file", handlers.ReplacePolicyFile)

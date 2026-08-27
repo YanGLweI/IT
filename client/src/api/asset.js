@@ -8,6 +8,10 @@ export function getAsset(id) {
   return request.get(`/assets/${id}`)
 }
 
+export function getVirtualHosts() {
+  return request.get('/assets/virtual-hosts')
+}
+
 export function createAsset(data, dualToken) {
   const config = {}
   if (dualToken) config.headers = { 'X-Dual-Control-Token': dualToken }

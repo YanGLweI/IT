@@ -189,7 +189,6 @@ export default {
         total_unfixed_vulns: 0,
         region_stats: [],
         os_stats: [],
-        status_stats: [],
         vuln_trend: [],
         trend_stats: [],
         software_update_stats: []

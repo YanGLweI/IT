@@ -18,8 +18,12 @@ func ListAssets(c *gin.Context) {
 	// 分页参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
-	if page < 1 { page = 1 }
-	if pageSize < 1 || pageSize > 100 { pageSize = 10 }
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
 
 	// 排序参数
 	sortBy := c.DefaultQuery("sort_by", "id")
@@ -29,7 +33,7 @@ func ListAssets(c *gin.Context) {
 	allowedSort := map[string]bool{
 		"id": true, "computer_name": true, "ip_address": true,
 		"os_type_id": true, "purpose": true, "asset_level": true,
-		"status": true, "created_at": true,
+		"created_at": true,
 	}
 	if !allowedSort[sortBy] {
 		sortBy = "id"
@@ -38,18 +42,12 @@ func ListAssets(c *gin.Context) {
 		sortOrder = "desc"
 	}
 
-	query := database.GetDB().Model(&models.Asset{}).Preload("Region").Preload("OSType")
+	query := database.GetDB().Model(&models.Asset{}).Preload("Region").Preload("OSType").Preload("HostAsset")
 
 	// 支持按区域过滤
 	regionID := c.Query("region_id")
 	if regionID != "" {
 		query = query.Where("region_id = ?", regionID)
-	}
-
-	// 支持按状态过滤
-	status := strings.TrimSpace(c.Query("status"))
-	if status != "" {
-		query = query.Where("status = ?", status)
 	}
 
 	// 支持按计算机名或IP地址模糊搜索（计算机名不区分大小写）
@@ -74,10 +72,10 @@ func ListAssets(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"data": assets,
-		"total": total,
-		"page": page,
+		"code":      200,
+		"data":      assets,
+		"total":     total,
+		"page":      page,
 		"page_size": pageSize,
 	})
 }
@@ -86,39 +84,86 @@ func ListAssets(c *gin.Context) {
 func GetAsset(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var asset models.Asset
-	if err := database.GetDB().Preload("Region").Preload("OSType").First(&asset, id).Error; err != nil {
+	if err := database.GetDB().Preload("Region").Preload("OSType").Preload("HostAsset").First(&asset, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "资产不存在"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": asset})
 }
 
+// ListVirtualHosts 获取虚拟主机列表（操作系统名含 ESXI 的资产）
+func ListVirtualHosts(c *gin.Context) {
+	var assets []models.Asset
+	err := database.GetDB().
+		Joins("JOIN os_types ON assets.os_type_id = os_types.id").
+		Where("UPPER(os_types.name) LIKE '%ESXI%'").
+		Order("computer_name ASC").
+		Find(&assets).Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": assets})
+}
+
+// boolText 将布尔值转为日志展示文本
+func boolText(v bool) string {
+	if v {
+		return "是"
+	}
+	return "否"
+}
+
+// hostAssetName 查询虚拟主机计算机名，无则返回空字符串
+func hostAssetName(hostID *uint) string {
+	if hostID == nil || *hostID == 0 {
+		return ""
+	}
+	var host models.Asset
+	if err := database.GetDB().Select("computer_name").First(&host, *hostID).Error; err != nil {
+		return ""
+	}
+	return host.ComputerName
+}
+
 // CreateAsset 创建资产
 func CreateAsset(c *gin.Context) {
 	var input struct {
-		ComputerName string `json:"computer_name" binding:"required"`
-		RegionID     uint   `json:"region_id" binding:"required"`
-		IPAddress    string `json:"ip_address"`
-		OSTypeID     uint   `json:"os_type_id" binding:"required"`
-		Purpose      string `json:"purpose"`
-		AssetLevel   string `json:"asset_level"`
-		Status       string `json:"status"`
-		Remark       string `json:"remark"`
+		ComputerName     string `json:"computer_name" binding:"required"`
+		RegionID         uint   `json:"region_id" binding:"required"`
+		IPAddress        string `json:"ip_address"`
+		OSTypeID         uint   `json:"os_type_id" binding:"required"`
+		Purpose          string `json:"purpose"`
+		AssetLevel       string `json:"asset_level"`
+		IsVirtualMachine bool   `json:"is_virtual_machine"`
+		HostAssetID      *uint  `json:"host_asset_id"`
+		Remark           string `json:"remark"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误: " + err.Error()})
 		return
 	}
 
+	// 虚拟机必须选择所属虚拟主机，非虚拟机强制清空
+	if input.IsVirtualMachine {
+		if input.HostAssetID == nil || *input.HostAssetID == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "虚拟机必须选择所属虚拟主机"})
+			return
+		}
+	} else {
+		input.HostAssetID = nil
+	}
+
 	asset := models.Asset{
-		ComputerName: input.ComputerName,
-		RegionID:     input.RegionID,
-		IPAddress:    input.IPAddress,
-		OSTypeID:     input.OSTypeID,
-		Purpose:      input.Purpose,
-		AssetLevel:   input.AssetLevel,
-		Status:       input.Status,
-		Remark:       input.Remark,
+		ComputerName:     input.ComputerName,
+		RegionID:         input.RegionID,
+		IPAddress:        input.IPAddress,
+		OSTypeID:         input.OSTypeID,
+		Purpose:          input.Purpose,
+		AssetLevel:       input.AssetLevel,
+		IsVirtualMachine: input.IsVirtualMachine,
+		HostAssetID:      input.HostAssetID,
+		Remark:           input.Remark,
 	}
 
 	if err := database.GetDB().Create(&asset).Error; err != nil {
@@ -127,7 +172,7 @@ func CreateAsset(c *gin.Context) {
 	}
 
 	// 重新查询以获取关联的区域和操作系统信息
-	database.GetDB().Preload("Region").Preload("OSType").First(&asset, asset.ID)
+	database.GetDB().Preload("Region").Preload("OSType").Preload("HostAsset").First(&asset, asset.ID)
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)
@@ -142,7 +187,8 @@ func CreateAsset(c *gin.Context) {
 		{FieldName: "OSTypeID", FieldLabel: "操作系统", NewValue: osTypeName},
 		{FieldName: "Purpose", FieldLabel: "用途", NewValue: asset.Purpose},
 		{FieldName: "AssetLevel", FieldLabel: "资产等级", NewValue: asset.AssetLevel},
-		{FieldName: "Status", FieldLabel: "状态", NewValue: asset.Status},
+		{FieldName: "IsVirtualMachine", FieldLabel: "是否虚拟机", NewValue: boolText(asset.IsVirtualMachine)},
+		{FieldName: "HostAssetID", FieldLabel: "所属虚拟主机", NewValue: hostAssetName(asset.HostAssetID)},
 		{FieldName: "Remark", FieldLabel: "备注", NewValue: asset.Remark},
 	}
 	services.LogOperation(username, displayName, "创建资产", "asset", asset.ID, asset.ComputerName, approver, c.ClientIP(), details)
@@ -163,18 +209,29 @@ func UpdateAsset(c *gin.Context) {
 	oldAsset := asset
 
 	var input struct {
-		ComputerName string `json:"computer_name" binding:"required"`
-		RegionID     uint   `json:"region_id" binding:"required"`
-		IPAddress    string `json:"ip_address"`
-		OSTypeID     uint   `json:"os_type_id" binding:"required"`
-		Purpose      string `json:"purpose"`
-		AssetLevel   string `json:"asset_level"`
-		Status       string `json:"status"`
-		Remark       string `json:"remark"`
+		ComputerName     string `json:"computer_name" binding:"required"`
+		RegionID         uint   `json:"region_id" binding:"required"`
+		IPAddress        string `json:"ip_address"`
+		OSTypeID         uint   `json:"os_type_id" binding:"required"`
+		Purpose          string `json:"purpose"`
+		AssetLevel       string `json:"asset_level"`
+		IsVirtualMachine bool   `json:"is_virtual_machine"`
+		HostAssetID      *uint  `json:"host_asset_id"`
+		Remark           string `json:"remark"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数错误"})
 		return
+	}
+
+	// 虚拟机必须选择所属虚拟主机，非虚拟机强制清空
+	if input.IsVirtualMachine {
+		if input.HostAssetID == nil || *input.HostAssetID == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "虚拟机必须选择所属虚拟主机"})
+			return
+		}
+	} else {
+		input.HostAssetID = nil
 	}
 
 	asset.ComputerName = input.ComputerName
@@ -184,7 +241,9 @@ func UpdateAsset(c *gin.Context) {
 	asset.OSType = models.OSType{} // 清空预加载的关联对象，避免 Save 时 GORM 将 os_type_id 覆盖回旧值
 	asset.Purpose = input.Purpose
 	asset.AssetLevel = input.AssetLevel
-	asset.Status = input.Status
+	asset.IsVirtualMachine = input.IsVirtualMachine
+	asset.HostAssetID = input.HostAssetID
+	asset.HostAsset = nil // 清空预加载的关联对象，避免 Save 时 GORM 覆盖 host_asset_id
 	asset.Remark = input.Remark
 
 	if err := database.GetDB().Save(&asset).Error; err != nil {
@@ -193,7 +252,7 @@ func UpdateAsset(c *gin.Context) {
 	}
 
 	// 重新查询以获取关联的区域和操作系统信息
-	database.GetDB().Preload("Region").Preload("OSType").First(&asset, asset.ID)
+	database.GetDB().Preload("Region").Preload("OSType").Preload("HostAsset").First(&asset, asset.ID)
 
 	// 记录操作日志
 	username, displayName, approver := services.GetUserContext(c)

@@ -34,11 +34,13 @@ type firewallRegionVO struct {
 	Name         string `json:"name"`
 	NetworkLevel int    `json:"network_level"`
 	Subnet       string `json:"subnet"`
-	Assets []struct {
-		ID           uint   `json:"id"`
-		ComputerName string `json:"computer_name"`
-		IPAddress    string `json:"ip_address"`
-		OSName       string `json:"os_name"`
+	Assets       []struct {
+		ID               uint   `json:"id"`
+		ComputerName     string `json:"computer_name"`
+		IPAddress        string `json:"ip_address"`
+		OSName           string `json:"os_name"`
+		IsVirtualMachine bool   `json:"is_virtual_machine"`
+		HostAssetID      *uint  `json:"host_asset_id"`
 	} `json:"assets"`
 }
 
@@ -95,18 +97,22 @@ func GetFirewallTopologyTree(c *gin.Context) {
 		}
 		for _, l := range linksByNode[n.ID] {
 			rv := firewallRegionVO{ID: l.RegionID, Name: l.Region.Name, NetworkLevel: l.Region.NetworkLevel, Subnet: l.Region.Subnet, Assets: []struct {
-				ID           uint   `json:"id"`
-				ComputerName string `json:"computer_name"`
-				IPAddress    string `json:"ip_address"`
-				OSName       string `json:"os_name"`
+				ID               uint   `json:"id"`
+				ComputerName     string `json:"computer_name"`
+				IPAddress        string `json:"ip_address"`
+				OSName           string `json:"os_name"`
+				IsVirtualMachine bool   `json:"is_virtual_machine"`
+				HostAssetID      *uint  `json:"host_asset_id"`
 			}{}}
 			for _, a := range assetsByRegion[l.RegionID] {
 				rv.Assets = append(rv.Assets, struct {
-					ID           uint   `json:"id"`
-					ComputerName string `json:"computer_name"`
-					IPAddress    string `json:"ip_address"`
-					OSName       string `json:"os_name"`
-				}{ID: a.ID, ComputerName: a.ComputerName, IPAddress: a.IPAddress, OSName: a.OSType.Name})
+					ID               uint   `json:"id"`
+					ComputerName     string `json:"computer_name"`
+					IPAddress        string `json:"ip_address"`
+					OSName           string `json:"os_name"`
+					IsVirtualMachine bool   `json:"is_virtual_machine"`
+					HostAssetID      *uint  `json:"host_asset_id"`
+				}{ID: a.ID, ComputerName: a.ComputerName, IPAddress: a.IPAddress, OSName: a.OSType.Name, IsVirtualMachine: a.IsVirtualMachine, HostAssetID: a.HostAssetID})
 			}
 			vo.Regions = append(vo.Regions, rv)
 		}

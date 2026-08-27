@@ -22,12 +22,6 @@ type OSStat struct {
 	Count  int64  `json:"count"`
 }
 
-// StatusStat 状态统计
-type StatusStat struct {
-	Status string `json:"status"`
-	Count  int64  `json:"count"`
-}
-
 // VulnTrendItem 漏洞趋势数据点（按季度）
 type VulnTrendItem struct {
 	Year          int `json:"year"`
@@ -109,13 +103,6 @@ func DashboardSummary(c *gin.Context) {
 		Group("os_types.name").
 		Scan(&osStats)
 
-	// 状态统计
-	var statusStats []StatusStat
-	db.Model(&models.Asset{}).
-		Select("status, count(*) as count").
-		Group("status").
-		Scan(&statusStats)
-
 	// 漏洞趋势（按季度聚合，最近8个季度）
 	var vulnTrend []VulnTrendItem
 	cutoffQ := now.Year()*4 + int(now.Month()-1)/3 - 7 // 最近8个季度的起始季度编号
@@ -146,20 +133,19 @@ func DashboardSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": gin.H{
-			"total_assets":          totalAssets,
-			"total_regions":         totalRegions,
-			"total_sftp_accounts":   totalSftpAccounts,
+			"total_assets":           totalAssets,
+			"total_regions":          totalRegions,
+			"total_sftp_accounts":    totalSftpAccounts,
 			"total_user_permissions": totalUserPermissions,
-			"need_update_software":  needUpdateSoftware,
-			"monthly_op_count":      monthlyOpCount,
-			"total_unfixed_vulns":   totalUnfixedVulns,
-			"backup_assets":         backupAssets,
-			"region_stats":          regionStats,
-			"os_stats":              osStats,
-			"status_stats":          statusStats,
-			"vuln_trend":            vulnTrend,
-			"trend_stats":           trendStats,
-			"software_update_stats": softwareUpdateStats,
+			"need_update_software":   needUpdateSoftware,
+			"monthly_op_count":       monthlyOpCount,
+			"total_unfixed_vulns":    totalUnfixedVulns,
+			"backup_assets":          backupAssets,
+			"region_stats":           regionStats,
+			"os_stats":               osStats,
+			"vuln_trend":             vulnTrend,
+			"trend_stats":            trendStats,
+			"software_update_stats":  softwareUpdateStats,
 		},
 	})
 }
