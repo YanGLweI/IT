@@ -357,15 +357,17 @@ export default {
         } else if (osName.startsWith('vmware')) {
           data.symbol = VMWARE_SYMBOL // VMware 资产：蓝橙双方块图标（SVG 自带配色）
         }
+        // ESXi 虚拟主机标签置于图标左侧（参考区域标签设置：position left + 右对齐避免遮住图标），VCSA 及其余资产仍为右侧
+        const isEsxiHost = osName.includes('esxi')
         data.symbolSize = 14
         data.itemStyle = { color: assetColor, borderColor: assetColor }
         data.label = {
-          position: 'right',
-          distance: 5,
+          position: isEsxiHost ? 'left' : 'right',
+          distance: isEsxiHost ? 6 : 5,
           color: '#1e293b',
           fontSize: 10,
           lineHeight: 14,
-          align: 'left',
+          align: isEsxiHost ? 'right' : 'left',
           backgroundColor: 'rgba(241, 245, 249, 0.95)',
           borderColor: '#e2e8f0',
           borderWidth: 1,
