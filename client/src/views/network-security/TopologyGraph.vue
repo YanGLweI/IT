@@ -11,6 +11,7 @@
         <el-button size="small" icon="el-icon-refresh-left" @click="resetView">重置视图</el-button>
         <el-button size="small" icon="el-icon-refresh" @click="fetchAll" :loading="loading">刷新</el-button>
         <el-button size="small" icon="el-icon-download" @click="exportPNG" :loading="exportingPNG">导出PNG</el-button>
+        <el-button size="small" icon="el-icon-download" @click="exportMaskedPNG" :loading="exportingMaskedPNG">导出脱敏PNG</el-button>
         <el-button size="small" icon="el-icon-download" @click="exportPDF" :loading="exporting">导出PDF</el-button>
       </div>
     </div>
@@ -154,6 +155,7 @@ export default {
       loading: false,
       exporting: false,
       exportingPNG: false,
+      exportingMaskedPNG: false,
       nodes: [],
       chart: null
     }
@@ -286,8 +288,8 @@ export default {
         children: roots
       }
     },
-    // 根据节点类型设置外观（自定义形状 + 胶囊标签，保证文字与背景对比度）
-    decorateNode(data) {
+    // 根据节点类型设置外观（自定义形状 + 胶囊标签，保证文字与背景对比度）；options.masked 为脱敏模式：资产标签不带 IP
+    decorateNode(data, options = {}) {
       if (data.nodeType === 'internet') {
         // 互联网：云 + 地球线稿图标（image symbol 内置白色遮罩挡住背后连线），文字置于图标下方胶囊标签
         data.symbol = CLOUD_SYMBOL
@@ -375,30 +377,30 @@ export default {
           padding: [2, 4],
           formatter: () => data.name
         }
-        const m = data.tooltip && data.tooltip.match(/IP：(.+?)(<br\/\>|$)/)
-        if (m && m[1] !== '无') {
-          data.label.formatter = () => `${data.name}  ${m[1]}`
+        // 脱敏模式下不追加 IP，标签仅显示资产名
+        if (!options.masked) {
+          const m = data.tooltip && data.tooltip.match(/IP：(.+?)(<br\/\>|$)/)
+          if (m && m[1] !== '无') {
+            data.label.formatter = () => `${data.name}  ${m[1]}`
+          }
         }
       }
-      ;(data.children || []).forEach(c => this.decorateNode(c))
+      ;(data.children || []).forEach(c => this.decorateNode(c, options))
       return data
     },
-    // 导出拓扑图为 PNG（离屏渲染高清大图，确保全部资产完整显示不遮挡）
-    async exportPNG() {
-      if (!this.treeData || this.exportingPNG) return
-      this.exportingPNG = true
+    // 离屏渲染高清拓扑图并返回 PNG dataURL（masked 为脱敏模式：资产标签不带 IP，且不绘制子网段标签）
+    async renderExportImage(masked) {
+      // 创建离屏容器
+      const container = document.createElement('div')
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;width:3200px;height:2200px;'
+      document.body.appendChild(container)
       try {
-        // 创建离屏容器
-        const container = document.createElement('div')
-        container.style.cssText = 'position:fixed;left:-9999px;top:0;width:3200px;height:2200px;'
-        document.body.appendChild(container)
-
         // 初始化临时 ECharts 实例
         const tmpChart = echarts.init(container, null, { renderer: 'canvas' })
 
         // 深拷贝树数据并重新 decorate（避免修改主图表数据）
         const exportData = JSON.parse(JSON.stringify(this.treeData))
-        this.decorateNode(exportData)
+        this.decorateNode(exportData, { masked })
 
         // 渲染配置：展开全部层级、关闭动画、放大符号与字体
         tmpChart.setOption({
@@ -433,21 +435,31 @@ export default {
         // 等待渲染完成
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        // 在"防火墙→区域"连接线上绘制子网标签（导出图字号放大适配 3200px 画布）
-        const tmpView = tmpChart.getViewOfSeriesModel(tmpChart.getModel().getSeriesByIndex(0))
-        const subnetGroup = this.buildSubnetLabelGroup(tmpView, 18, 0.3)
-        if (subnetGroup && tmpView._mainGroup) {
-          tmpView._mainGroup.add(subnetGroup)
-          tmpChart.getZr().refresh()
+        // 在"防火墙→区域"连接线上绘制子网标签（导出图字号放大适配 3200px 画布），脱敏模式跳过（子网段含 IP）
+        if (!masked) {
+          const tmpView = tmpChart.getViewOfSeriesModel(tmpChart.getModel().getSeriesByIndex(0))
+          const subnetGroup = this.buildSubnetLabelGroup(tmpView, 18, 0.3)
+          if (subnetGroup && tmpView._mainGroup) {
+            tmpView._mainGroup.add(subnetGroup)
+            tmpChart.getZr().refresh()
+          }
+          await new Promise(resolve => setTimeout(resolve, 200))
         }
-        await new Promise(resolve => setTimeout(resolve, 200))
 
-        // 获取高清 PNG（pixelRatio: 1.5 平衡清晰度与文件大小）
+        // 获取高清 PNG（pixelRatio: 1.5 平衡清晰度与文件大小）后销毁临时图表和容器（避免 canvas 资源泄漏）
         const imgData = tmpChart.getDataURL({ type: 'png', pixelRatio: 1.5, backgroundColor: '#fff' })
-
-        // 销毁临时图表和容器
         tmpChart.dispose()
+        return imgData
+      } finally {
         document.body.removeChild(container)
+      }
+    },
+    // 导出拓扑图为 PNG（离屏渲染高清大图，确保全部资产完整显示不遮挡）
+    async exportPNG() {
+      if (!this.treeData || this.exportingPNG) return
+      this.exportingPNG = true
+      try {
+        const imgData = await this.renderExportImage(false)
 
         // 创建下载链接
         const link = document.createElement('a')
@@ -463,6 +475,29 @@ export default {
         this.$message.error('导出失败，请重试')
       } finally {
         this.exportingPNG = false
+      }
+    },
+    // 导出脱敏拓扑图为 PNG（资产标签仅显示资产名不带 IP，且不绘制子网段标签）
+    async exportMaskedPNG() {
+      if (!this.treeData || this.exportingMaskedPNG) return
+      this.exportingMaskedPNG = true
+      try {
+        const imgData = await this.renderExportImage(true)
+
+        // 创建下载链接
+        const link = document.createElement('a')
+        link.href = imgData
+        const today = new Date()
+        const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+        link.download = `网络拓扑图-脱敏-${dateStr}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } catch (e) {
+        console.error('exportMaskedPNG error:', e)
+        this.$message.error('导出失败，请重试')
+      } finally {
+        this.exportingMaskedPNG = false
       }
     },
     // 导出拓扑图为 PDF（离屏渲染高清大图，确保全部资产完整显示不遮挡）
