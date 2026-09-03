@@ -37,7 +37,9 @@ export function updateExceptionManagement(id, formData, dualToken) {
 
 // 删除例外管理记录
 export function deleteExceptionManagement(id, dualToken) {
-  const config = {}
+  const config = {
+    headers: {}
+  }
   if (dualToken) {
     config.headers['X-Dual-Control-Token'] = dualToken
   }

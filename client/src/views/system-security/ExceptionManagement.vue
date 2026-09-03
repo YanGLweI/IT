@@ -451,11 +451,6 @@ export default {
   gap: 10px;
 }
 
-.table-card {
-}
-
-.table-wrapper {
-}
 
 .op-btns {
   display: flex;
