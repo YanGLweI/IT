@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -221,10 +222,48 @@ func UpdatePermissionRule(c *gin.Context) {
 	var rule models.PermissionRule
 	database.GetDB().First(&rule, id)
 
-	// 记录操作日志
+	// 记录操作日志的详情
 	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("permission_rule")
 	details := services.DiffStructs(oldRule, rule, fieldLabels)
+
+	// 如果岗位名称被修改，级联更新所有相关表
+	if req.PositionName != "" && req.PositionName != oldRule.PositionName {
+		oldName := oldRule.PositionName
+		newName := req.PositionName
+
+		// 1. 更新用户权限表
+		result := database.GetDB().Model(&models.UserPermission{}).
+			Where("position_name = ?", oldName).
+			Update("position_name", newName)
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新用户权限失败"})
+			return
+		}
+		updatedUserCount := result.RowsAffected
+
+		// 2. 更新部门岗位关联表
+		result = database.GetDB().Model(&models.DepartmentPosition{}).
+			Where("position_name = ?", oldName).
+			Update("position_name", newName)
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新部门岗位配置失败"})
+			return
+		}
+		updatedDeptPosCount := result.RowsAffected
+
+		// 记录级联更新的行数到日志详情
+		details = append(details,
+			services.LogDetail{
+				FieldName: "CascadeUpdate",
+				FieldLabel: "级联更新",
+				NewValue: fmt.Sprintf("用户权限：%d 条，部门岗位：%d 条", updatedUserCount, updatedDeptPosCount),
+			})
+
+		log.Printf("岗位 '%s' 重命名为 '%s'，级联更新：%d 条用户权限，%d 条部门岗位配置", oldName, newName, updatedUserCount, updatedDeptPosCount)
+	}
+
+	// 记录操作日志
 	services.LogOperation(username, displayName, "更新岗位权限", "permission_rule", rule.ID, rule.PositionName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": rule, "message": "更新成功"})
@@ -264,6 +303,35 @@ func RemoveSystemFromPermissions(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "系统名称不能为空"})
 		return
+	}
+
+	// 先清理用户权限表中的对应系统
+	var userPerms []models.UserPermission
+	if err := database.GetDB().Where("system_roles_json LIKE ?", "%"+req.SystemName+"%").Find(&userPerms).Error; err == nil {
+		for i := range userPerms {
+			// 解析 JSON，过滤掉被删除的系统
+			var sysRoles []struct {
+				System string   `json:"system"`
+				Roles  []string `json:"roles"`
+			}
+			if err := json.Unmarshal([]byte(userPerms[i].SystemRolesJSON), &sysRoles); err == nil {
+				// 移除匹配的系统
+				filtered := make([]struct {
+					System string   `json:"system"`
+					Roles  []string `json:"roles"`
+				}, 0)
+				for _, sr := range sysRoles {
+					if sr.System != req.SystemName {
+						filtered = append(filtered, sr)
+					}
+				}
+				// 保存回数据库
+				if newJSON, err := json.Marshal(filtered); err == nil {
+					database.GetDB().Model(&userPerms[i]).Update("system_roles_json", string(newJSON))
+					log.Printf("已清理用户 %s 的 %s 系统角色", userPerms[i].Name, req.SystemName)
+				}
+			}
+		}
 	}
 
 	var allRules []models.PermissionRule
