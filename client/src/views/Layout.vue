@@ -142,7 +142,8 @@ export default {
           { index: '/system-hardening', icon: 'hammer', title: '系统加固' },
           { index: '/patch-update', icon: 'download', title: '补丁更新' },
           { index: '/virus-control', icon: 'shield-alert', title: '病毒控制' },
-          { index: '/backup-management', icon: 'database', title: '备份管理' }
+          { index: '/backup-management', icon: 'database', title: '备份管理' },
+          { index: '/exception-management', icon: 'file-text', title: '例外管理' }
         ]},
         { type: 'submenu', index: 'permission', icon: 'users', title: '用户管理', children: [
           { index: '/permissions', icon: 'key', title: '岗位权限设置' },

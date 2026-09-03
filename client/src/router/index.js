@@ -104,6 +104,7 @@ const routes = [
       { path: 'security-rectification', name: 'SecurityRectification', component: () => import('../views/network-security/SecurityRectification.vue'), meta: { title: '安全整改记录', enTitle: 'Security Rectification' } },
       { path: 'system-hardening', name: 'SystemHardening', component: () => import('../views/system-security/SystemHardening.vue'), meta: { title: '系统加固', enTitle: 'System Hardening' } },
       { path: 'patch-update', name: 'PatchUpdate', component: () => import('../views/system-security/PatchUpdate.vue'), meta: { title: '补丁更新', enTitle: 'Patch Update' } },
+      { path: 'exception-management', name: 'ExceptionManagement', component: () => import('../views/system-security/ExceptionManagement.vue'), meta: { title: '例外管理', enTitle: 'Exception Management' } },
       { path: 'virus-control', name: 'VirusControl', component: () => import('../views/system-security/VirusControl.vue'), meta: { title: '病毒控制', enTitle: 'Virus Control' } },
       { path: 'backup-management', name: 'BackupManagement', component: () => import('../views/system-security/BackupManagement.vue'), meta: { title: '备份管理', enTitle: 'Backup Management' } },
       { path: 'permissions', name: 'Permissions', component: () => import('../views/permission/PermissionList.vue'), meta: { title: '岗位权限设置', enTitle: 'Permission Settings' } },

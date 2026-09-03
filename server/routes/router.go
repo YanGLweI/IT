@@ -172,6 +172,11 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/patch-updates/:id/fix-preview", handlers.PreviewPatchFixReport)
 			protected.GET("/patch-updates/:id/fix-download", handlers.DownloadPatchFixReport)
 
+			// 例外管理 - 查询（不需要双控）
+			protected.GET("/exception-managements", handlers.ListExceptionManagement)
+			protected.GET("/exception-managements/:id/preview", handlers.PreviewExceptionManagement)
+			protected.GET("/exception-managements/:id/download", handlers.DownloadExceptionManagement)
+
 			// 备份管理 - 查询（不需要双控）
 			protected.GET("/backups", handlers.ListBackups)
 			protected.GET("/backups/:id/preview", handlers.PreviewBackup)
@@ -371,6 +376,11 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/patch-updates/:id", handlers.DeletePatchUpdate)
 				dual.PUT("/patch-updates/:id/fix", handlers.UploadPatchFixReport)
 				dual.DELETE("/patch-updates/:id/fix", handlers.DeletePatchFixReport)
+				
+				// 例外管理 - 写操作（需要双控）
+				dual.POST("/exception-managements", handlers.CreateExceptionManagement)
+				dual.PUT("/exception-managements/:id", handlers.UpdateExceptionManagement)
+				dual.DELETE("/exception-managements/:id", handlers.DeleteExceptionManagement)
 
 				// 备份管理 - 写操作（需要双控）
 				dual.POST("/backups", handlers.CreateBackup)

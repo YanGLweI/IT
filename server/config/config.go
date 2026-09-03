@@ -89,6 +89,7 @@ type UploadConfig struct {
 	FormVaultSnapshotPath        string `yaml:"form_vault_snapshot_path"`
 	ITGuideMediaPath             string `yaml:"it_guide_media_path"`
 	ITGuideAttachmentPath        string `yaml:"it_guide_attachment_path"`
+	ExceptionManagementPath      string `yaml:"exception_management_path"`
 }
 
 // LDAPConfig LDAP配置
@@ -241,6 +242,9 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.ITGuideAttachmentPath == "" {
 		Cfg.Upload.ITGuideAttachmentPath = "./uploads/it_guide_attachments"
+	}
+	if Cfg.Upload.ExceptionManagementPath == "" {
+		Cfg.Upload.ExceptionManagementPath = "./uploads/exception_managements"
 	}
 	if Cfg.RSA.PrivateKeyPath == "" {
 		Cfg.RSA.PrivateKeyPath = "./certificate/rsa_private.pem"

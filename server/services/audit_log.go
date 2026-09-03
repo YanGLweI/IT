@@ -352,7 +352,7 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"Quarter":          "季度",
 			"ReportDate":       "报告日期",
 			"AssetCount":       "资产数量",
-			"ExternalIP":       "对外IP",
+			"ExternalIP":       "对外 IP",
 			"CriticalCount":    "关键漏洞",
 			"HighCount":        "严重漏洞",
 			"MediumCount":      "中等漏洞",
@@ -363,6 +363,17 @@ func GetFieldLabels(resourceType string) map[string]string {
 			"FixHighCount":     "修复后严重漏洞",
 			"FixMediumCount":   "修复后中等漏洞",
 			"RectFileName":     "整改记录表",
+		}
+	case "exception_management":
+		return map[string]string{
+			"ApplyDate":  "申请日期",
+			"Applicant":  "申请人",
+			"Reason":     "例外说明",
+			"EndDate":    "持续时间",
+			"FileName":   "扫描件名称",
+			"FilePath":   "文件路径",
+			"FileSize":   "文件大小",
+			"FileType":   "文件类型",
 		}
 	case "system_hardening_history":
 		return map[string]string{

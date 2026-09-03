@@ -71,8 +71,10 @@ upload:
   form_vault_path: "./uploads/form_vault"
   # 表单保管区快照路径
   form_vault_snapshot_path: "./uploads/form_vault/snapshots"
-  # IT指南媒体资源上传路径
+  # IT 指南媒体资源上传路径
   it_guide_media_path: "./uploads/it_guide_media"
+  # 例外管理授权文件上传路径
+  exception_management_path: "./uploads/exception_managements"
 
 # RSA 加密配置
 rsa:
