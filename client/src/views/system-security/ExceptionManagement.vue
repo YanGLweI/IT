@@ -4,7 +4,7 @@
     <div class="page-header">
       <div class="header-left">
         <h2 class="page-title">例外管理</h2>
-        <p class="page-subtitle">管理电脑补丁升级例外的授权文件存档</p>
+        <p class="page-subtitle">管理例外情况的授权文件存档</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" size="small" icon="el-icon-upload2" @click="openCreate">上传授权文件</el-button>
@@ -14,7 +14,7 @@
 
     <!-- 筛选栏 -->
     <div class="filter-bar">
-      <el-input v-model="keyword" placeholder="搜索说明..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
+      <el-input v-model="keyword" placeholder="搜索申请人/说明..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
       <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
     </div>
 
