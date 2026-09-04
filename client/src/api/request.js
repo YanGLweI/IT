@@ -29,9 +29,16 @@ function onTokenRefreshFailed() {
   refreshSubscribers = []
 }
 
+// 创建独立的 axios 实例用于刷新 token（避免被主实例的拦截器循环）
+const refreshAxios = axios.create({
+  baseURL: '/api',
+  timeout: 10000,
+  withCredentials: true // 必须携带 HttpOnly Cookie
+})
+
 // 执行刷新 Token 的请求（使用独立 axios 实例，避免被拦截器循环）
 function doRefreshToken() {
-  return axios.post('/api/refresh-token', null, { withCredentials: true })
+  return refreshAxios.post('/refresh-token')
 }
 
 // 清除登录状态并跳转登录页
