@@ -116,6 +116,24 @@
 
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
+
+    <!-- 关联第三方软件提示弹窗 -->
+    <el-dialog
+      class="link-prompt-dialog"
+      title="关联第三方软件"
+      :visible.sync="showLinkPrompt"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <div class="prompt-content">
+        <p class="prompt-text">是否立即为新资产关联第三方软件？</p>
+        <el-tag v-if="newAssetComputerName" size="small" type="success">{{ newAssetComputerName }}</el-tag>
+      </div>
+      <span slot="footer">
+        <el-button @click="handleSkipAsset">稍后处理</el-button>
+        <el-button type="primary" @click="handleGoToAsset">立即前往</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -148,12 +166,31 @@ export default {
       editRow: null,
       selectedSoftwareIds: [],
       submitting: false,
-      exporting: false
+      exporting: false,
+      autoLocateHandled: false,  // 标记是否已处理自动定位
+      newAssetId: null,        // 记录新创建的资产 ID
+      newAssetComputerName: '', // 新创建资产的计算机名
+      showLinkPrompt: false    // 显示关联提示弹窗
     }
   },
-  mounted() {
+  async mounted() {
     this.fetchData()
-    this.fetchAllSoftware()
+    await this.fetchAllSoftware()
+    
+    // 检查是否有来自资产创建的跳转参数
+    const assetId = this.$route.query.asset_id
+    if (assetId && !this.autoLocateHandled) {
+      // 立即清理查询参数，避免后续重复触发
+      this.autoLocateHandled = true
+      this.$router.replace({ query: {} })
+      
+      // 数据应该已经加载完成，直接定位
+      console.log('[AutoLocate] 开始定位资产 ID:', assetId)
+      this.locateAndOpen(assetId)
+    }
+    
+    // 监听子组件的 success 事件
+    this.$on('child-success', this.handleChildSuccess)
   },
   methods: {
     indexMethod(index) {
@@ -220,26 +257,66 @@ export default {
       try {
         const dualToken = await this.$refs.dualControl.open()
         await updateAssetSoftwareLinks(this.editRow.id, this.selectedSoftwareIds, dualToken)
-        this.$message.success('关联更新成功')
+        
+        // 关闭弹窗并刷新数据
         this.editDialogVisible = false
         this.fetchData()
+        
+        this.$message.success('关联更新成功')
       } catch (e) {
         if (e.message !== 'canceled') console.error(e)
       } finally {
         this.submitting = false
       }
     },
+    locateAndOpen(assetId) {
+      console.log('[AutoLocate] 开始查找资产:', assetId)
+      
+      // 清除筛选条件
+      this.search = ''
+      this.selectedSoftwareFilter = []
+      this.currentPage = 1
+      
+      // 首次查找
+      let row = this.list.find(item => String(item.id) === String(assetId))
+      
+      if (row) {
+        // 找到则直接打开
+        console.log('[AutoLocate] 找到资产，准备打开对话框')
+        this.$nextTick(() => {
+          this.handleEdit(row)
+        })
+      } else {
+        // 未找到则刷新数据再尝试
+        console.log('[AutoLocate] 首次未找到，刷新数据...')
+        this.fetchData().then(() => {
+          const updatedRow = this.list.find(item => String(item.id) === String(assetId))
+          if (updatedRow) {
+            console.log('[AutoLocate] 刷新后找到资产，打开对话框')
+            this.$nextTick(() => {
+              this.handleEdit(updatedRow)
+            })
+          } else {
+            console.warn('[AutoLocate] 刷新后仍未找到资产 ID:', assetId)
+            this.$message.warning(`未找到资产 ID${assetId}，请确认资产已创建成功`)
+          }
+        }).catch(err => {
+          console.error('定位资产失败:', err)
+          this.$message.error('定位资产失败，请手动查找')
+        })
+      }
+    },
     async handleExport() {
       this.exporting = true
       try {
         const res = await exportPatchUpdateRecord()
-        // 检查是否返回了错误JSON（blob情况下需要转换）
+        // 检查是否返回了错误 JSON（blob 情况下需要转换）
         if (res instanceof Blob) {
           const link = document.createElement('a')
           link.href = URL.createObjectURL(res)
           const now = new Date()
           const yearMonth = `${now.getFullYear()}年${now.getMonth() + 1}月`
-          link.download = `第三方应用补丁更新记录表(${yearMonth}).xlsx`
+          link.download = `第三方应用补丁更新记录表 (${yearMonth}).xlsx`
           document.body.appendChild(link)
           link.click()
           document.body.removeChild(link)
@@ -254,7 +331,53 @@ export default {
       } finally {
         this.exporting = false
       }
+    },
+    // 处理稍后点击“稍后处理”按钮
+    handleSkipAsset() {
+      this.showLinkPrompt = false
+      this.newAssetId = null
+      this.newAssetComputerName = ''
+    },
+    // 处理点击“立即前往”按钮
+    handleGoToAsset() {
+      this.showLinkPrompt = false
+      const assetId = this.newAssetId
+      const assetName = this.newAssetComputerName
+      this.newAssetId = null
+      this.newAssetComputerName = ''
+        
+      // 延迟跳转确保弹窗关闭完成（不再清理参数，避免 NavigationDuplicate）
+      this.$nextTick(() => {
+        setTimeout(() => {
+          // 跳转到资产对应表页面并自动定位
+          this.$router.push({
+            name: 'AssetSoftware',
+            query: { asset_id: assetId, auto_open: 'true' }
+          })
+        }, 300)
+      })
+    },
+    // 接收子组件的 success 事件
+    handleChildSuccess(newAssetData) {
+      if (newAssetData && newAssetData.id) {
+        this.newAssetId = newAssetData.id
+        this.newAssetComputerName = newAssetData.computer_name || '新资产'
+        this.showLinkPrompt = true
+      }
+    },
+    // 处理自动打开（通过 URL 参数）
+    handleAutoOpen(assetId) {
+      // 立即清理查询参数，避免后续重复触发
+      this.$router.replace({ query: {} })
+      
+      // 数据应该已经加载完成，直接定位（无需等待）
+      console.log('[AutoLocate] 开始定位资产 ID:', assetId)
+      this.locateAndOpen(assetId)
     }
+  },
+  beforeDestroy() {
+    // 清除子组件事件监听
+    this.$off('child-success', this.handleChildSuccess)
   }
 }
 </script>
@@ -336,5 +459,18 @@ export default {
   text-align: center;
   color: #999;
   padding: 20px;
+}
+
+/* 关联提示弹窗样式 */
+.link-prompt-dialog .prompt-content {
+  padding: 16px 0;
+  text-align: center;
+}
+
+.link-prompt-dialog .prompt-text {
+  margin: 0 0 12px 0;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.6;
 }
 </style>

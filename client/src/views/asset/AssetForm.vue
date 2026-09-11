@@ -1,7 +1,8 @@
 <template>
-  <el-dialog class="vault-dialog" :title="isEdit ? '编辑资产' : '新增资产'" :visible.sync="dialogVisible" width="600px" @close="handleClose" :close-on-click-modal="false">
-    <DualControlDialog ref="dualControl" />
-    <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
+  <div>
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑资产' : '新增资产'" :visible.sync="dialogVisible" width="600px" @close="handleClose" :close-on-click-modal="false">
+      <DualControlDialog ref="dualControl" />
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
       <el-form-item label="计算机名" prop="computer_name">
         <el-input v-model="form.computer_name" placeholder="请输入计算机名" />
       </el-form-item>
@@ -48,6 +49,7 @@
       <el-button type="primary" @click="handleSubmit">确定</el-button>
     </span>
   </el-dialog>
+  </div>
 </template>
 
 <script>
@@ -173,12 +175,25 @@ export default {
           if (this.isEdit) {
             await updateAsset(this.form.id, submitData, dualToken)
             this.$message.success('更新成功')
+            this.dialogVisible = false
+            // 通知父组件刷新列表（不是创建）
+            this.$emit('success', null, false)
           } else {
-            await createAsset(submitData, dualToken)
+            const res = await createAsset(submitData, dualToken)
             this.$message.success('创建成功')
+            // 保存新资产 ID 和名称用于父组件的提示弹窗
+            const newAssetData = {
+              id: res.data?.id || null,
+              computer_name: this.form.computer_name
+            }
+            
+            // 关闭表单并通知父组件有新资产创建成功
+            setTimeout(() => {
+              this.dialogVisible = false
+              // 发往父组件事件，由父组件处理提示弹窗
+              this.$emit('success', newAssetData, true)
+            }, 500)
           }
-          this.dialogVisible = false
-          this.$emit('success')
         } catch (e) {
           if (e.message !== 'canceled') {
             console.error('提交失败:', e)
@@ -193,3 +208,6 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+</style>

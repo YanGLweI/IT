@@ -90,11 +90,29 @@
       :visible.sync="formVisible"
       :edit-data="editData"
       :regions="regions"
-      @success="fetchData"
+      @success="handleAssetFormSuccess"
       ref="assetForm"
     />
     <!-- 双控验证弹窗 -->
     <DualControlDialog ref="dualControl" />
+
+    <!-- 关联第三方软件提示弹窗 -->
+    <el-dialog
+      class="link-prompt-dialog"
+      title="关联第三方软件"
+      :visible.sync="showLinkPrompt"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <div class="prompt-content">
+        <p class="prompt-text">是否立即为新资产关联第三方软件？</p>
+        <el-tag v-if="newAssetData && newAssetData.computer_name" size="small" type="success">{{ newAssetData.computer_name }}</el-tag>
+      </div>
+      <span slot="footer">
+        <el-button @click="handleSkipAsset">稍后处理</el-button>
+        <el-button type="primary" @click="handleGoToAsset">立即前往</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -124,7 +142,10 @@ export default {
       // 排序
       sortBy: 'id',
       sortOrder: 'desc',
-      search: ''
+      search: '',
+      // 关联提示相关
+      newAssetData: null,
+      showLinkPrompt: false
     }
   },
   async mounted() {
@@ -210,10 +231,47 @@ export default {
         if (e.message !== 'canceled') console.error(e)
       }
     },
+    // 接收子组件的 success 事件
+    handleAssetFormSuccess(newAssetData, isCreate = true) {
+      if (isCreate && newAssetData && newAssetData.id) {
+        this.newAssetData = newAssetData
+        this.showLinkPrompt = true
+      } else {
+        // 编辑或其他情况，刷新列表
+        this.fetchData()
+      }
+    },
+    // 处理稍后点击"稍后处理"按钮
+    handleSkipAsset() {
+      this.showLinkPrompt = false
+      this.newAssetData = null
+      this.fetchData()
+    },
+    // 处理点击"立即前往"按钮
+    handleGoToAsset() {
+      this.showLinkPrompt = false
+      const assetId = this.newAssetData?.id
+      this.newAssetData = null
+      
+      // 延迟跳转确保弹窗关闭完成
+      this.$nextTick(() => {
+        setTimeout(() => {
+          // 跳转到资产对应表页面并自动定位
+          this.$router.push({
+            name: 'AssetSoftware',
+            query: { asset_id: assetId, auto_open: 'true' }
+          })
+        }, 300)
+      })
+    },
     handleSearch() {
       this.currentPage = 1
       this.fetchData()
     }
+  },
+  beforeDestroy() {
+    // 清除所有事件监听
+    this.$off()
   }
 }
 </script>
@@ -282,5 +340,18 @@ export default {
 /* --- Tabs 间距 --- */
 .asset-list .el-tabs {
   margin-bottom: 16px;
+}
+
+/* 关联提示弹窗样式 */
+.link-prompt-dialog .prompt-content {
+  padding: 16px 0;
+  text-align: center;
+}
+
+.link-prompt-dialog .prompt-text {
+  margin: 0 0 12px 0;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.6;
 }
 </style>

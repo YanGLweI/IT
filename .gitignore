@@ -42,3 +42,4 @@ deploy.sh
 
 dist*
 flyfish-viewer-assets.json
+*.log
