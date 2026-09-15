@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/binary"
@@ -328,4 +329,94 @@ func encodePassword(password string) []byte {
 		binary.LittleEndian.PutUint16(utf16Bytes[i*2:], r)
 	}
 	return utf16Bytes
+}
+
+// GetDisplayNameFromLDAP 从 LDAP 获取用户显示名称
+func GetDisplayNameFromLDAP(username string) (string, error) {
+	cfg := &config.Cfg.LDAP
+	
+	conn, err := serviceBind()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	// 搜索用户，包含 displayName, cn, sAMAccountName
+	searchRequest := ldap.NewSearchRequest(
+		cfg.BaseDN,
+		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
+		fmt.Sprintf(cfg.UserFilter, username),
+		[]string{"dn", "displayName", "cn", "sAMAccountName"},
+		nil,
+	)
+
+	result, err := conn.Search(searchRequest)
+	if err != nil {
+		return "", fmt.Errorf("搜索用户失败：%w", err)
+	}
+	
+	if len(result.Entries) == 0 {
+		return "", fmt.Errorf("用户不存在")
+	}
+
+	entry := result.Entries[0]
+	displayName := entry.GetAttributeValue("displayName")
+	if displayName == "" {
+		displayName = entry.GetAttributeValue("cn")
+	}
+	if displayName == "" {
+		displayName = username
+	}
+
+	return displayName, nil
+}
+
+// GetDisplayNameFromLDAPWithContext 从 LDAP 获取用户显示名称 (with context timeout)
+func GetDisplayNameFromLDAPWithContext(ctx context.Context, username string) (string, error) {
+	cfg := &config.Cfg.LDAP
+	
+	conn, err := serviceBind()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	// Create sub-context with timeout
+	subCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// Check context cancellation
+	select {
+	case <-subCtx.Done():
+		return "", fmt.Errorf("LDAP query timed out: %w", subCtx.Err())
+	default:
+	}
+
+	searchRequest := ldap.NewSearchRequest(
+		cfg.BaseDN,
+		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
+		fmt.Sprintf(cfg.UserFilter, username),
+		[]string{"dn", "displayName", "cn", "sAMAccountName"},
+		nil,
+	)
+
+	result, err := conn.Search(searchRequest)
+	if err != nil {
+		return "", fmt.Errorf("搜索用户失败：%w", err)
+	}
+	
+	if len(result.Entries) == 0 {
+		return "", fmt.Errorf("用户不存在")
+	}
+
+	entry := result.Entries[0]
+	displayName := entry.GetAttributeValue("displayName")
+	if displayName == "" {
+		displayName = entry.GetAttributeValue("cn")
+	}
+	if displayName == "" {
+		displayName = username
+	}
+
+	return displayName, nil
 }

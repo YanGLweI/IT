@@ -12,6 +12,11 @@ const request = axios.create({
 let isRefreshing = false        // 是否正在刷新中
 let refreshSubscribers = []     // 等待刷新完成的请求队列
 
+// ========== Retry Configuration ==========
+const MAX_REFRESH_RETRIES = 3          // Maximum retry attempts
+const REFRESH_RETRY_DELAY = 1000       // Initial delay in milliseconds
+let refreshRetries = 0                 // Retry counter (session-scoped)
+
 // 将等待刷新的请求加入队列
 function subscribeTokenRefresh(cb) {
   refreshSubscribers.push(cb)
@@ -57,6 +62,36 @@ function handleLogout(msg) {
       Message.error(msg)
     }
     router.push('/login').catch(() => {})
+  }
+}
+
+// Decode JWT token to extract claims (no signature verification, payload only)
+function decodeToken(token) {
+  try {
+    // Validate input type
+    if (!token || typeof token !== 'string') {
+      console.warn('Invalid token type:', typeof token)
+      return null
+    }
+    
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      console.warn('Invalid token format: expected 3 parts, got', parts.length)
+      return null
+    }
+    
+    const base64Url = parts[1]
+    if (!base64Url || base64Url.length === 0) {
+      console.warn('Invalid token format: payload part is empty')
+      return null
+    }
+    
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))
+    return JSON.parse(jsonPayload)
+  } catch (e) {
+    console.error('Failed to decode token:', e)
+    return null
   }
 }
 
@@ -122,25 +157,53 @@ request.interceptors.response.use(
           .then(res => {
             const newToken = res.data && res.data.data && res.data.data.token
             if (newToken) {
-              // 更新 localStorage 中的 accessToken
+              // Decode token to get username and display_name
+              const claims = decodeToken(newToken)
+                    
+              // Safe extraction with defaults
+              const username = claims?.username || 'unknown'
+              const displayName = claims?.display_name || claims?.username || 'Unknown User'
+                  
+              // Update localStorage with all necessary information for session recovery
               localStorage.setItem('token', newToken)
-              // 用新 Token 重放当前失败的请求
+              localStorage.setItem('username', username)
+              localStorage.setItem('display_name', displayName)
+                    
+              // Set authorization header for current request
               originalRequest.headers['Authorization'] = `Bearer ${newToken}`
-              // 通知所有排队中的请求
+                    
+              // Notify waiting subscribers with new token
               onTokenRefreshed(newToken)
               resolve(request(originalRequest))
             } else {
-              // 刷新接口返回了非预期格式，视为失败
+              // Invalid response format
               onTokenRefreshFailed()
               handleLogout('登录已过期，请重新登录')
-              reject(new Error('Token刷新失败'))
+              reject(new Error('Token 刷新失败'))
             }
           })
           .catch(() => {
             // refreshToken 也过期或网络错误
-            onTokenRefreshFailed()
-            handleLogout('登录已过期，请重新登录')
-            reject(error)
+            refreshRetries++
+            
+            if (refreshRetries >= MAX_REFRESH_RETRIES) {
+              // Max retries exceeded, force logout
+              console.error('Token 刷新失败次数已达上限，强制登出')
+              onTokenRefreshFailed()
+              handleLogout('登录已过期，请重新登录')
+              reject(error)
+            } else {
+              // Retry with exponential backoff
+              const delay = REFRESH_RETRY_DELAY * Math.pow(2, refreshRetries - 1)
+              console.warn(`Token 刷新失败 (${refreshRetries}/${MAX_REFRESH_RETRIES}), ${delay}ms 后重试...`)
+              
+              setTimeout(() => {
+                // Reset retry counter and retry the original request
+                refreshRetries = 0
+                originalRequest._retry = false
+                request(originalRequest).then(resolve).catch(reject)
+              }, delay)
+            }
           })
           .finally(() => {
             isRefreshing = false

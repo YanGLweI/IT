@@ -63,7 +63,7 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成令牌失败"})
 		return
 	}
-	refreshToken, err := generateRefreshToken(req.Username, displayName)
+	refreshToken, err := generateRefreshToken(req.Username)
 	if err != nil {
 		services.LogLogin(req.Username, displayName, "login_failure", c.ClientIP(), c.Request.UserAgent(), "生成刷新令牌失败")
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "生成刷新令牌失败"})
@@ -268,17 +268,16 @@ func generateAccessToken(username, displayName string) (string, error) {
 	return token.SignedString([]byte(secret))
 }
 
-// generateRefreshToken 生成刷新 Token（长期）
-func generateRefreshToken(username, displayName string) (string, error) {
+// generateRefreshToken 生成刷新 Token（长期）- ONLY contains username
+func generateRefreshToken(username string) (string, error) {
 	secret := getJWTSecret()
 	expiry := config.Cfg.Server.RefreshTokenExpiry
 
 	claims := jwt.MapClaims{
-		"type":         "refresh",
-		"username":     username,
-		"display_name": displayName,
-		"exp":          time.Now().Add(time.Duration(expiry) * 24 * time.Hour).Unix(),
-		"iat":          time.Now().Unix(),
+		"type":       "refresh",
+		"username":   username,
+		"exp":        time.Now().Add(time.Duration(expiry) * 24 * time.Hour).Unix(),
+		"iat":        time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
@@ -351,7 +350,13 @@ func RefreshToken(c *gin.Context) {
 	}
 
 	username, _ := claims["username"].(string)
-	displayName, _ := claims["display_name"].(string)
+
+	// Fetch display_name from LDAP with timeout and fallback
+	displayName, err := services.GetDisplayNameFromLDAPWithContext(c.Request.Context(), username)
+	if err != nil {
+		log.Printf("查询用户 %s 的显示名称失败：%v", username, err)
+		displayName = username // safe fallback
+	}
 
 	// 签发新的 accessToken
 	newAccessToken, err := generateAccessToken(username, displayName)

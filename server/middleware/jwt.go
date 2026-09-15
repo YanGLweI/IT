@@ -58,6 +58,13 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 
+		// Check if token is blacklisted
+		if IsBlacklisted(tokenString) {
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "Token 已失效"})
+			c.Abort()
+			return
+		}
+
 		// 将用户信息存入上下文，并校验 Token 类型
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			// 校验 Token 类型必须为 access 或 domain_account（兼容旧 Token：无 type 字段视为 access）

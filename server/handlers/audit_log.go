@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"it-platform-server/database"
+	"it-platform-server/middleware"
 	"it-platform-server/models"
 
 	"github.com/gin-gonic/gin"
@@ -159,6 +162,25 @@ func Logout(c *gin.Context) {
 	ipAddress := c.ClientIP()
 	userAgent := c.Request.UserAgent()
 
+	// Extract token from either Header or Cookie
+	authHeader := c.GetHeader("Authorization")
+	var tokenString string
+
+	if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+		tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+	} else {
+		// Fallback to access_token cookie for browser-native requests
+		tokenString, _ = c.Cookie("access_token")
+	}
+
+	// Only blacklist if we have a token
+	if tokenString != "" {
+		middleware.AddToBlacklist(tokenString, 120*time.Minute)
+		log.Printf("已注销 token: %s (来源：%s)",
+			tokenString[:20]+"...",
+			getLogoutSource(authHeader))
+	}
+
 	// 清除 refreshToken Cookie
 	ClearRefreshTokenCookie(c)
 	// 同步清除 access_token Cookie
@@ -187,4 +209,12 @@ func Logout(c *gin.Context) {
 	}()
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "登出成功"})
+}
+
+// getLogoutSource returns where the token came from
+func getLogoutSource(authHeader string) string {
+	if authHeader != "" {
+		return "header"
+	}
+	return "cookie"
 }

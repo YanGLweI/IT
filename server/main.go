@@ -9,6 +9,7 @@ import (
 	"it-platform-server/config"
 	"it-platform-server/database"
 	"it-platform-server/handlers"
+	"it-platform-server/middleware"
 	"it-platform-server/routes"
 )
 
@@ -30,6 +31,9 @@ func main() {
 
 	// 初始化数据库
 	database.InitDB()
+
+	// 初始化 Token Blacklist
+	middleware.InitTokenBlacklist()
 
 	// 设置路由
 	r := routes.SetupRouter()
