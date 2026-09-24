@@ -276,6 +276,7 @@ func generateRefreshToken(username string) (string, error) {
 	claims := jwt.MapClaims{
 		"type":       "refresh",
 		"username":   username,
+		// 恢复为单位：天
 		"exp":        time.Now().Add(time.Duration(expiry) * 24 * time.Hour).Unix(),
 		"iat":        time.Now().Unix(),
 	}
@@ -286,6 +287,7 @@ func generateRefreshToken(username string) (string, error) {
 // setRefreshTokenCookie 设置 refreshToken 到 HttpOnly Cookie
 func setRefreshTokenCookie(c *gin.Context, refreshToken string) {
 	expiry := config.Cfg.Server.RefreshTokenExpiry
+	// 恢复为单位：天（86400 秒）
 	c.SetCookie("refresh_token", refreshToken, expiry*86400, "/api", "", false, true)
 }
 

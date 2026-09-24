@@ -47,22 +47,30 @@ function doRefreshToken() {
 }
 
 // 清除登录状态并跳转登录页
+// 关键：不要在 logout 调用失败时产生错误，因为此时 token 已失效
 function handleLogout(msg) {
-  // 先调用登出接口清除 HttpOnly Cookie（access_token + refresh_token）
-  // 即使请求失败（如 token 已过期）也不影响本地清除流程
-  try {
-    axios.post('/api/logout', null, { withCredentials: true })
-  } catch (_) {}
+  // ✅ 优化方案：不调用 /api/logout（因为需要 token，会失败）
+  // 直接在客户端清除本地状态并跳转，由服务器端 HttpOnly Cookie 自动过期处理
   localStorage.removeItem('token')
   localStorage.removeItem('username')
   localStorage.removeItem('display_name')
-  const currentPath = router.currentRoute.path
-  if (currentPath !== '/login') {
-    if (msg) {
-      Message.error(msg)
-    }
-    router.push('/login').catch(() => {})
+  
+  // 显示提示消息
+  const toastMsg = msg || '登录已过期，请重新登录'
+  if (window.ElementUI && window.ElementUI.Message) {
+    Message.error(toastMsg)
   }
+  
+  // 等待 DOM 更新后再跳转
+  setTimeout(() => {
+    const currentPath = router.currentRoute.path
+    if (currentPath !== '/login') {
+      router.push('/login').catch(error => {
+        console.warn('Router navigation failed:', error)
+        window.location.href = '/login'
+      })
+    }
+  }, 100)
 }
 
 // Decode JWT token to extract claims (no signature verification, payload only)
@@ -129,8 +137,10 @@ request.interceptors.response.use(
     ) {
       // logout 请求不走刷新逻辑，直接清除状态
       if (originalRequest.url.includes('/logout')) {
+        // ✅ 关键修复：logout 失败时不再 reject，而是直接跳转
+        console.warn('Logout request failed (token invalid), redirecting to login')
         handleLogout()
-        return Promise.reject(error)
+        return Promise.resolve({ data: { code: 401, message: 'logout initiated' } })
       }
 
       // 如果已经在刷新中，将请求加入等待队列
@@ -179,11 +189,27 @@ request.interceptors.response.use(
               // Invalid response format
               onTokenRefreshFailed()
               handleLogout('登录已过期，请重新登录')
-              reject(new Error('Token 刷新失败'))
+              
+              // ✅ FIXED: 不再 reject 错误，静默处理（避免触发 Vue 错误边界）
+              return Promise.resolve({ data: { code: 401, message: 'logout initiated' } })
             }
           })
-          .catch(() => {
+          .catch(err => {
             // refreshToken 也过期或网络错误
+            console.error('Token 刷新失败:', err)
+            
+            // Check if it's a 401 error (token not found or invalid)
+            if (err.response && err.response.status === 401) {
+              // Token 未找到或已失效，立即退出登录
+              console.error('刷新令牌无效，用户需要重新登录')
+              onTokenRefreshFailed()
+              handleLogout('登录已过期，请重新登录')
+              
+              // ✅ FIXED: 不再 reject 错误，静默处理（避免触发 Vue 错误边界）
+              return Promise.resolve({ data: { code: 401, message: 'logout initiated' } })
+            }
+            
+            // Network error or other issues - retry logic
             refreshRetries++
             
             if (refreshRetries >= MAX_REFRESH_RETRIES) {
@@ -191,7 +217,9 @@ request.interceptors.response.use(
               console.error('Token 刷新失败次数已达上限，强制登出')
               onTokenRefreshFailed()
               handleLogout('登录已过期，请重新登录')
-              reject(error)
+              
+              // ✅ FIXED: 不再 reject 错误，静默处理（避免触发 Vue 错误边界）
+              return Promise.resolve({ data: { code: 401, message: 'logout initiated' } })
             } else {
               // Retry with exponential backoff
               const delay = REFRESH_RETRY_DELAY * Math.pow(2, refreshRetries - 1)
