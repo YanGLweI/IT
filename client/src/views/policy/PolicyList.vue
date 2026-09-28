@@ -142,8 +142,7 @@ export default {
   computed: {
     fvOptions() {
       return {
-        preset: officePreset,
-        fetchFile: this.fetchFileWithAuth
+        preset: officePreset
       }
     }
   },
@@ -229,17 +228,41 @@ export default {
     },
     async handlePreview(row) {
       const url = getPolicyPreviewUrl(row.id)
-      
+
+      // 预览前预检：FileViewer 内部使用无鉴权的裸 fetch 加载文件，
+      // 当后端文件被删除时会抛出未捕获错误并触发全屏报错浮层。
+      // 这里先做一次带认证的探测，若文件不存在则温和提示并阻止打开预览。
+      try {
+        const token = localStorage.getItem('token')
+        const check = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (!check.ok) {
+          if (check.status === 404) {
+            this.$alert('文件不存在或已丢失，请联系管理员确认文件状态。', '预览失败', {
+              confirmButtonText: '确定',
+              type: 'warning'
+            }).catch(() => {})
+          } else {
+            this.$message.error('文件预览失败，请稍后重试')
+          }
+          return
+        }
+      } catch (e) {
+        // 网络异常等无法确认文件状态时，仍尝试打开预览（交由 FileViewer 处理）
+        console.error('预览预检失败:', e)
+      }
+
       // 从文件名中提取扩展名
       const fileExtension = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
-      
+
       this.currentFileUrl = url
       this.currentFileName = row.file_name || 'unknown_file'
       this.currentFileType = this.getFileTypeFromExtension(fileExtension)
-      
+
       this.previewFileName = row.file_name || '文件'
       this.previewId = row.id
-      
+
       // 先关闭再打开，确保 FileViewer 组件重新渲染
       this.previewVisible = false
       await this.$nextTick()
@@ -248,18 +271,6 @@ export default {
     },
     getFileTypeFromExtension(ext) {
       return ext || ''
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     async downloadFile() {
       if (this.previewId) {
