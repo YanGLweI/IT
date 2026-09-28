@@ -44,6 +44,38 @@ if (typeof ResizeObserver !== 'undefined') {
   }
 }
 
+// 修复 file-viewer 图片预览放大后左边界无法滚动的问题
+// 背景：内置 image 渲染器用 flex 居中（.image-stage{justify-content:center}），
+// 图片放大超出容器宽度后负剩余空间被均分到左右两侧，而 overflow 容器的
+// 可滚动区域只向右/下延伸，导致图片左侧永远滚动不到。
+// 查看器内容渲染在 open Shadow DOM 中（styleIsolation 默认 auto），
+// 文档级样式无法穿透 shadow 边界，只能把覆盖规则注入 shadow root 内部。
+// 改为 flex-start 放置 + img auto 边距：未溢出时仍居中显示（视觉不变），
+// 溢出时边距归零、图片贴左，左右边界均可滚动到达。
+const FV_IMAGE_SCROLL_FIX_CSS = '.image-stage{justify-content:flex-start!important}.image-stage img{margin:auto!important}'
+function applyFileViewerImageScrollFix(host) {
+  // shadow root 由适配器 mounted 时的 mountViewer 同步挂载
+  const shadowRoot = host.shadowRoot
+  if (!shadowRoot || shadowRoot.querySelector('style[data-fv-image-scroll-fix]')) return
+  const style = document.createElement('style')
+  style.setAttribute('data-fv-image-scroll-fix', '')
+  style.textContent = FV_IMAGE_SCROLL_FIX_CSS
+  shadowRoot.appendChild(style)
+}
+if (typeof MutationObserver !== 'undefined') {
+  const scanFileViewerHosts = root => {
+    if (root.classList && root.classList.contains('ff-file-viewer-vue27')) applyFileViewerImageScrollFix(root)
+    if (root.querySelectorAll) root.querySelectorAll('.ff-file-viewer-vue27').forEach(applyFileViewerImageScrollFix)
+  }
+  new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeType === Node.ELEMENT_NODE) scanFileViewerHosts(node)
+      })
+    }
+  }).observe(document.body, { childList: true, subtree: true })
+}
+
 Vue.use(ElementUI)
 Vue.config.productionTip = false
 
