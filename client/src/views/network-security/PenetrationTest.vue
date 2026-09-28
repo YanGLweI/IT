@@ -167,6 +167,7 @@ import {
 import { getVulnerabilityScans, getVulnerabilityScanPreviewUrl, getVulnerabilityScanDownloadUrl } from '@/api/vulnerability_scan'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import tableHeightMixin from '@/mixins/table-height'
+import previewGuardMixin from '@/mixins/preview-guard'
 import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import fvFeature from '@/config/fv-feature'
@@ -174,7 +175,7 @@ import fvFeature from '@/config/fv-feature'
 export default {
   name: 'PenetrationTest',
   components: { DualControlDialog, FileViewer },
-  mixins: [tableHeightMixin],
+  mixins: [tableHeightMixin, previewGuardMixin],
   data() {
     const now = new Date()
     return {
@@ -220,8 +221,7 @@ export default {
   computed: {
     fvOptions() {
       return {
-        preset: officePreset,
-        fetchFile: this.fetchFileWithAuth
+        preset: officePreset
       }
     }
   },
@@ -377,7 +377,9 @@ export default {
       this.previewDownloadUrl = getPenetrationTestDownloadUrl(row.id)
       this.currentFileName = row.file_name || 'unknown_file'
       this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
-      this.currentFileUrl = getPenetrationTestPreviewUrl(row.id)
+      const previewUrl = getPenetrationTestPreviewUrl(row.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.currentVulnScanId = null
       this.previewVisible = false
       await this.$nextTick()
@@ -390,24 +392,14 @@ export default {
       const name = vs.file_name || `漏洞扫描-${vs.year}-Q${vs.quarter}-${vs.scan_type === 'internal' ? '内部' : '外部'}`
       this.currentFileName = name
       this.currentFileType = vs.file_name ? vs.file_name.split('.').pop().toLowerCase() : ''
-      this.currentFileUrl = getVulnerabilityScanPreviewUrl(vs.id)
+      const previewUrl = getVulnerabilityScanPreviewUrl(vs.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.currentVulnScanId = vs.id
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     handleDownloadFromPreview() {
       if (!this.previewDownloadUrl) return

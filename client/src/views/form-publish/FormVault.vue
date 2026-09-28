@@ -262,6 +262,7 @@ import {
 import { getDepartments } from '@/api/department'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import tableHeightMixin from '@/mixins/table-height'
+import previewGuardMixin from '@/mixins/preview-guard'
 import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import fvFeature from '@/config/fv-feature'
@@ -269,7 +270,7 @@ import fvFeature from '@/config/fv-feature'
 export default {
   name: 'FormVault',
   components: { DualControlDialog, FileViewer },
-  mixins: [tableHeightMixin],
+  mixins: [tableHeightMixin, previewGuardMixin],
   data() {
     return {
       items: [],
@@ -330,7 +331,7 @@ export default {
       return this.crossSources.filter(s => s.source_type === this.crossForm.source_type)
     },
     fvOptions() {
-      return { preset: officePreset, fetchFile: this.fetchFileWithAuth }
+      return { preset: officePreset }
     }
   },
   created() {
@@ -562,19 +563,13 @@ export default {
       } else {
         this.currentFileType = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : ''
       }
-      this.currentFileUrl = `/api/form-vault/${row.id}/preview`
+      const previewUrl = `/api/form-vault/${row.id}/preview`
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     async downloadFromPreview() {
       if (!this.previewRowId) return

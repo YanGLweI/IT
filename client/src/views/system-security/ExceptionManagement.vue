@@ -145,6 +145,7 @@ import {
 } from '@/api/exception_management'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import tableHeightMixin from '@/mixins/table-height'
+import previewGuardMixin from '@/mixins/preview-guard'
 import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import fvFeature from '@/config/fv-feature'
@@ -152,7 +153,7 @@ import fvFeature from '@/config/fv-feature'
 export default {
   name: 'ExceptionManagement',
   components: { DualControlDialog, FileViewer },
-  mixins: [tableHeightMixin],
+  mixins: [tableHeightMixin, previewGuardMixin],
   data() {
     return {
       records: [],
@@ -191,8 +192,7 @@ export default {
   computed: {
     fvOptions() {
       return {
-        preset: officePreset,
-        fetchFile: this.fetchFileWithAuth
+        preset: officePreset
       }
     }
   },
@@ -321,6 +321,7 @@ export default {
     // 预览文件
     async handlePreview(row) {
       const url = previewExceptionManagementUrl(row.id)
+      if (!(await this.checkFileExists(url))) return
       const fileExtension = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
       
       this.currentFileName = row.file_name || 'unknown_file'
@@ -332,14 +333,6 @@ export default {
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     async handleDownloadFromPreview() {
       if (!this.currentFileUrl) return

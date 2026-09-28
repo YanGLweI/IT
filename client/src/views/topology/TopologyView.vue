@@ -118,10 +118,12 @@ import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import fvFeature from '@/config/fv-feature'
+import previewGuardMixin from '@/mixins/preview-guard'
 
 export default {
   components: { DualControlDialog, FileViewer },
   name: 'TopologyView',
+  mixins: [previewGuardMixin],
   data() {
     return {
       topologies: [],
@@ -151,8 +153,7 @@ export default {
   computed: {
     fvOptions() {
       return {
-        preset: officePreset,
-        fetchFile: this.fetchFileWithAuth
+        preset: officePreset
       }
     }
   },
@@ -260,31 +261,21 @@ export default {
     },
     async handlePreview(item) {
       const url = getTopologyPreviewUrl(item.id)
+      if (!(await this.checkFileExists(url))) return
+
       const fileExtension = item.file_name ? item.file_name.split('.').pop().toLowerCase() : ''
-      
+
       this.currentFileUrl = url
       this.currentFileName = item.file_name || 'unknown_file'
       this.currentFileType = fileExtension
       this.previewFileName = item.file_name || '拓扑图'
       this.previewId = item.id
-      
+
       // 先关闭再打开，确保 FileViewer 组件重新渲染
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     async downloadFile() {
       if (this.previewId) {

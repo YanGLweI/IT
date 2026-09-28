@@ -201,6 +201,7 @@ import {
 } from '@/api/patch_update'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import tableHeightMixin from '@/mixins/table-height'
+import previewGuardMixin from '@/mixins/preview-guard'
 import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import fvFeature from '@/config/fv-feature'
@@ -208,7 +209,7 @@ import fvFeature from '@/config/fv-feature'
 export default {
   name: 'PatchUpdate',
   components: { DualControlDialog, FileViewer },
-  mixins: [tableHeightMixin],
+  mixins: [tableHeightMixin, previewGuardMixin],
   data() {
     const now = new Date()
     return {
@@ -269,8 +270,7 @@ export default {
   computed: {
     fvOptions() {
       return {
-        preset: officePreset,
-        fetchFile: this.fetchFileWithAuth
+        preset: officePreset
       }
     }
   },
@@ -408,19 +408,13 @@ export default {
       this.previewDownloadUrl = getPatchUpdateDownloadUrl(row.id)
       this.currentFileName = row.file_name || 'unknown_file'
       this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
-      this.currentFileUrl = getPatchUpdatePreviewUrl(row.id)
+      const previewUrl = getPatchUpdatePreviewUrl(row.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     async handleDownloadFromPreview() {
       if (!this.previewDownloadUrl) return
@@ -518,7 +512,9 @@ export default {
       this.previewDownloadUrl = getPatchFixDownloadUrl(row.id)
       this.currentFileName = row.fix_file_name || 'unknown_file'
       this.currentFileType = row.fix_file_name ? row.fix_file_name.split('.').pop().toLowerCase() : ''
-      this.currentFileUrl = getPatchFixPreviewUrl(row.id)
+      const previewUrl = getPatchFixPreviewUrl(row.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true

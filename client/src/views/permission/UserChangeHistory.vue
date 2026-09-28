@@ -157,6 +157,7 @@
 import { getUserChangeHistories, createUserChangeHistory, updateUserChangeHistory, deleteUserChangeHistory, getUserChangePreviewUrl, getUserChangeDownloadUrl } from '@/api/user_change'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import tableHeightMixin from '@/mixins/table-height'
+import previewGuardMixin from '@/mixins/preview-guard'
 import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import fvFeature from '@/config/fv-feature'
@@ -164,7 +165,7 @@ import fvFeature from '@/config/fv-feature'
 export default {
   name: 'UserChangeHistory',
   components: { DualControlDialog, FileViewer },
-  mixins: [tableHeightMixin],
+  mixins: [tableHeightMixin, previewGuardMixin],
   data() {
     const now = new Date()
     return {
@@ -227,7 +228,7 @@ export default {
       }
     },
     fvOptions() {
-      return { preset: officePreset, fetchFile: this.fetchFileWithAuth }
+      return { preset: officePreset }
     }
   },
   watch: {
@@ -342,19 +343,13 @@ export default {
       this.previewDownloadUrl = getUserChangeDownloadUrl(row.id)
       this.currentFileName = row.file_name || 'unknown_file'
       this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
-      this.currentFileUrl = getUserChangePreviewUrl(row.id)
+      const previewUrl = getUserChangePreviewUrl(row.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     async handleDownloadFromPreview() {
       if (!this.previewDownloadUrl) return

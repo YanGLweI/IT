@@ -163,10 +163,12 @@ import { getPublicForms, getPublicPreviewUrl } from '@/api/public_form'
 import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import fvFeature from '@/config/fv-feature'
+import previewGuardMixin from '@/mixins/preview-guard'
 
 export default {
   name: 'FormDownload',
   components: { FileViewer },
+  mixins: [previewGuardMixin],
   data() {
     return {
       items: [],
@@ -190,7 +192,7 @@ export default {
       return this.items
     },
     fvOptions() {
-      return { preset: officePreset, fetchFile: this.fetchFilePublic }
+      return { preset: officePreset }
     },
     publicDownloadUrl() {
       return this.previewItemId ? '/api/public/forms/' + this.previewItemId + '/download' : ''
@@ -264,22 +266,13 @@ export default {
       } else {
         this.currentFileType = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : ''
       }
-      this.currentFileUrl = getPublicPreviewUrl(item.id)
+      const previewUrl = getPublicPreviewUrl(item.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    // 公共接口免登录；若已登录则附带 token（兼容两种场景）
-    async fetchFilePublic({ url }) {
-      const headers = {}
-      const token = localStorage.getItem('token')
-      if (token) headers['Authorization'] = `Bearer ${token}`
-      const response = await fetch(url, { headers })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     }
   }
 }

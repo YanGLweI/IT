@@ -351,6 +351,7 @@ import {
 import { getAssets } from '@/api/asset'
 import { getDepartments } from '@/api/department'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import previewGuardMixin from '@/mixins/preview-guard'
 import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import fvFeature from '@/config/fv-feature'
@@ -358,6 +359,7 @@ import fvFeature from '@/config/fv-feature'
 export default {
   name: 'BackupManagement',
   components: { DualControlDialog, FileViewer },
+  mixins: [previewGuardMixin],
   data() {
     const now = new Date()
     return {
@@ -452,7 +454,7 @@ export default {
   },
   computed: {
     fvOptions() {
-      return { preset: officePreset, fetchFile: this.fetchFileWithAuth }
+      return { preset: officePreset }
     },
     backupTargetPlaceholder() {
       const map = {
@@ -541,7 +543,9 @@ export default {
       this.previewDownloadUrl = getBackupTemplateDownloadUrl(row.id)
       this.currentFileName = row.file_name || 'unknown_file'
       this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
-      this.currentFileUrl = getBackupTemplatePreviewUrl(row.id)
+      const previewUrl = getBackupTemplatePreviewUrl(row.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true
@@ -800,19 +804,13 @@ export default {
       this.previewDownloadUrl = getBackupDownloadUrl(row.id)
       this.currentFileName = row.file_name || 'unknown_file'
       this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
-      this.currentFileUrl = getBackupPreviewUrl(row.id)
+      const previewUrl = getBackupPreviewUrl(row.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     // 下载
     async handleDownload(row) {
@@ -923,7 +921,9 @@ export default {
       this.previewDownloadUrl = getBackupRecoveryDownloadUrl(recovery.id)
       this.currentFileName = recovery.file_name || 'unknown_file'
       this.currentFileType = recovery.file_name ? recovery.file_name.split('.').pop().toLowerCase() : ''
-      this.currentFileUrl = getBackupRecoveryPreviewUrl(recovery.id)
+      const previewUrl = getBackupRecoveryPreviewUrl(recovery.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
       this.previewVisible = false
       await this.$nextTick()
       this.previewVisible = true

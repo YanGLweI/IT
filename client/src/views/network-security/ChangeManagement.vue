@@ -311,10 +311,12 @@ import { FileViewer } from '@file-viewer/vue2.7'
 import officePreset from '@file-viewer/preset-office'
 import DualControlDialog from '@/components/DualControlDialog.vue'
 import fvFeature from '@/config/fv-feature'
+import previewGuardMixin from '@/mixins/preview-guard'
 
 export default {
   name: 'ChangeManagement',
   components: { DualControlDialog, FileViewer },
+  mixins: [previewGuardMixin],
   data() {
     const now = new Date()
     return {
@@ -379,8 +381,7 @@ export default {
   computed: {
     fvOptions() {
       return {
-        preset: officePreset,
-        fetchFile: this.fetchFileWithAuth
+        preset: officePreset
       }
     },
     // 申请日期：只能选择当月日期
@@ -552,6 +553,7 @@ export default {
       const fileExtension = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
       
       this.templatePreviewRow = row
+      if (!(await this.checkFileExists(url))) return
       this.currentFileUrl = url
       this.currentFileName = row.file_name || 'unknown_file'
       this.currentFileType = fileExtension
@@ -660,6 +662,8 @@ export default {
       const url = getChangeRecordPreviewUrl(row.id)
       const fileExtension = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
       
+      if (!(await this.checkFileExists(url))) return
+      
       this.currentFileUrl = url
       this.currentFileName = row.file_name || 'unknown_file'
       this.currentFileType = fileExtension
@@ -670,18 +674,6 @@ export default {
       await this.$nextTick()
       this.previewVisible = true
       await this.$nextTick()
-    },
-    async fetchFileWithAuth({ url }) {
-      const token = localStorage.getItem('token')
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`)
-      }
-      return response.arrayBuffer()
     },
     async downloadRecord(row) {
       const url = getChangeRecordDownloadUrl(row.id)
