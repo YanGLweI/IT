@@ -44,28 +44,68 @@ if (typeof ResizeObserver !== 'undefined') {
   }
 }
 
-// 修复 file-viewer 图片预览放大后左边界无法滚动的问题
-// 背景：内置 image 渲染器用 flex 居中（.image-stage{justify-content:center}），
-// 图片放大超出容器宽度后负剩余空间被均分到左右两侧，而 overflow 容器的
-// 可滚动区域只向右/下延伸，导致图片左侧永远滚动不到。
-// 查看器内容渲染在 open Shadow DOM 中（styleIsolation 默认 auto），
-// 文档级样式无法穿透 shadow 边界，只能把覆盖规则注入 shadow root 内部。
-// 改为 flex-start 放置 + img auto 边距：未溢出时仍居中显示（视觉不变），
-// 溢出时边距归零、图片贴左，左右边界均可滚动到达。
-const FV_IMAGE_SCROLL_FIX_CSS = '.image-stage{justify-content:flex-start!important}.image-stage img{margin:auto!important}'
-function applyFileViewerImageScrollFix(host) {
+// file-viewer 图片预览交互补丁（内容在 open Shadow DOM 内，只能注入 shadow root）
+// 1) 修复放大后左边界无法滚动：内置 image 渲染器用 justify-content:center 居中，
+//    图片溢出后负剩余空间均分两侧，而 overflow 容器可滚动区域不向左延伸。
+//    改为 flex-start + img auto 边距：未溢出时仍居中，溢出时贴左、左右均可滚动到达。
+// 2) 屏蔽点击/回车打开内置 lightbox 遮罩层：库把 click/keydown 监听绑在 img 上，
+//    在 shadowRoot 捕获阶段 stopPropagation 即可阻止其触发，多余遮罩层不再出现。
+// 3) 按住图片拖拽平移画布：mousedown 记录 .image-viewer 滚动原点，
+//    window mousemove 按位移改 scrollLeft/scrollTop（移出弹窗也不中断），放大后免用滚动条。
+const FV_IMAGE_FIX_CSS = [
+  '.image-stage{justify-content:flex-start!important}',
+  '.image-stage img{margin:auto!important;cursor:grab!important}',
+  '.image-stage img:active{cursor:grabbing!important}'
+].join('')
+const fvImageDragState = { current: null }
+window.addEventListener('mousemove', event => {
+  const drag = fvImageDragState.current
+  if (!drag) return
+  drag.viewer.scrollLeft = drag.left - (event.clientX - drag.x)
+  drag.viewer.scrollTop = drag.top - (event.clientY - drag.y)
+})
+window.addEventListener('mouseup', () => { fvImageDragState.current = null })
+function applyFileViewerImageFix(host) {
   // shadow root 由适配器 mounted 时的 mountViewer 同步挂载
   const shadowRoot = host.shadowRoot
-  if (!shadowRoot || shadowRoot.querySelector('style[data-fv-image-scroll-fix]')) return
+  if (!shadowRoot || shadowRoot.querySelector('style[data-fv-image-fix]')) return
   const style = document.createElement('style')
-  style.setAttribute('data-fv-image-scroll-fix', '')
-  style.textContent = FV_IMAGE_SCROLL_FIX_CSS
+  style.setAttribute('data-fv-image-fix', '')
+  style.textContent = FV_IMAGE_FIX_CSS
   shadowRoot.appendChild(style)
+
+  const isStageImage = target => target && target.closest && target.closest('.image-stage img')
+  shadowRoot.addEventListener('click', event => {
+    if (isStageImage(event.target)) {
+      event.stopPropagation()
+      event.preventDefault()
+    }
+  }, true)
+  shadowRoot.addEventListener('keydown', event => {
+    if (isStageImage(event.target) && (event.key === 'Enter' || event.key === ' ')) {
+      event.stopPropagation()
+      event.preventDefault()
+    }
+  }, true)
+  shadowRoot.addEventListener('mousedown', event => {
+    if (event.button !== 0 || !isStageImage(event.target)) return
+    const viewer = event.target.closest('.image-viewer')
+    if (!viewer) return
+    fvImageDragState.current = {
+      viewer,
+      x: event.clientX,
+      y: event.clientY,
+      left: viewer.scrollLeft,
+      top: viewer.scrollTop
+    }
+    // 阻止浏览器原生图片拖拽与文字选中
+    event.preventDefault()
+  })
 }
 if (typeof MutationObserver !== 'undefined') {
   const scanFileViewerHosts = root => {
-    if (root.classList && root.classList.contains('ff-file-viewer-vue27')) applyFileViewerImageScrollFix(root)
-    if (root.querySelectorAll) root.querySelectorAll('.ff-file-viewer-vue27').forEach(applyFileViewerImageScrollFix)
+    if (root.classList && root.classList.contains('ff-file-viewer-vue27')) applyFileViewerImageFix(root)
+    if (root.querySelectorAll) root.querySelectorAll('.ff-file-viewer-vue27').forEach(applyFileViewerImageFix)
   }
   new MutationObserver(mutations => {
     for (const mutation of mutations) {
