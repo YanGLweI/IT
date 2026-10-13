@@ -66,7 +66,7 @@
             <td class="td-images">
               <template v-if="parseImages(item.images).length">
                 <div class="img-thumb-wrap">
-                  <img :src="'/' + parseImages(item.images)[0]" class="img-thumb" @click="previewImages(item)" />
+                  <img :src="'/' + parseImages(item.images)[0]" class="img-thumb" @click="previewLineImages(item)" />
                   <i class="el-icon-close img-close" @click.stop="deleteImage(item, parseImages(item.images)[0])"></i>
                 </div>
               </template>
@@ -102,10 +102,31 @@
     <!-- 双控验证 -->
     <DualControlDialog ref="dualControl" />
 
-    <!-- 图片预览弹窗 -->
-    <el-dialog class="preview-dialog" title="图片预览" :visible.sync="previewVisible" width="700px" append-to-body :close-on-click-modal="true">
-      <div class="preview-gallery">
-        <img v-for="(img, idx) in previewList" :key="idx" :src="'/' + img" class="preview-img" />
+    <!-- 预览弹窗（使用 file-viewer） -->
+    <el-dialog class="preview-dialog fv-preview-dialog" :title="previewTitle" :visible.sync="previewVisible" width="80%" top="3vh" append-to-body :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="handleDownloadFromPreview">下载文件</el-button>
+        </div>
+      </div>
+      <div v-if="previewImages.length > 1" class="preview-nav">
+        <button class="nav-arrow left" :disabled="previewIndex === 0" @click="prevPreview">
+          <i class="el-icon-arrow-left"></i>
+        </button>
+        <span class="nav-indicator">{{ previewIndex + 1 }} / {{ previewImages.length }}</span>
+        <button class="nav-arrow right" :disabled="previewIndex === previewImages.length - 1" @click="nextPreview">
+          <i class="el-icon-arrow-right"></i>
+        </button>
       </div>
     </el-dialog>
 
@@ -165,7 +186,7 @@
         <div v-if="parseImages(detailItem.images).length" class="detail-section">
           <div class="detail-section-title">图片附件</div>
           <div class="detail-images">
-            <img v-for="(img, idx) in parseImages(detailItem.images)" :key="idx" :src="'/' + img" class="detail-img" @click="previewList = [img]; previewVisible = true" />
+            <img v-for="img in parseImages(detailItem.images)" :key="img" :src="'/' + img" class="detail-img" @click="previewFromDetail(img)" />
           </div>
         </div>
         <div class="detail-section">
@@ -198,10 +219,13 @@
 import { getDedicatedLines, deleteDedicatedLine, deleteDedicatedLineImage } from '@/api/dedicated_line'
 import DedicatedLineDialog from './DedicatedLineDialog.vue'
 import DualControlDialog from '@/components/DualControlDialog.vue'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
 
 export default {
   name: 'DedicatedLineList',
-  components: { DedicatedLineDialog, DualControlDialog },
+  components: { DedicatedLineDialog, DualControlDialog, FileViewer },
   data() {
     return {
       list: [],
@@ -215,13 +239,25 @@ export default {
       filterFactory: '',
       searchTimer: null,
       previewVisible: false,
-      previewList: [],
+      previewTitle: '图片预览',
+      previewImages: [],
+      previewIndex: 0,
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvFeature: fvFeature,
       detailVisible: false,
       detailItem: null
     }
   },
   created() {
     this.fetchList()
+  },
+  computed: {
+    fvOptions() {
+      // 图片为公开静态路径（uploads/dedicated_lines/），无需鉴权，省略 fetchFile 走默认获取
+      return { preset: officePreset }
+    }
   },
   methods: {
     async fetchList() {
@@ -294,9 +330,51 @@ export default {
         return []
       }
     },
-    previewImages(item) {
-      this.previewList = this.parseImages(item.images)
-      this.previewVisible = true
+    previewLineImages(item) {
+      const images = this.parseImages(item.images)
+      if (!images.length) return
+      this.previewImages = images
+      this.openPreviewAt(0)
+    },
+    previewFromDetail(path) {
+      const images = this.parseImages(this.detailItem && this.detailItem.images)
+      if (!images.length) return
+      this.previewImages = images
+      const idx = images.indexOf(path)
+      this.openPreviewAt(idx >= 0 ? idx : 0)
+    },
+    async openPreviewAt(idx) {
+      this.previewIndex = idx
+      const path = this.previewImages[idx]
+      this.currentFileUrl = '/' + path
+      this.currentFileName = path.split('/').pop() || 'image'
+      this.currentFileType = path.split('.').pop().toLowerCase()
+      // FileViewer 监听 url prop 变化自动重载（updateViewer），
+      // 多图切换时保持弹窗常开，避免重开弹窗的视觉跳动
+      if (!this.previewVisible) {
+        this.previewVisible = true
+        await this.$nextTick()
+      }
+    },
+    prevPreview() {
+      if (this.previewIndex > 0) {
+        this.openPreviewAt(this.previewIndex - 1)
+      }
+    },
+    nextPreview() {
+      if (this.previewIndex < this.previewImages.length - 1) {
+        this.openPreviewAt(this.previewIndex + 1)
+      }
+    },
+    // 仅在 fv-feature 关闭的降级方案中使用
+    handleDownloadFromPreview() {
+      if (!this.currentFileUrl) return
+      const a = document.createElement('a')
+      a.href = this.currentFileUrl
+      a.download = this.currentFileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     },
     async deleteImage(item, imagePath) {
       try {
@@ -585,18 +663,78 @@ tr:hover .td-actions {
   color: #94a3b8;
 }
 
-/* 图片预览弹窗 */
-.preview-gallery {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
+/* file-viewer 预览弹窗 */
+.fv-preview-dialog ::v-deep .el-dialog__body {
+  max-height: none;
+  padding: 12px 20px;
 }
-.preview-img {
-  max-width: 100%;
-  max-height: 400px;
-  border-radius: 8px;
-  object-fit: contain;
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
+}
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
+}
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 多图导航 */
+.preview-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+.nav-arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #334155;
+  transition: all 0.2s;
+}
+.nav-arrow:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+.nav-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.nav-indicator {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
 }
 
 /* 详情弹窗 */
