@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"sort"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/xuri/excelize/v2"
+	"gorm.io/gorm"
 )
 
 	// ListApprovedSoftware 获取核准软件列表
@@ -171,10 +173,24 @@ func DeleteApprovedSoftware(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "软件不存在"})
 		return
 	}
-	// 删除关联记录
-	database.GetDB().Where("approved_software_id = ?", id).Delete(&models.AssetSoftware{})
-	if err := database.GetDB().Unscoped().Delete(&sw).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
+
+	if err := database.GetDB().Transaction(func(tx *gorm.DB) error {
+		// 资产对应表关联
+		if err := tx.Where("approved_software_id = ?", id).Delete(&models.AssetSoftware{}).Error; err != nil {
+			return err
+		}
+		// 季度检查软件明细同样对 approved_software 有 RESTRICT 外键，不清理则删除必然失败
+		if err := tx.Where("approved_software_id = ?", id).Delete(&models.QuarterlyCheckSoftware{}).Error; err != nil {
+			return err
+		}
+		return tx.Unscoped().Delete(&sw).Error
+	}); err != nil {
+		log.Printf("删除核准软件失败 (id=%d, name=%s): %v", id, sw.Name, err)
+		if isForeignKeyBlock(err) {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "该软件仍存在数据库外键保护的关联记录，未能自动清理。原始错误: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败: " + err.Error()})
 		return
 	}
 
@@ -580,16 +596,29 @@ func UpdateAssetSoftwareLinks(c *gin.Context) {
 		oldIDs = append(oldIDs, l.ApprovedSoftwareID)
 	}
 
-	// 删除旧关联
-	database.GetDB().Where("asset_id = ?", assetID).Delete(&models.AssetSoftware{})
-
-	// 创建新关联
-	for _, swID := range input.SoftwareIDs {
-		link := models.AssetSoftware{
-			AssetID:            uint(assetID),
-			ApprovedSoftwareID: swID,
+	// 全量替换必须在同一事务内：否则删除成功、重建失败会把用户已勾选的关联清空且前端仍提示成功
+	err := database.GetDB().Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("asset_id = ?", assetID).Delete(&models.AssetSoftware{}).Error; err != nil {
+			return err
 		}
-		database.GetDB().Create(&link)
+		for _, swID := range input.SoftwareIDs {
+			if err := tx.Create(&models.AssetSoftware{
+				AssetID:            uint(assetID),
+				ApprovedSoftwareID: swID,
+			}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Printf("更新资产软件关联失败 (asset_id=%d): %v", assetID, err)
+		if isForeignKeyBlock(err) {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "所选软件已不存在或存在外键保护的关联记录，关联未变更。原始错误: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新失败: " + err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功"})

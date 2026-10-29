@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +13,8 @@ import (
 	"it-platform-server/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
+	"gorm.io/gorm"
 )
 
 // ListAssets 获取资产列表（支持分页和排序）
@@ -264,16 +268,106 @@ func UpdateAsset(c *gin.Context) {
 }
 
 // DeleteAsset 删除资产
+// assets.id 上有 6 个 RESTRICT 外键（asset_software / firewall_nodes / firewall_checks /
+// backup_records 源与介质 / assets 自引用），必须按子→父顺序在同一事务内清理，否则 MySQL 1451 会让删除失败。
 func DeleteAsset(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
+	db := database.GetDB()
+
 	var asset models.Asset
-	if err := database.GetDB().First(&asset, id).Error; err != nil {
+	if err := db.First(&asset, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "资产不存在"})
 		return
 	}
 
-	if err := database.GetDB().Unscoped().Delete(&asset).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败"})
+	// 预检：存活的业务历史记录与下挂虚拟机不能随资产静默销毁，明确拒绝并告知去哪处理
+	var vmCount, liveChecks, liveSrc, liveMed int64
+	db.Model(&models.Asset{}).Where("host_asset_id = ?", id).Count(&vmCount)
+	db.Unscoped().Model(&models.FirewallCheck{}).Where("asset_id = ? AND deleted_at IS NULL", id).Count(&liveChecks)
+	db.Unscoped().Model(&models.BackupRecord{}).Where("backup_source_asset_id = ? AND deleted_at IS NULL", id).Count(&liveSrc)
+	db.Unscoped().Model(&models.BackupRecord{}).Where("backup_medium_asset_id = ? AND deleted_at IS NULL", id).Count(&liveMed)
+	if vmCount+liveChecks+liveSrc+liveMed > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": fmt.Sprintf(
+			"该资产仍有未处理的关联记录，无法删除：虚拟机 %d 台、防火墙检查记录 %d 条、备份记录（作为备份源 %d 条 / 作为备份介质 %d 条）。请先在资产管理、防火墙检查、备份记录模块迁移或删除。",
+			vmCount, liveChecks, liveSrc, liveMed)})
+		return
+	}
+
+	// 防火墙拓扑节点：节点本身随资产清理，但有子防火墙时不能删（否则子节点失去父级）
+	var nodeIDs []uint
+	db.Model(&models.FirewallNode{}).Where("asset_id = ?", id).Pluck("id", &nodeIDs)
+	if len(nodeIDs) > 0 {
+		var childNodeCount int64
+		db.Model(&models.FirewallNode{}).Where("parent_id IN ? AND asset_id <> ?", nodeIDs, id).Count(&childNodeCount)
+		if childNodeCount > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": fmt.Sprintf(
+				"该资产是防火墙拓扑节点，其下还有 %d 个子防火墙，请先在防火墙拓扑模块迁移子节点。", childNodeCount)})
+			return
+		}
+	}
+
+	// 软删残行必须 Unscoped 统计：普通查询看不到它们，但它们仍占用外键，会让资产永久删不掉
+	var deadCheckCount, deadBackupCount int64
+	db.Unscoped().Model(&models.FirewallCheck{}).Where("asset_id = ? AND deleted_at IS NOT NULL", id).Count(&deadCheckCount)
+	db.Unscoped().Model(&models.BackupRecord{}).
+		Where("(backup_source_asset_id = ? OR backup_medium_asset_id = ?) AND deleted_at IS NOT NULL", id, id).
+		Count(&deadBackupCount)
+
+	var softwareLinkCount int64
+	db.Model(&models.AssetSoftware{}).Where("asset_id = ?", id).Count(&softwareLinkCount)
+
+	deadBackupIDs := make([]uint, 0)
+	if deadBackupCount > 0 {
+		db.Unscoped().Model(&models.BackupRecord{}).
+			Where("(backup_source_asset_id = ? OR backup_medium_asset_id = ?) AND deleted_at IS NOT NULL", id, id).
+			Pluck("id", &deadBackupIDs)
+	}
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// 1) 拓扑节点与区域挂靠：region_firewalls.firewall_node_id 没有数据库外键，
+		//    不显式清理不会报错，只会静默留下指向已删节点的悬挂引用
+		if len(nodeIDs) > 0 {
+			if err := tx.Where("firewall_node_id IN ?", nodeIDs).Delete(&models.RegionFirewall{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Unscoped().Where("id IN ?", nodeIDs).Delete(&models.FirewallNode{}).Error; err != nil {
+				return err
+			}
+		}
+
+		// 2) 资产对应表的第三方软件关联
+		if err := tx.Where("asset_id = ?", id).Delete(&models.AssetSoftware{}).Error; err != nil {
+			return err
+		}
+
+		// 3) 已软删的防火墙检查记录
+		if deadCheckCount > 0 {
+			if err := tx.Unscoped().Where("asset_id = ? AND deleted_at IS NOT NULL", id).Delete(&models.FirewallCheck{}).Error; err != nil {
+				return err
+			}
+		}
+
+		// 4) 已软删的备份记录：先清恢复记录，backup_recoveries 对 backup_records.id 有 RESTRICT 外键
+		if len(deadBackupIDs) > 0 {
+			if err := tx.Unscoped().Where("backup_record_id IN ?", deadBackupIDs).Delete(&models.BackupRecovery{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Unscoped().Where("id IN ?", deadBackupIDs).Delete(&models.BackupRecord{}).Error; err != nil {
+				return err
+			}
+		}
+
+		// 5) 资产本体
+		return tx.Unscoped().Delete(&asset).Error
+	})
+	if err != nil {
+		log.Printf("删除资产失败 (id=%d, computer_name=%s): %v", id, asset.ComputerName, err)
+		if isForeignKeyBlock(err) {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": fmt.Sprintf(
+				"该资产仍存在外键保护的关联记录，未能自动清理。请检查：资产对应表、防火墙拓扑节点、备份记录（源/介质）、防火墙检查记录，或联系管理员。原始错误：%s", err.Error())})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除失败: " + err.Error()})
 		return
 	}
 
@@ -281,7 +375,25 @@ func DeleteAsset(c *gin.Context) {
 	username, displayName, approver := services.GetUserContext(c)
 	fieldLabels := services.GetFieldLabels("asset")
 	details := services.DiffStructs(asset, models.Asset{}, fieldLabels)
+	if softwareLinkCount+int64(len(nodeIDs))+deadCheckCount+deadBackupCount > 0 {
+		details = append(details, services.LogDetail{
+			FieldName:  "CascadeCleanup",
+			FieldLabel: "级联清理",
+			NewValue: fmt.Sprintf("第三方软件关联 %d 条、防火墙拓扑节点 %d 个、已软删防火墙检查 %d 条、已软删备份记录 %d 条",
+				softwareLinkCount, len(nodeIDs), deadCheckCount, deadBackupCount),
+		})
+	}
 	services.LogOperation(username, displayName, "删除资产", "asset", asset.ID, asset.ComputerName, approver, c.ClientIP(), details)
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
+}
+
+// isForeignKeyBlock 判定 MySQL 1451/1452：子表仍存在引用，RESTRICT 拒绝了父行删除
+func isForeignKeyBlock(err error) bool {
+	var myErr *mysql.MySQLError
+	if errors.As(err, &myErr) {
+		return myErr.Number == 1451 || myErr.Number == 1452
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "Error 1451") || strings.Contains(msg, "Error 1452")
 }

@@ -228,7 +228,9 @@ export default {
         this.$message.success('删除成功')
         this.fetchData()
       } catch (e) {
-        if (e.message !== 'canceled') console.error(e)
+        // $confirm 取消时 reject 的是字符串而非 Error；失败提示已由 request 拦截器统一 toast
+        if (e === 'cancel' || e === 'close') return
+        console.error(e)
       }
     },
     // 接收子组件的 success 事件
