@@ -136,6 +136,7 @@ export default {
           { index: '/vulnerability-scan', icon: 'search', title: '漏洞扫描' },
           { index: '/penetration-test', icon: 'crosshair', title: '渗透测试' },
           { index: '/firewall-check', icon: 'shield-check', title: '防火墙检查' },
+          { index: '/wireless-scan', icon: 'wifi', title: '无线扫描' },
           { index: '/security-rectification', icon: 'pencil', title: '安全整改记录' }
         ]},
         { type: 'submenu', index: 'system-security', icon: 'settings', title: '系统安全', children: [

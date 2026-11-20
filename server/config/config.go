@@ -90,6 +90,7 @@ type UploadConfig struct {
 	ITGuideMediaPath             string `yaml:"it_guide_media_path"`
 	ITGuideAttachmentPath        string `yaml:"it_guide_attachment_path"`
 	ExceptionManagementPath      string `yaml:"exception_management_path"`
+	WirelessScanPath             string `yaml:"wireless_scan_path"`
 }
 
 // LDAPConfig LDAP配置
@@ -245,6 +246,9 @@ func LoadConfig() error {
 	}
 	if Cfg.Upload.ExceptionManagementPath == "" {
 		Cfg.Upload.ExceptionManagementPath = "./uploads/exception_managements"
+	}
+	if Cfg.Upload.WirelessScanPath == "" {
+		Cfg.Upload.WirelessScanPath = "./uploads/wireless_scans"
 	}
 	if Cfg.RSA.PrivateKeyPath == "" {
 		Cfg.RSA.PrivateKeyPath = "./certificate/rsa_private.pem"

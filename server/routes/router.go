@@ -165,6 +165,11 @@ func SetupRouter() *gin.Engine {
 			protected.GET("/firewall-checks/:id/rect-preview", handlers.PreviewFirewallRectReport)
 			protected.GET("/firewall-checks/:id/rect-download", handlers.DownloadFirewallRectReport)
 
+			// 无线扫描 - 查询（不需要双控）
+			protected.GET("/wireless-scans", handlers.ListWirelessScans)
+			protected.GET("/wireless-scans/:id/preview", handlers.PreviewWirelessScan)
+			protected.GET("/wireless-scans/:id/download", handlers.DownloadWirelessScan)
+
 			// 补丁更新 - 查询（不需要双控）
 			protected.GET("/patch-updates", handlers.ListPatchUpdates)
 			protected.GET("/patch-updates/:id/preview", handlers.PreviewPatchUpdate)
@@ -369,6 +374,11 @@ func SetupRouter() *gin.Engine {
 				dual.DELETE("/firewall-checks/:id", handlers.DeleteFirewallCheck)
 				dual.PUT("/firewall-checks/:id/rect", handlers.UploadFirewallRectReport)
 				dual.DELETE("/firewall-checks/:id/rect", handlers.DeleteFirewallRectReport)
+
+				// 无线扫描 - 写操作（需要双控）
+				dual.POST("/wireless-scans", handlers.CreateWirelessScan)
+				dual.PUT("/wireless-scans/:id", handlers.UpdateWirelessScan)
+				dual.DELETE("/wireless-scans/:id", handlers.DeleteWirelessScan)
 
 				// 补丁更新 - 写操作（需要双控）
 				dual.POST("/patch-updates", handlers.CreatePatchUpdate)

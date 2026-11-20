@@ -101,6 +101,7 @@ const routes = [
       { path: 'vulnerability-scan', name: 'VulnerabilityScan', component: () => import('../views/network-security/VulnerabilityScan.vue'), meta: { title: '漏洞扫描', enTitle: 'Vulnerability Scan' } },
       { path: 'penetration-test', name: 'PenetrationTest', component: () => import('../views/network-security/PenetrationTest.vue'), meta: { title: '渗透测试', enTitle: 'Penetration Test' } },
       { path: 'firewall-check', name: 'FirewallCheck', component: () => import('../views/network-security/FirewallCheck.vue'), meta: { title: '防火墙检查', enTitle: 'Firewall Check' } },
+      { path: 'wireless-scan', name: 'WirelessScan', component: () => import('../views/network-security/WirelessScan.vue'), meta: { title: '无线扫描', enTitle: 'Wireless Scan' } },
       { path: 'security-rectification', name: 'SecurityRectification', component: () => import('../views/network-security/SecurityRectification.vue'), meta: { title: '安全整改记录', enTitle: 'Security Rectification' } },
       { path: 'system-hardening', name: 'SystemHardening', component: () => import('../views/system-security/SystemHardening.vue'), meta: { title: '系统加固', enTitle: 'System Hardening' } },
       { path: 'patch-update', name: 'PatchUpdate', component: () => import('../views/system-security/PatchUpdate.vue'), meta: { title: '补丁更新', enTitle: 'Patch Update' } },

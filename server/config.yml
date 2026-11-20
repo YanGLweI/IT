@@ -75,6 +75,8 @@ upload:
   it_guide_media_path: "./uploads/it_guide_media"
   # 例外管理授权文件上传路径
   exception_management_path: "./uploads/exception_managements"
+  # 无线扫描报告上传路径
+  wireless_scan_path: "./uploads/wireless_scans"
 
 # RSA 加密配置
 rsa:

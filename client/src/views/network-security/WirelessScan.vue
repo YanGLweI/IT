@@ -1,0 +1,496 @@
+<template>
+  <div class="wireless-scan">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">无线扫描</h2>
+        <p class="page-subtitle">上传并预览无线覆盖扫描报告</p>
+      </div>
+      <div class="header-actions">
+        <el-button type="primary" size="small" icon="el-icon-upload2" @click="openUpload">上传扫描报告</el-button>
+        <el-button type="default" size="small" icon="el-icon-refresh" @click="fetchData" :loading="loading">刷新</el-button>
+      </div>
+    </div>
+
+      <!-- 筛选栏 -->
+      <div class="filter-bar">
+        <el-select v-model="filterYear" placeholder="全部年份" size="small" clearable @change="handleFilterChange" style="width: 120px">
+          <el-option v-for="y in yearOptions" :key="y" :label="y + '年'" :value="y" />
+        </el-select>
+        <el-input v-model="keyword" placeholder="搜索描述..." size="small" clearable @keyup.enter.native="handleFilterChange" @clear="handleFilterChange" style="width: 200px" />
+        <el-button size="small" type="primary" icon="el-icon-search" @click="handleFilterChange">搜索</el-button>
+      </div>
+
+      <!-- 数据表格 -->
+      <div class="table-card" ref="tableCard">
+      <div class="table-wrapper">
+        <el-table :data="records" stripe v-loading="loading" :max-height="tableMaxHeight">
+        <el-table-column type="index" label="序号" width="75" align="center" />
+        <el-table-column prop="year" label="年份" width="85" align="center" />
+        <el-table-column prop="month" label="月份" width="85" align="center">
+          <template slot-scope="{ row }">{{ row.month }}月</template>
+        </el-table-column>
+        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip />
+        <el-table-column label="上传时间" width="250" align="center">
+          <template slot-scope="{ row }">{{ formatDate(row.created_at) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="350" fixed="right" align="center">
+          <template slot-scope="{ row }">
+            <div class="op-btns">
+              <el-button size="mini" type="text" icon="el-icon-view" @click="handlePreview(row)">预览</el-button>
+              <el-button size="mini" type="text" icon="el-icon-download" @click="handleDownload(row)">下载</el-button>
+              <el-button size="mini" type="text" icon="el-icon-edit" @click="handleEdit(row)">编辑</el-button>
+              <el-button size="mini" type="danger" icon="el-icon-delete" @click="handleDelete(row)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+        </el-table>
+      </div>
+      </div>
+
+      <!-- 分页 -->
+      <div class="pagination-wrap">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          :page-size.sync="pageSize"
+          :current-page.sync="page"
+          :page-sizes="[10, 20, 50]"
+          @size-change="handleSizeChange"
+          @current-change="fetchData"
+        />
+      </div>
+
+    <!-- 上传弹窗 -->
+    <el-dialog class="vault-dialog" :title="isEdit ? '编辑无线扫描报告' : '上传无线扫描报告'" :visible.sync="showUpload" width="520px" :close-on-click-modal="false">
+      <el-form :model="uploadForm" ref="uploadFormRef" :rules="uploadRules" label-width="80px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="年份" prop="year">
+              <el-input-number v-model="uploadForm.year" :min="2020" :max="2100" :step="1" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="月份" prop="month">
+              <el-select v-model="uploadForm.month" placeholder="请选择" style="width: 100%">
+                <el-option v-for="m in 12" :key="m" :label="m + '月'" :value="m" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="uploadForm.description" type="textarea" :rows="2" placeholder="输入描述，便于后续搜索" />
+        </el-form-item>
+        <el-form-item label="文件" prop="file" v-if="!isEdit">
+          <el-upload
+            ref="uploader"
+            action=""
+            :auto-upload="false"
+            :limit="1"
+            accept=".pdf,.docx"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            :file-list="fileList"
+            drag
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">拖拽文件到此处，或<em>点击上传</em></div>
+            <div slot="tip" class="el-upload__tip">仅支持 PDF、DOCX 格式文件</div>
+          </el-upload>
+        </el-form-item>
+        <el-alert v-else title="编辑模式下不可修改文件" type="info" :closable="false" show-icon />
+      </el-form>
+      <span slot="footer">
+        <el-button @click="showUpload = false">取消</el-button>
+        <el-button type="primary" :loading="uploading" @click="handleUpload">{{ isEdit ? '保存' : '确定上传' }}</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 预览弹窗（使用 file-viewer） -->
+    <el-dialog class="vault-dialog preview-dialog fv-preview-dialog" title="文件预览" :visible.sync="previewVisible" width="80%" top="3vh" :close-on-click-modal="true">
+      <div class="fv-container" style="height: 70vh">
+        <div v-if="fvFeature.enabled">
+          <FileViewer
+            v-if="previewVisible"
+            :url="currentFileUrl"
+            :name="currentFileName"
+            :type="currentFileType"
+            :options="fvOptions"
+          />
+        </div>
+        <div v-else class="fv-fallback">
+          <p>文件预览功能暂不可用，请下载后查看。</p>
+          <el-button type="primary" @click="handleDownloadFromPreview">下载文件</el-button>
+        </div>
+      </div>
+      <span slot="footer">
+        <el-button type="primary" size="small" icon="el-icon-download" @click="handleDownloadFromPreview">下载</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 双控验证弹窗 -->
+    <DualControlDialog ref="dualControl" />
+  </div>
+</template>
+
+<script>
+import { getWirelessScans, createWirelessScan, updateWirelessScan, deleteWirelessScan, getWirelessScanPreviewUrl, getWirelessScanDownloadUrl } from '@/api/wireless_scan'
+import DualControlDialog from '@/components/DualControlDialog.vue'
+import tableHeightMixin from '@/mixins/table-height'
+import previewGuardMixin from '@/mixins/preview-guard'
+import { FileViewer } from '@file-viewer/vue2.7'
+import officePreset from '@file-viewer/preset-office'
+import fvFeature from '@/config/fv-feature'
+
+export default {
+  name: 'WirelessScan',
+  components: { DualControlDialog, FileViewer },
+  mixins: [tableHeightMixin, previewGuardMixin],
+  data() {
+    const now = new Date()
+    return {
+      records: [],
+      loading: false,
+      page: 1,
+      pageSize: 10,
+      total: 0,
+      filterYear: '',
+      keyword: '',
+      yearOptions: Array.from({ length: 10 }, (_, i) => now.getFullYear() - i),
+      // 上传
+      showUpload: false,
+      isEdit: false,
+      editingId: null,
+      uploading: false,
+      uploadForm: {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        description: ''
+      },
+      uploadRules: {
+        year: [{ required: true, message: '请选择年份', trigger: 'change' }],
+        month: [{ required: true, message: '请选择月份', trigger: 'change' }]
+      },
+      selectedFile: null,
+      fileList: [],
+      // 预览
+      previewVisible: false,
+      previewDownloadUrl: '',
+      currentFileUrl: '',
+      currentFileName: '',
+      currentFileType: '',
+      fvFeature: fvFeature
+    }
+  },
+  computed: {
+    fvOptions() {
+      return { preset: officePreset }
+    }
+  },
+  mounted() {
+    this.fetchData()
+  },
+  methods: {
+    async fetchData() {
+      this.loading = true
+      try {
+        const params = { page: this.page, page_size: this.pageSize }
+        if (this.filterYear) params.year = this.filterYear
+        if (this.keyword) params.keyword = this.keyword
+        const res = await getWirelessScans(params)
+        this.records = res.data || []
+        this.total = res.total || 0
+      } catch (e) {
+        console.error(e)
+      } finally {
+        this.loading = false
+        this.$nextTick(() => this.calcTableHeight())
+      }
+    },
+    handleSizeChange() {
+      this.page = 1
+      this.fetchData()
+    },
+    handleFilterChange() {
+      this.page = 1
+      this.fetchData()
+    },
+    openUpload() {
+      this.resetUploadForm()
+      this.showUpload = true
+    },
+    handleFileChange(file) {
+      const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
+      if (ext !== '.pdf' && ext !== '.docx') {
+        this.$message.warning('仅支持 PDF、DOCX 格式文件')
+        this.$refs.uploader.clearFiles()
+        this.selectedFile = null
+        return
+      }
+      this.selectedFile = file.raw
+    },
+    handleFileRemove() {
+      this.selectedFile = null
+    },
+    handleUpload() {
+      this.$refs.uploadFormRef.validate(async valid => {
+        if (!valid) return
+        // 上传模式需要文件，编辑模式不需要
+        if (!this.isEdit && !this.selectedFile) {
+          this.$message.warning('请选择 PDF 或 DOCX 文件')
+          return
+        }
+        this.uploading = true
+        try {
+          const formData = new FormData()
+          formData.append('year', this.uploadForm.year)
+          formData.append('month', this.uploadForm.month)
+          formData.append('description', this.uploadForm.description || '')
+          if (this.selectedFile) {
+            formData.append('file', this.selectedFile)
+          }
+
+          const dualToken = await this.$refs.dualControl.open()
+          if (this.isEdit) {
+            await updateWirelessScan(this.editingId, formData, dualToken)
+            this.$message.success('更新成功')
+          } else {
+            await createWirelessScan(formData, dualToken)
+            this.$message.success('上传成功')
+          }
+          this.showUpload = false
+          this.resetUploadForm()
+          this.fetchData()
+        } catch (e) {
+          if (e.message !== 'canceled') console.error(e)
+        } finally {
+          this.uploading = false
+        }
+      })
+    },
+    resetUploadForm() {
+      const now = new Date()
+      this.isEdit = false
+      this.editingId = null
+      this.uploadForm = {
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        description: ''
+      }
+      this.selectedFile = null
+      this.fileList = []
+      if (this.$refs.uploader) {
+        this.$refs.uploader.clearFiles()
+      }
+    },
+    handleEdit(row) {
+      this.isEdit = true
+      this.editingId = row.id
+      this.uploadForm = {
+        year: row.year,
+        month: row.month,
+        description: row.description || ''
+      }
+      this.showUpload = true
+    },
+    async handlePreview(row) {
+      this.previewDownloadUrl = getWirelessScanDownloadUrl(row.id)
+      this.currentFileName = row.file_name || 'unknown_file'
+      this.currentFileType = row.file_name ? row.file_name.split('.').pop().toLowerCase() : ''
+      const previewUrl = getWirelessScanPreviewUrl(row.id)
+      if (!(await this.checkFileExists(previewUrl))) return
+      this.currentFileUrl = previewUrl
+      this.previewVisible = false
+      await this.$nextTick()
+      this.previewVisible = true
+      await this.$nextTick()
+    },
+    async handleDownloadFromPreview() {
+      if (!this.previewDownloadUrl) return
+      try {
+        const response = await fetch(this.previewDownloadUrl, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = this.currentFileName || '下载文件'
+        link.click()
+        URL.revokeObjectURL(link.href)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
+    },
+    async handleDownload(row) {
+      const url = getWirelessScanDownloadUrl(row.id)
+      try {
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (!response.ok) throw new Error('下载失败')
+        const blob = await response.blob()
+        const downloadUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = row.file_name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(downloadUrl)
+      } catch (e) {
+        console.error('下载失败:', e)
+        this.$message.error('下载失败')
+      }
+    },
+    async handleDelete(row) {
+      try {
+        await this.$confirm(`确定要删除 ${row.year}年${row.month}月 的无线扫描报告吗？`, '删除确认', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        const dualToken = await this.$refs.dualControl.open()
+        await deleteWirelessScan(row.id, dualToken)
+        this.$message.success('删除成功')
+        this.fetchData()
+      } catch (e) {
+        if (e.message !== 'canceled') console.error(e)
+      }
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '-'
+      return dateStr.replace('T', ' ').substring(0, 19)
+    }
+  }
+}
+</script>
+
+<style scoped>
+.wireless-scan {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin: 20px;
+  padding: 24px;
+  height: calc(100% - 85px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.op-btns {
+  display: flex;
+  gap: 6px;
+}
+
+/* 主按钮 */
+.header-actions .el-button--primary,
+.el-dialog__footer .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+.header-actions .el-button--primary:hover,
+.el-dialog__footer .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* 筛选栏搜索按钮 */
+.filter-bar .el-button--primary {
+  background: #3b82f6;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+}
+.filter-bar .el-button--primary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* 次要按钮 */
+.header-actions .el-button--default {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: #64748b;
+}
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+/* file-viewer 组件高度修复 - 强制填满容器 */
+.fv-container > div {
+  height: 100% !important;
+}
+
+.fv-container >>> .ff-file-viewer-vue27 {
+  height: 100% !important;
+}
+
+/* file-viewer 内部工具栏样式覆盖 */
+.fv-container >>> .fv-toolbar {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  background: #ffffff;
+}
+
+/* 确保滚动正确工作 */
+.fv-container >>> .fv-content-wrapper {
+  height: calc(100% - 50px);
+}
+
+/* 降级方案样式 */
+.fv-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: #64748b;
+}
+</style>

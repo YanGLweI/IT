@@ -184,6 +184,7 @@ export default {
         'system_hardening_history': '系统加固记录',
         'penetration_test': '渗透测试',
         'firewall_check': '防火墙检查',
+        'wireless_scan': '无线扫描',
         'patch_update': '补丁更新',
         'backup': '备份记录',
         'backup_recovery': '恢复还原记录',
